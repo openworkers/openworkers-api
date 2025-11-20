@@ -19,7 +19,7 @@ export function createAuthMiddleware() {
 
   return jwt({
     secret,
-    cookie: 'token', // Also check cookie for token
+    cookie: 'access_token', // Also check cookie for token
   });
 }
 

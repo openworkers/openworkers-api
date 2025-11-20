@@ -1,7 +1,6 @@
 export interface User {
   id: string;
   username: string;
-  email?: string;
   avatar_url?: string;
   resource_limits?: {
     workers: number;

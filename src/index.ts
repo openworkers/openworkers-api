@@ -1,51 +1,49 @@
-import { Hono } from 'hono';
-import { cors } from 'hono/cors';
-import { logger } from 'hono/logger';
-import { initDb } from './services/db';
-import { createAuthMiddleware, extractUser } from './middlewares/auth';
-import workers from './routes/workers';
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { logger } from "hono/logger";
+import { createAuthMiddleware, extractUser } from "./middlewares/auth";
+import authRoutes from "./routes/auth";
+import users from "./routes/users";
+import workers from "./routes/workers";
 
 const app = new Hono();
 
 // Global middlewares
-app.use('*', logger());
-app.use('*', cors());
+app.use("*", logger());
+app.use("*", cors());
 
 // Health check (no auth required)
-app.get('/health', (c) => {
-  return c.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get("/health", (c) => {
+  return c.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// API v1 routes
+const v1 = new Hono();
+
+// Auth routes (no JWT required - these CREATE the tokens)
+v1.route("/", authRoutes);
+
 // Protected routes (require JWT)
-const api = new Hono();
-api.use('*', createAuthMiddleware());
-api.use('*', extractUser);
+v1.use("*", createAuthMiddleware());
+v1.use("*", extractUser);
 
-// Mount route modules
-api.route('/workers', workers);
+// Mount protected route modules
+v1.route("/workers", workers);
+v1.route("/", users);
 // TODO: Add more routes
-// api.route('/users', users);
-// api.route('/environments', environments);
-// api.route('/domains', domains);
-// api.route('/crons', crons);
+// v1.route('/environments', environments);
+// v1.route('/domains', domains);
+// v1.route('/crons', crons);
 
-app.route('/api', api);
+app.route("/api/v1", v1);
 
 // Start server
-const port = parseInt(process.env.PORT || '3000');
-const dbUrl = process.env.DATABASE_URL;
-
-if (!dbUrl) {
-  console.error('DATABASE_URL environment variable not set');
-  process.exit(1);
-}
-
-// Initialize database
-initDb(dbUrl);
+const port = parseInt(process.env.PORT || "7000");
 
 console.log(`OpenWorkers API starting on port ${port}...`);
-console.log(`Database: ${dbUrl.split('@')[1] || 'configured'}`);
-console.log(`JWT secret: ${process.env.JWT_ACCESS_SECRET ? 'configured' : 'MISSING!'}`);
+console.log(
+  `JWT secret: ${process.env.JWT_ACCESS_SECRET ? "configured" : "MISSING!"}`
+);
 
 export default {
   port,

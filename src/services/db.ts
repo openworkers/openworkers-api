@@ -1,103 +1,148 @@
 /**
- * Database service abstraction.
- *
- * Uses Bun's native Postgres client for now.
- * Can be swapped with postgres-gateway later by changing this file only.
+ * Database service with specific functions using Bun.sql template literals
  */
 
-import { sql as bunSql } from 'bun';
+import { SQL } from "bun";
+import type { User, Worker } from "../types";
 
-export interface QueryResult<T = any> {
-  rows: T[];
-  rowCount: number;
+// Initialize DB connection
+const sql = new SQL({
+  host: process.env.DB_HOST || "localhost",
+  port: parseInt(process.env.DB_PORT || "5432"),
+  user: process.env.DB_USER || "postgres",
+  password: process.env.DB_PASSWORD || "password",
+  database: process.env.DB_NAME || "openworkers",
+  adapter: "postgres",
+});
+
+// Users
+export async function findUserById(userId: string): Promise<User | null> {
+  const users = await sql`
+    SELECT id, username, avatar_url as "avatarUrl", resource_limits as "resourceLimits", created_at as "createdAt", updated_at as "updatedAt"
+    FROM users
+    WHERE id = ${userId}
+  `;
+  return users[0] || null;
 }
 
-export interface DbService {
-  query<T = any>(query: string, params?: any[]): Promise<QueryResult<T>>;
-  transaction<T>(callback: (tx: DbTransaction) => Promise<T>): Promise<T>;
+export async function findUserByGitHub(
+  externalId: string
+): Promise<User | null> {
+  const users = await sql`
+    SELECT u.id, u.username, u.avatar_url as "avatarUrl", u.resource_limits as "resourceLimits", u.created_at as "createdAt", u.updated_at as "updatedAt"
+    FROM users u
+    INNER JOIN external_users eu ON u.id = eu.user_id
+    WHERE eu.external_id = ${externalId} AND eu.provider = 'github'
+  `;
+  return users[0] || null;
 }
 
-export interface DbTransaction {
-  query<T = any>(query: string, params?: any[]): Promise<QueryResult<T>>;
-}
+export async function createUserWithGitHub(
+  externalId: string,
+  username: string,
+  avatarUrl: string
+): Promise<User> {
+  await sql`BEGIN`;
 
-class BunPostgresService implements DbService {
-  private sql: ReturnType<typeof bunSql>;
+  try {
+    const users = await sql`
+      INSERT INTO users (username, avatar_url)
+      VALUES (${username}, ${avatarUrl})
+      RETURNING id, username, avatar_url as "avatarUrl", resource_limits as "resourceLimits", created_at as "createdAt", updated_at as "updatedAt"
+    `;
 
-  constructor(connectionString: string) {
-    this.sql = bunSql(connectionString);
-  }
+    const user = users[0];
 
-  async query<T = any>(query: string, params: any[] = []): Promise<QueryResult<T>> {
-    const result = await this.sql(query, params);
+    await sql`
+      INSERT INTO external_users (external_id, provider, user_id)
+      VALUES (${externalId}, 'github', ${user.id})
+    `;
 
-    return {
-      rows: result as T[],
-      rowCount: Array.isArray(result) ? result.length : 0,
-    };
-  }
-
-  async transaction<T>(callback: (tx: DbTransaction) => Promise<T>): Promise<T> {
-    // Bun's sql doesn't have explicit transaction API yet
-    // We'll use BEGIN/COMMIT manually
-    await this.sql`BEGIN`;
-
-    try {
-      const tx: DbTransaction = {
-        query: async <T>(query: string, params: any[] = []) => {
-          const result = await this.sql(query, params);
-          return {
-            rows: result as T[],
-            rowCount: Array.isArray(result) ? result.length : 0,
-          };
-        }
-      };
-
-      const result = await callback(tx);
-      await this.sql`COMMIT`;
-      return result;
-    } catch (error) {
-      await this.sql`ROLLBACK`;
-      throw error;
-    }
-  }
-
-  async close() {
-    // Bun sql doesn't expose close method
-    // Connection is managed automatically
+    await sql`COMMIT`;
+    return user;
+  } catch (error) {
+    await sql`ROLLBACK`;
+    throw error;
   }
 }
 
-// Singleton instance
-let dbInstance: DbService | null = null;
-
-export function initDb(connectionString: string): DbService {
-  if (!dbInstance) {
-    dbInstance = new BunPostgresService(connectionString);
-  }
-  return dbInstance;
+// Workers
+export async function findAllWorkers(userId: string): Promise<Worker[]> {
+  return sql`
+    SELECT id, name, script, language, user_id, environment_id, created_at, updated_at
+    FROM workers
+    WHERE user_id = ${userId}
+    ORDER BY created_at DESC
+  `;
 }
 
-export function getDb(): DbService {
-  if (!dbInstance) {
-    throw new Error('Database not initialized. Call initDb() first.');
-  }
-  return dbInstance;
+export async function findWorkerById(
+  userId: string,
+  workerId: string
+): Promise<Worker | null> {
+  const workers = await sql`
+    SELECT id, name, script, language, user_id, environment_id, created_at, updated_at
+    FROM workers
+    WHERE id = ${workerId} AND user_id = ${userId}
+  `;
+  return workers[0] || null;
 }
 
-// Future: Gateway implementation
-// class GatewayDbService implements DbService {
-//   private gatewayUrl: string;
-//
-//   constructor(gatewayUrl: string) {
-//     this.gatewayUrl = gatewayUrl;
-//   }
-//
-//   async query<T>(query: string, params?: any[]): Promise<QueryResult<T>> {
-//     const response = await fetch(`${this.gatewayUrl}/query`, {
-//       method: 'POST',
-//       body: JSON.stringify({ query, params })
-//     });
-//     return response.json();
-//   }
-// }
+export async function createWorker(
+  userId: string,
+  name: string,
+  script: string,
+  language: "javascript" | "typescript",
+  environmentId?: string
+): Promise<Worker> {
+  const workers = await sql`
+    INSERT INTO workers (name, script, language, user_id, environment_id)
+    VALUES (${name}, ${script}, ${language}, ${userId}, ${
+    environmentId || null
+  })
+    RETURNING id, name, script, language, user_id, environment_id, created_at, updated_at
+  `;
+  return workers[0];
+}
+
+export async function updateWorker(
+  userId: string,
+  workerId: string,
+  updates: {
+    name?: string;
+    script?: string;
+    language?: "javascript" | "typescript";
+    environment_id?: string;
+  }
+): Promise<Worker | null> {
+  // Simple approach: always update all fields (use existing values if not provided)
+  const current = await findWorkerById(userId, workerId);
+  if (!current) {
+    return null;
+  }
+
+  const workers = await sql`
+    UPDATE workers
+    SET
+      name = ${updates.name ?? current.name},
+      script = ${updates.script ?? current.script},
+      language = ${updates.language ?? current.language},
+      environment_id = ${updates.environment_id ?? current.environment_id},
+      updated_at = NOW()
+    WHERE id = ${workerId} AND user_id = ${userId}
+    RETURNING id, name, script, language, user_id, environment_id, created_at, updated_at
+  `;
+
+  return workers[0] || null;
+}
+
+export async function deleteWorker(
+  userId: string,
+  workerId: string
+): Promise<number> {
+  const result = await sql`
+    DELETE FROM workers
+    WHERE id = ${workerId} AND user_id = ${userId}
+  `;
+  return result.count || 0;
+}

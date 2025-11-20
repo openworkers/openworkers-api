@@ -45,7 +45,13 @@ bun run start
 
 ## API Endpoints
 
-### Workers
+### Auth (Public)
+
+- `GET /login/github` - Redirect to GitHub OAuth
+- `GET /callback/github` - GitHub OAuth callback (creates JWT, redirects to dashboard)
+- `POST /refresh` - Refresh access token using refresh token
+
+### Workers (Protected)
 
 - `GET /api/workers` - List all workers
 - `GET /api/workers/:id` - Get single worker
@@ -53,13 +59,21 @@ bun run start
 - `PUT /api/workers/:id` - Update worker
 - `DELETE /api/workers/:id` - Delete worker
 
-### Auth
+### Authentication
 
 All `/api/*` endpoints require JWT Bearer token in `Authorization` header:
 
 ```
 Authorization: Bearer <token>
 ```
+
+OAuth flow:
+1. User clicks "Login with GitHub" → `GET /login/github`
+2. GitHub redirects to → `GET /callback/github?code=...`
+3. Server exchanges code for user profile
+4. Creates/finds user in DB
+5. Issues JWT tokens (access + refresh)
+6. Redirects to dashboard with token
 
 ## Database Service Abstraction
 
