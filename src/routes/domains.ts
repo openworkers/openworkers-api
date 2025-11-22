@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 import { domainsService } from '../services/domains';
+import { DomainFullSchema, DomainCreateInputSchema } from '../types';
+import { jsonResponse, jsonArrayResponse } from '../utils/validate';
 
 const domains = new Hono();
 
@@ -8,7 +10,7 @@ domains.get('/', async (c) => {
     const userId = c.get('userId');
     try {
         const domains = await domainsService.findAll(userId);
-        return c.json(domains);
+        return jsonArrayResponse(c, DomainFullSchema, domains);
     } catch (error) {
         console.error('Failed to fetch domains:', error);
         return c.json({ error: 'Failed to fetch domains' }, 500);
@@ -20,16 +22,10 @@ domains.post('/', async (c) => {
     const userId = c.get('userId');
     const body = await c.req.json();
 
-    if (!body.name || !body.workerId) {
-        return c.json({ error: 'Missing required fields: name, workerId' }, 400);
-    }
-
     try {
-        const domain = await domainsService.create(userId, {
-            name: body.name,
-            workerId: body.workerId
-        });
-        return c.json(domain, 201);
+        const payload = DomainCreateInputSchema.parse(body);
+        const domain = await domainsService.create(userId, payload);
+        return jsonResponse(c, DomainFullSchema, domain, 201);
     } catch (error) {
         console.error('Failed to create domain:', error);
         return c.json({

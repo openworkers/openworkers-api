@@ -3,7 +3,7 @@ import { setCookie } from "hono/cookie";
 import { verify } from "hono/jwt";
 import { authService } from "../services/auth";
 import { github as githubConfig, jwt as jwtConfig } from "../config";
-import { LoginResponseSchema, type JWTPayload } from "../types";
+import { LoginResponseSchema } from "../types";
 import { jsonResponse } from "../utils/validate";
 
 const auth = new Hono();
@@ -86,7 +86,7 @@ auth.get("/callback/github", async (c) => {
     // Create JWT tokens
     const tokens = await authService.createTokens(user);
 
-    // Set access_token cookie (only access token, not refresh)
+    // Set access_token cookie
     setCookie(c, "access_token", tokens.accessToken, {
       httpOnly: true,
       secure: true,
@@ -126,6 +126,13 @@ auth.post("/refresh", async (c) => {
 
     // Generate new tokens
     const tokens = await authService.refreshTokens(payload.sub);
+
+    // Set access_token cookie
+    setCookie(c, "access_token", tokens.accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+    });
 
     return jsonResponse(c, LoginResponseSchema, tokens);
   } catch (error) {

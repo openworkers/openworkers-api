@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 // Environment schema
-const EnvironmentSchema = z.enum(["development", "staging", "production", "test"]);
+const EnvironmentSchema = z.enum([
+  "development",
+  "staging",
+  "production",
+  "test",
+]);
 
 // Configuration schema
 const ConfigSchema = z.object({
@@ -23,11 +28,15 @@ const ConfigSchema = z.object({
   // JWT
   jwt: z.object({
     access: z.object({
-      secret: z.string().min(32, "JWT_ACCESS_SECRET must be at least 32 characters"),
+      secret: z
+        .string()
+        .min(32, "JWT_ACCESS_SECRET must be at least 32 characters"),
       expiresIn: z.string().default("15m"),
     }),
     refresh: z.object({
-      secret: z.string().min(32, "JWT_REFRESH_SECRET must be at least 32 characters"),
+      secret: z
+        .string()
+        .min(32, "JWT_REFRESH_SECRET must be at least 32 characters"),
       expiresIn: z.string().default("18h"),
     }),
   }),
@@ -90,7 +99,9 @@ function loadConfig(): Config {
 
     // Warn about missing GitHub OAuth
     if (!config.github.clientId || !config.github.clientSecret) {
-      console.warn("⚠️  GitHub OAuth not configured (GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET missing)");
+      console.warn(
+        "⚠️  GitHub OAuth not configured (GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET missing)"
+      );
     }
 
     return config;

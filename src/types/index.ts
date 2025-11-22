@@ -39,6 +39,12 @@ export type {
   IEnvironmentValueUpdateInput,
 } from "./schemas/environment.schema";
 
+export {
+  CronSchema,
+  CronCreateInputSchema,
+  CronUpdateInputSchema,
+} from "./schemas/cron.schema";
+
 export type {
   ICron,
   ICronExpressionInput,
@@ -47,11 +53,17 @@ export type {
 } from "./schemas/cron.schema";
 
 export {
+  DomainSchema as DomainFullSchema,
+  DomainCreateInputSchema,
+} from "./schemas/domain.schema";
+
+export type { IDomain, IDomainCreateInput } from "./schemas/domain.schema";
+
+export {
   WorkerSchema,
   WorkerCreateInputSchema,
   WorkerUpdateInputSchema,
   WorkerLanguageSchema,
-  DomainSchema,
 } from "./schemas/worker.schema";
 
 export type {
@@ -59,5 +71,4 @@ export type {
   IWorkerLanguage,
   IWorkerCreateInput,
   IWorkerUpdateInput,
-  IDomain,
 } from "./schemas/worker.schema";

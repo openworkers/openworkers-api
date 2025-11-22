@@ -12,9 +12,7 @@ export async function findAllDomains(userId: string): Promise<IDomain[]> {
   `;
 }
 
-export async function findDomainByName(
-  name: string
-): Promise<IDomain | null> {
+export async function findDomainByName(name: string): Promise<IDomain | null> {
   const domains = await sql`
     SELECT name, worker_id as "workerId", user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
     FROM domains
@@ -62,8 +60,9 @@ export async function deleteDomainsForWorker(
 
   // Execute delete for each domain in parallel
   const results = await Promise.all(
-    domainNames.map((name) =>
-      sql`
+    domainNames.map(
+      (name) =>
+        sql`
         DELETE FROM domains
         WHERE worker_id = ${workerId} AND user_id = ${userId} AND name = ${name}
       `

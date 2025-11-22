@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { cronsService } from '../services/crons';
 import { workersService } from '../services/workers';
+import { CronCreateInputSchema, CronUpdateInputSchema, CronSchema } from '../types';
+import { jsonResponse } from '../utils/validate';
 
 const crons = new Hono();
 
@@ -10,16 +12,11 @@ crons.put('/:id', async (c) => {
     const id = c.req.param('id');
     const body = await c.req.json();
 
-    if (!body.value) {
-        return c.json({ error: 'Missing required field: value' }, 400);
-    }
-
     try {
-        const cron = await cronsService.update(userId, id, {
-            value: body.value,
-        });
+        const payload = CronUpdateInputSchema.parse(body);
+        const cron = await cronsService.update(userId, id, payload);
 
-        return c.json(cron);
+        return jsonResponse(c, CronSchema, cron);
     } catch (error) {
         console.error('Failed to update cron:', error);
         return c.json({
@@ -61,16 +58,10 @@ crons.post('/', async (c) => {
     const userId = c.get('userId');
     const body = await c.req.json();
 
-    if (!body.workerId || !body.value) {
-        return c.json({ error: 'Missing required fields: workerId, value' }, 400);
-    }
-
     try {
-        const cron = await cronsService.create(userId, {
-            workerId: body.workerId,
-            value: body.value
-        });
-        return c.json(cron, 201);
+        const payload = CronCreateInputSchema.parse(body);
+        const cron = await cronsService.create(userId, payload);
+        return jsonResponse(c, CronSchema, cron, 201);
     } catch (error) {
         console.error('Failed to create cron:', error);
         return c.json({
