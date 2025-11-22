@@ -78,8 +78,6 @@ auth.get("/callback/github", async (c) => {
       avatar_url: string;
     };
 
-    console.log("GitHub user:", githubUser);
-
     // Find or create user in our DB
     const user = await authService.findOrCreateGitHubUser(githubUser);
 

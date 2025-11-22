@@ -83,12 +83,9 @@ export async function createWorker(
   language: "javascript" | "typescript",
   environmentId?: string
 ): Promise<IWorker> {
-  const id = crypto.randomUUID();
-  // TODO: Let DB handle ID and timestamps
   const workers = await sql`
-    INSERT INTO workers (id, name, script, language, user_id, environment_id, created_at, updated_at)
-    VALUES (${id}, ${name}, ${script}, ${language}, ${userId}, ${environmentId || null
-    }, NOW(), NOW())
+    INSERT INTO workers (name, script, language, user_id, environment_id)
+    VALUES (${name}, ${script}, ${language}, ${userId}, ${environmentId || null})
     RETURNING id, name, script, language, user_id as "userId", environment_id as "environmentId", created_at as "createdAt", updated_at as "updatedAt"
   `;
   return workers[0];
@@ -111,15 +108,14 @@ export async function updateWorker(
     return null;
   }
 
-  // Update worker fields
+  // Update worker fields (updated_at auto-updated by trigger)
   const workers = await sql`
     UPDATE workers
     SET
       name = ${updates.name ?? current.name},
       script = ${updates.script ?? current.script},
       language = ${updates.language ?? current.language},
-      environment_id = ${updates.environmentId === undefined ? (current.environment?.id ?? null) : updates.environmentId},
-      updated_at = NOW()
+      environment_id = ${updates.environmentId === undefined ? (current.environment?.id ?? null) : updates.environmentId}
     WHERE id = ${workerId} AND user_id = ${userId}
     RETURNING id, name, script, language, user_id as "userId", environment_id as "environmentId", created_at as "createdAt", updated_at as "updatedAt"
   `;

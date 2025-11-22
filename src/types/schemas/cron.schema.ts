@@ -23,7 +23,7 @@ export const CronCreateInputSchema = z.object({
 });
 
 export const CronUpdateInputSchema = z.object({
-  value: z.string().min(1),
+  expression: z.string().min(1),
 });
 
 // Types

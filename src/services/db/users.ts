@@ -27,28 +27,22 @@ export async function createUserWithGitHub(
   username: string,
   avatarUrl: string
 ): Promise<ISelf> {
-  await sql`BEGIN`;
-
-  try {
-    const id = crypto.randomUUID();
-    // TODO: Let DB handle ID and timestamps
-    const users = await sql`
-      INSERT INTO users (id, username, avatar_url, created_at, updated_at)
-      VALUES (${id}, ${username}, ${avatarUrl}, NOW(), NOW())
+  return await sql.begin(async (tx) => {
+    // Create user (DB auto-generates id, created_at, updated_at)
+    const users = await tx`
+      INSERT INTO users (username, avatar_url)
+      VALUES (${username}, ${avatarUrl})
       RETURNING id, username, avatar_url as "avatarUrl", resource_limits as "resourceLimits", created_at as "createdAt", updated_at as "updatedAt"
     `;
 
     const user = users[0];
 
-    await sql`
-      INSERT INTO external_users (id, external_id, provider, user_id)
-      VALUES (${crypto.randomUUID()}, ${externalId}, 'github', ${user.id})
+    // Link GitHub account (DB auto-generates created_at, updated_at)
+    await tx`
+      INSERT INTO external_users (external_id, provider, user_id)
+      VALUES (${externalId}, 'github', ${user.id})
     `;
 
-    await sql`COMMIT`;
     return user;
-  } catch (error) {
-    await sql`ROLLBACK`;
-    throw error;
-  }
+  });
 }

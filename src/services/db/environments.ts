@@ -7,7 +7,7 @@ export async function findAllEnvironments(userId: string): Promise<IEnvironment[
     SELECT
       e.id,
       e.name,
-      e.desc,
+      e."desc",
       e.user_id as "userId",
       e.created_at as "createdAt",
       e.updated_at as "updatedAt",
@@ -47,7 +47,7 @@ export async function findEnvironmentById(
     SELECT
       e.id,
       e.name,
-      e.desc,
+      e."desc",
       e.user_id as "userId",
       e.created_at as "createdAt",
       e.updated_at as "updatedAt",
@@ -84,12 +84,10 @@ export async function createEnvironment(
   name: string,
   desc?: string | null
 ): Promise<IEnvironment> {
-  const id = crypto.randomUUID();
-  // TODO: Let DB handle ID and timestamps
   const envs = await sql`
-    INSERT INTO environments (id, name, desc, user_id, created_at, updated_at)
-    VALUES (${id}, ${name}, ${desc || null}, ${userId}, NOW(), NOW())
-    RETURNING id, name, desc, user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
+    INSERT INTO environments (name, "desc", user_id)
+    VALUES (${name}, ${desc || null}, ${userId})
+    RETURNING id, name, "desc", user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
   `;
 
   // Return with empty values and workers arrays
@@ -113,10 +111,9 @@ export async function updateEnvironment(
     UPDATE environments
     SET
       name = ${updates.name ?? current.name},
-      desc = ${updates.desc === undefined ? current.desc : updates.desc},
-      updated_at = NOW()
+      "desc" = ${updates.desc === undefined ? current.desc : updates.desc}
     WHERE id = ${envId} AND user_id = ${userId}
-    RETURNING id, name, desc, user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
+    RETURNING id, name, "desc", user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
   `;
 
   if (!envs[0]) return null;
@@ -148,11 +145,9 @@ export async function createEnvironmentValue(
   value: string,
   secret: boolean
 ): Promise<IEnvironmentValue> {
-  const id = crypto.randomUUID();
-  // TODO: Let DB handle ID and timestamps
   const vals = await sql`
-    INSERT INTO environment_values (id, key, value, secret, environment_id, user_id, created_at, updated_at)
-    VALUES (${id}, ${key}, ${value}, ${secret}, ${envId}, ${userId}, NOW(), NOW())
+    INSERT INTO environment_values (key, value, secret, environment_id, user_id)
+    VALUES (${key}, ${value}, ${secret}, ${envId}, ${userId})
     RETURNING id, key, value, secret, environment_id as "environmentId", user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
   `;
   return vals[0];
@@ -173,8 +168,7 @@ export async function updateEnvironmentValue(
     SET
       key = ${updates.key ?? current[0].key},
       value = ${updates.value ?? current[0].value},
-      secret = ${updates.secret ?? current[0].secret},
-      updated_at = NOW()
+      secret = ${updates.secret ?? current[0].secret}
     WHERE id = ${valId} AND user_id = ${userId}
     RETURNING id, key, value, secret, environment_id as "environmentId", user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
   `;

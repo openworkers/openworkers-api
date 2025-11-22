@@ -27,10 +27,9 @@ export async function createCron(
     throw new Error("Worker not found or unauthorized");
   }
 
-  // TODO: Let DB handle ID and timestamps
   const crons = await sql`
-    INSERT INTO crons (id, value, worker_id, next_run, created_at, updated_at)
-    VALUES (${crypto.randomUUID()}, ${value}, ${workerId}, ${nextRun}, NOW(), NOW())
+    INSERT INTO crons (value, worker_id, next_run)
+    VALUES (${value}, ${workerId}, ${nextRun})
     RETURNING id, value, worker_id as "workerId", next_run as "nextRun", last_run as "lastRun", created_at as "createdAt", updated_at as "updatedAt"
   `;
   return crons[0];
@@ -42,10 +41,10 @@ export async function updateCron(
   value: string,
   nextRun: Date
 ): Promise<ICron | null> {
-  // Verify ownership via join
+  // Verify ownership via join (updated_at auto-updated by trigger)
   const crons = await sql`
     UPDATE crons c
-    SET value = ${value}, next_run = ${nextRun}, updated_at = NOW()
+    SET value = ${value}, next_run = ${nextRun}
     FROM workers w
     WHERE c.worker_id = w.id
       AND c.id = ${cronId}

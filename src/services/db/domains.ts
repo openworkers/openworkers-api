@@ -33,8 +33,8 @@ export async function createDomain(
   }
 
   const domains = await sql`
-    INSERT INTO domains (name, worker_id, user_id, created_at, updated_at)
-    VALUES (${name}, ${workerId}, ${userId}, NOW(), NOW())
+    INSERT INTO domains (name, worker_id, user_id)
+    VALUES (${name}, ${workerId}, ${userId})
     RETURNING name, worker_id as "workerId", user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
   `;
   return domains[0];
