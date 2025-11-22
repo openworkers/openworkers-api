@@ -71,9 +71,11 @@ workers.put('/:id', async (c) => {
   try {
     const payload = WorkerUpdateInputSchema.parse(body);
 
-    const _update = await workersService.update(userId, id, payload);
+    const updatedWorker = await workersService.update(userId, id, payload);
 
-    const updatedWorker = await workersService.findById(userId, id);
+    if (!updatedWorker) {
+      return c.json({ error: 'Worker not found' }, 404);
+    }
 
     return c.json(updatedWorker);
   } catch (error) {

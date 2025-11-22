@@ -90,6 +90,7 @@ export async function updateWorker(
     script?: string;
     language?: "javascript" | "typescript";
     environmentId?: string | null;
+    domains?: string[];
   }
 ): Promise<IWorker | null> {
   // Simple approach: always update all fields (use existing values if not provided)
@@ -98,6 +99,7 @@ export async function updateWorker(
     return null;
   }
 
+  // Update worker fields
   const workers = await sql`
     UPDATE workers
     SET
@@ -109,6 +111,12 @@ export async function updateWorker(
     WHERE id = ${workerId} AND user_id = ${userId}
     RETURNING id, name, script, language, user_id as "userId", environment_id as "environmentId", created_at as "createdAt", updated_at as "updatedAt"
   `;
+
+  // Update domains if provided
+  if (updates.domains !== undefined) {
+    const { updateWorkerDomains } = await import("./domains");
+    await updateWorkerDomains(userId, workerId, updates.domains);
+  }
 
   return workers[0] || null;
 }

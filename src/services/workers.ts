@@ -14,18 +14,20 @@ export class WorkersService {
     return db.createWorker(userId, input.name, input.script || '', input.language, input.environmentId);
   }
 
-  async update(userId: string, id: string, input: IWorkerUpdateInput): Promise<IWorker> {
+  async update(userId: string, id: string, input: IWorkerUpdateInput): Promise<IWorker | null> {
     const worker = await db.updateWorker(userId, id, {
       name: input.name,
       script: input.script,
-      environmentId: input.environment
+      environmentId: input.environment,
+      domains: input.domains
     });
 
     if (!worker) {
-      throw new Error('Worker not found or unauthorized');
+      return null;
     }
 
-    return worker;
+    // Return full worker with updated domains
+    return db.findWorkerById(userId, id);
   }
 
   async delete(userId: string, id: string): Promise<number> {
