@@ -40,13 +40,10 @@ v1.route("/", users);
 
 app.route("/api/v1", v1);
 
-// Start server
-const port = parseInt(process.env.PORT || "7000");
+import { port } from "./config";
 
+// Start server
 console.log(`OpenWorkers API starting on port ${port}...`);
-console.log(
-  `JWT secret: ${process.env.JWT_ACCESS_SECRET ? "configured" : "MISSING!"}`
-);
 
 export default {
   port,

@@ -1,12 +1,13 @@
 import { SQL } from "bun";
+import { database } from "../../config";
 
 // Initialize DB connection
 export const sql = new SQL({
-    host: process.env.DB_HOST || "localhost",
-    port: parseInt(process.env.DB_PORT || "5432"),
-    user: process.env.DB_USER || "postgres",
-    password: process.env.DB_PASSWORD || "password",
-    database: process.env.DB_NAME || "openworkers",
+    host: database.host,
+    port: database.port,
+    user: database.user,
+    password: database.password,
+    database: database.name,
     adapter: "postgres",
     max: 10,
 });

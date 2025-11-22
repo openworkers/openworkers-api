@@ -1,5 +1,6 @@
 import { jwt } from 'hono/jwt';
 import type { JWTPayload } from '../types';
+import { jwt as jwtConfig } from '../config';
 
 declare module 'hono' {
   interface ContextVariableMap {
@@ -9,16 +10,10 @@ declare module 'hono' {
   }
 }
 
-// Create JWT middleware with secret from env
+// Create JWT middleware with secret from config
 export function createAuthMiddleware() {
-  const secret = process.env.JWT_ACCESS_SECRET;
-
-  if (!secret) {
-    throw new Error('JWT_ACCESS_SECRET environment variable not set');
-  }
-
   return jwt({
-    secret,
+    secret: jwtConfig.access.secret,
     cookie: 'access_token', // Also check cookie for token
   });
 }

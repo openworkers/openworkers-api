@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { ResourceSchema } from './base.schema';
-import { WorkerSchema } from './worker.schema';
 
 // Environment Value
 export const EnvironmentValueSchema = z.object({

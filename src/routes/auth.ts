@@ -1,19 +1,18 @@
 import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
 import { authService } from "../services/auth";
+import { github as githubConfig } from "../config";
 
 const auth = new Hono();
 
 // GitHub OAuth endpoints
 auth.post("/openid/github", (c) => {
-  const clientId = process.env.GITHUB_CLIENT_ID;
-
-  if (!clientId) {
+  if (!githubConfig.clientId) {
     return c.json({ error: "GitHub OAuth not configured" }, 500);
   }
 
   const githubAuthUrl = new URL("https://github.com/login/oauth/authorize");
-  githubAuthUrl.searchParams.set("client_id", clientId);
+  githubAuthUrl.searchParams.set("client_id", githubConfig.clientId);
 
   return c.redirect(githubAuthUrl.toString());
 });
@@ -25,10 +24,7 @@ auth.get("/callback/github", async (c) => {
     return c.json({ error: "Missing code parameter" }, 400);
   }
 
-  const clientId = process.env.GITHUB_CLIENT_ID;
-  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
+  if (!githubConfig.clientId || !githubConfig.clientSecret) {
     return c.json({ error: "GitHub OAuth not configured" }, 500);
   }
 
@@ -43,8 +39,8 @@ auth.get("/callback/github", async (c) => {
           Accept: "application/json",
         },
         body: JSON.stringify({
-          client_id: clientId,
-          client_secret: clientSecret,
+          client_id: githubConfig.clientId,
+          client_secret: githubConfig.clientSecret,
           code,
         }),
       }
@@ -121,12 +117,6 @@ auth.post("/refresh", async (c) => {
   }
 
   try {
-    // Verify refresh token
-    const secret = process.env.JWT_REFRESH_SECRET;
-    if (!secret) {
-      throw new Error("JWT_REFRESH_SECRET not configured");
-    }
-
     // TODO: Verify refresh token and extract userId
     // For now, simple implementation
     const payload = JSON.parse(atob(refreshToken.split(".")[1]));

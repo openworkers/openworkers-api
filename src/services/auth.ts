@@ -1,11 +1,26 @@
 import { sign } from 'hono/jwt';
 import { findUserByGitHub, createUserWithGitHub, findUserById } from './db';
 import type { ISelf } from '../types';
+import { jwt as jwtConfig } from '../config';
 
 interface GitHubUser {
   id: number;
   login: string;
   avatar_url: string;
+}
+
+// Parse JWT expiration to seconds
+function parseExpiration(exp: string): number {
+  const value = parseInt(exp);
+  const unit = exp.slice(-1);
+
+  switch (unit) {
+    case 's': return value;
+    case 'm': return value * 60;
+    case 'h': return value * 60 * 60;
+    case 'd': return value * 24 * 60 * 60;
+    default: return parseInt(exp); // Assume seconds if no unit
+  }
 }
 
 export class AuthService {
@@ -27,9 +42,6 @@ export class AuthService {
   }
 
   async createTokens(user: ISelf): Promise<{ accessToken: string; refreshToken: string }> {
-    const secret = process.env.JWT_ACCESS_SECRET!;
-    const refreshSecret = process.env.JWT_REFRESH_SECRET!;
-
     const payload = {
       userId: user.id,
       username: user.username,
@@ -38,17 +50,17 @@ export class AuthService {
     const accessToken = await sign(
       {
         ...payload,
-        exp: Math.floor(Date.now() / 1000) + 15 * 60, // 15 minutes
+        exp: Math.floor(Date.now() / 1000) + parseExpiration(jwtConfig.access.expiresIn),
       },
-      secret
+      jwtConfig.access.secret
     );
 
     const refreshToken = await sign(
       {
         ...payload,
-        exp: Math.floor(Date.now() / 1000) + 18 * 60 * 60, // 18 hours
+        exp: Math.floor(Date.now() / 1000) + parseExpiration(jwtConfig.refresh.expiresIn),
       },
-      refreshSecret
+      jwtConfig.refresh.secret
     );
 
     return { accessToken, refreshToken };
