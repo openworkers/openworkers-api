@@ -11,11 +11,14 @@ export class EnvironmentsService {
     }
 
     async create(userId: string, input: IEnvironmentCreateInput): Promise<IEnvironment> {
-        return db.createEnvironment(userId, input.name);
+        return db.createEnvironment(userId, input.name, input.desc);
     }
 
     async update(userId: string, id: string, input: IEnvironmentUpdateInput): Promise<IEnvironment> {
-        const env = await db.updateEnvironment(userId, id, input.name || ''); // TODO: Handle partial update better in DB layer if name is optional in update
+        const env = await db.updateEnvironment(userId, id, {
+            name: input.name,
+            desc: input.desc
+        });
         if (!env) {
             throw new Error('Environment not found or unauthorized');
         }
@@ -23,15 +26,14 @@ export class EnvironmentsService {
     }
 
     async delete(userId: string, id: string): Promise<number> {
-        // Delete values first (cascade usually handles this in DB, but good to be explicit if needed)
-        // Assuming DB cascade is set up, but let's delete values just in case or rely on DB.
-        // dash-api doesn't explicitly delete values in service, so likely DB cascade.
+        // DB cascade will handle deletion of values
         return db.deleteEnvironment(userId, id);
     }
 
-    // Values management
+    // Values management - now values are included in findById
     async getValues(userId: string, envId: string): Promise<IEnvironmentValue[]> {
-        return db.findAllEnvironmentValues(userId, envId);
+        const env = await db.findEnvironmentById(userId, envId);
+        return env?.values || [];
     }
 
     async updateValues(userId: string, envId: string, values: IEnvironmentValueUpdateInput[]): Promise<void> {

@@ -4,10 +4,38 @@ import type { IEnvironment, IEnvironmentValue } from "../../types";
 // Environments
 export async function findAllEnvironments(userId: string): Promise<IEnvironment[]> {
   return sql`
-    SELECT id, name, user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
-    FROM environments
-    WHERE user_id = ${userId}
-    ORDER BY created_at DESC
+    SELECT
+      e.id,
+      e.name,
+      e.desc,
+      e.user_id as "userId",
+      e.created_at as "createdAt",
+      e.updated_at as "updatedAt",
+      (
+        SELECT coalesce(json_agg(json_build_object(
+          'id', ev.id,
+          'key', ev.key,
+          'value', CASE WHEN ev.secret THEN '********' ELSE ev.value END,
+          'secret', ev.secret
+        )), '[]'::json)
+        FROM environment_values ev
+        WHERE ev.environment_id = e.id
+      ) as values,
+      (
+        SELECT coalesce(json_agg(json_build_object(
+          'id', w.id,
+          'name', w.name,
+          'language', w.language,
+          'userId', w.user_id,
+          'createdAt', w.created_at,
+          'updatedAt', w.updated_at
+        )), '[]'::json)
+        FROM workers w
+        WHERE w.environment_id = e.id
+      ) as workers
+    FROM environments e
+    WHERE e.user_id = ${userId}
+    ORDER BY e.created_at DESC
   `;
 }
 
@@ -16,39 +44,89 @@ export async function findEnvironmentById(
   envId: string
 ): Promise<IEnvironment | null> {
   const envs = await sql`
-    SELECT id, name, user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
-    FROM environments
-    WHERE id = ${envId} AND user_id = ${userId}
+    SELECT
+      e.id,
+      e.name,
+      e.desc,
+      e.user_id as "userId",
+      e.created_at as "createdAt",
+      e.updated_at as "updatedAt",
+      (
+        SELECT coalesce(json_agg(json_build_object(
+          'id', ev.id,
+          'key', ev.key,
+          'value', CASE WHEN ev.secret THEN '********' ELSE ev.value END,
+          'secret', ev.secret
+        )), '[]'::json)
+        FROM environment_values ev
+        WHERE ev.environment_id = e.id
+      ) as values,
+      (
+        SELECT coalesce(json_agg(json_build_object(
+          'id', w.id,
+          'name', w.name,
+          'language', w.language,
+          'userId', w.user_id,
+          'createdAt', w.created_at,
+          'updatedAt', w.updated_at
+        )), '[]'::json)
+        FROM workers w
+        WHERE w.environment_id = e.id
+      ) as workers
+    FROM environments e
+    WHERE e.id = ${envId} AND e.user_id = ${userId}
   `;
   return envs[0] || null;
 }
 
 export async function createEnvironment(
   userId: string,
-  name: string
+  name: string,
+  desc?: string | null
 ): Promise<IEnvironment> {
   const id = crypto.randomUUID();
   // TODO: Let DB handle ID and timestamps
   const envs = await sql`
-    INSERT INTO environments (id, name, user_id, created_at, updated_at)
-    VALUES (${id}, ${name}, ${userId}, NOW(), NOW())
-    RETURNING id, name, user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
+    INSERT INTO environments (id, name, desc, user_id, created_at, updated_at)
+    VALUES (${id}, ${name}, ${desc || null}, ${userId}, NOW(), NOW())
+    RETURNING id, name, desc, user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
   `;
-  return envs[0];
+
+  // Return with empty values and workers arrays
+  return {
+    ...envs[0],
+    values: [],
+    workers: [],
+  };
 }
 
 export async function updateEnvironment(
   userId: string,
   envId: string,
-  name: string
+  updates: { name?: string; desc?: string | null }
 ): Promise<IEnvironment | null> {
+  // Get current values to merge updates
+  const current = await findEnvironmentById(userId, envId);
+  if (!current) return null;
+
   const envs = await sql`
     UPDATE environments
-    SET name = ${name}, updated_at = NOW()
+    SET
+      name = ${updates.name ?? current.name},
+      desc = ${updates.desc === undefined ? current.desc : updates.desc},
+      updated_at = NOW()
     WHERE id = ${envId} AND user_id = ${userId}
-    RETURNING id, name, user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
+    RETURNING id, name, desc, user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
   `;
-  return envs[0] || null;
+
+  if (!envs[0]) return null;
+
+  // Return updated environment with current values and workers
+  return {
+    ...envs[0],
+    values: current.values,
+    workers: current.workers,
+  };
 }
 
 export async function deleteEnvironment(
@@ -63,21 +141,6 @@ export async function deleteEnvironment(
 }
 
 // Environment Values
-export async function findAllEnvironmentValues(
-  userId: string,
-  envId: string
-): Promise<IEnvironmentValue[]> {
-  // Verify ownership first
-  const env = await findEnvironmentById(userId, envId);
-  if (!env) return [];
-
-  return sql`
-    SELECT id, key, value, secret, environment_id as "environmentId", user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
-    FROM environment_values
-    WHERE environment_id = ${envId}
-  `;
-}
-
 export async function createEnvironmentValue(
   userId: string,
   envId: string,
