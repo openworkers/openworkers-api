@@ -5,6 +5,9 @@ import { createAuthMiddleware, extractUser } from "./middlewares/auth";
 import authRoutes from "./routes/auth";
 import users from "./routes/users";
 import workers from "./routes/workers";
+import crons from "./routes/crons";
+import environments from "./routes/environments";
+import domains from "./routes/domains";
 
 const app = new Hono();
 
@@ -29,11 +32,11 @@ v1.use("*", extractUser);
 
 // Mount protected route modules
 v1.route("/workers", workers);
+v1.route("/crons", crons);
+v1.route("/environments", environments);
+v1.route("/domains", domains);
 v1.route("/", users);
 // TODO: Add more routes
-// v1.route('/environments', environments);
-// v1.route('/domains', domains);
-// v1.route('/crons', crons);
 
 app.route("/api/v1", v1);
 

@@ -9,7 +9,9 @@
     "test": "bun test"
   },
   "dependencies": {
-    "hono": "^4.10.6"
+    "@openworkers/croner-wasm": "^0.3.0",
+    "hono": "^4.10.6",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/bun": "latest"

@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 import { workersService } from '../services/workers';
+import { cronsService } from '../services/crons';
+import { WorkerCreateInputSchema, WorkerUpdateInputSchema } from '../types';
 
 const workers = new Hono();
 
@@ -40,21 +42,14 @@ workers.post('/', async (c) => {
   const userId = c.get('userId');
   const body = await c.req.json();
 
-  // Validation
-  if (!body.name || !body.script) {
-    return c.json({ error: 'Missing required fields: name, script' }, 400);
-  }
-
-  if (!['javascript', 'typescript'].includes(body.language)) {
-    body.language = 'javascript'; // Default
-  }
-
   try {
+    const payload = WorkerCreateInputSchema.parse(body);
+
     const worker = await workersService.create(userId, {
-      name: body.name,
-      script: body.script,
-      language: body.language,
-      environment_id: body.environment_id,
+      name: payload.name,
+      script: payload.script || '', // Default to empty string if not provided
+      language: payload.language,
+      environmentId: undefined, // TODO: Handle environment mapping if needed
     });
 
     return c.json(worker, 201);
@@ -74,18 +69,51 @@ workers.put('/:id', async (c) => {
   const body = await c.req.json();
 
   try {
-    const worker = await workersService.update(userId, id, {
-      name: body.name,
-      script: body.script,
-      language: body.language,
-      environment_id: body.environment_id,
-    });
+    const payload = WorkerUpdateInputSchema.parse(body);
 
-    return c.json(worker);
+    const _update = await workersService.update(userId, id, payload);
+
+    const updatedWorker = await workersService.findById(userId, id);
+
+    return c.json(updatedWorker);
   } catch (error) {
     console.error('Failed to update worker:', error);
     return c.json({
       error: 'Failed to update worker',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// POST /workers/:id/crons - Create cron for worker
+workers.post('/:id/crons', async (c) => {
+  const userId = c.get('userId');
+  const workerId = c.req.param('id');
+  const body = await c.req.json();
+
+  if (!body.expression) {
+    return c.json({ error: 'Missing required field: expression' }, 400);
+  }
+
+  try {
+    // Verify worker exists and belongs to user
+    const worker = await workersService.findById(userId, workerId);
+    if (!worker) {
+      return c.json({ error: 'Worker not found' }, 404);
+    }
+
+    await cronsService.create(userId, {
+      workerId,
+      value: body.expression // Map expression -> value
+    });
+
+    // Return updated worker
+    const updatedWorker = await workersService.findById(userId, workerId);
+    return c.json(updatedWorker, 201);
+  } catch (error) {
+    console.error('Failed to create cron:', error);
+    return c.json({
+      error: 'Failed to create cron',
       message: error instanceof Error ? error.message : 'Unknown error'
     }, 500);
   }

@@ -1,6 +1,6 @@
 import { sign } from 'hono/jwt';
 import { findUserByGitHub, createUserWithGitHub, findUserById } from './db';
-import type { User } from '../types';
+import type { ISelf } from '../types';
 
 interface GitHubUser {
   id: number;
@@ -9,7 +9,7 @@ interface GitHubUser {
 }
 
 export class AuthService {
-  async findOrCreateGitHubUser(githubProfile: GitHubUser): Promise<User> {
+  async findOrCreateGitHubUser(githubProfile: GitHubUser): Promise<ISelf> {
     const externalId = githubProfile.id.toString();
 
     // Check if user exists
@@ -26,7 +26,7 @@ export class AuthService {
     );
   }
 
-  async createTokens(user: User): Promise<{ accessToken: string; refreshToken: string }> {
+  async createTokens(user: ISelf): Promise<{ accessToken: string; refreshToken: string }> {
     const secret = process.env.JWT_ACCESS_SECRET!;
     const refreshSecret = process.env.JWT_REFRESH_SECRET!;
 
