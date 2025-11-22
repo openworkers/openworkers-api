@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { environmentsService } from '../services/environments';
-import { EnvironmentCreateInputSchema, EnvironmentUpdateInputSchema } from '../types';
+import { EnvironmentCreateInputSchema, EnvironmentUpdateInputSchema, EnvironmentSchema } from '../types';
+import { jsonResponse, jsonArrayResponse } from '../utils/validate';
 
 const environments = new Hono();
 
@@ -9,7 +10,7 @@ environments.get('/', async (c) => {
     const userId = c.get('userId');
     try {
         const envs = await environmentsService.findAll(userId);
-        return c.json(envs);
+        return jsonArrayResponse(c, EnvironmentSchema, envs);
     } catch (error) {
         console.error('Failed to fetch environments:', error);
         return c.json({ error: 'Failed to fetch environments' }, 500);
@@ -25,9 +26,8 @@ environments.get('/:id', async (c) => {
         if (!env) {
             return c.json({ error: 'Environment not found' }, 404);
         }
-        // Also fetch values
-        const values = await environmentsService.getValues(userId, id);
-        return c.json({ ...env, values });
+        // Values are already included in findById now
+        return jsonResponse(c, EnvironmentSchema, env);
     } catch (error) {
         console.error('Failed to fetch environment:', error);
         return c.json({ error: 'Failed to fetch environment' }, 500);
@@ -41,8 +41,8 @@ environments.post('/', async (c) => {
 
     try {
         const payload = EnvironmentCreateInputSchema.parse(body);
-        const env = await environmentsService.create(userId, { name: payload.name });
-        return c.json(env, 201);
+        const env = await environmentsService.create(userId, payload);
+        return jsonResponse(c, EnvironmentSchema, env, 201);
     } catch (error) {
         console.error('Failed to create environment:', error);
         return c.json({ error: 'Failed to create environment' }, 500);
@@ -123,11 +123,10 @@ environments.put('/:id', async (c) => {
             await environmentsService.updateValues(userId, id, payload.values as any);
         }
 
-        // Reload to get fresh state
+        // Reload to get fresh state (with values included)
         const updatedEnv = await environmentsService.findById(userId, id);
-        const values = await environmentsService.getValues(userId, id);
 
-        return c.json({ ...updatedEnv, values });
+        return jsonResponse(c, EnvironmentSchema, updatedEnv);
     } catch (error) {
         console.error('Failed to update environment:', error);
         return c.json({

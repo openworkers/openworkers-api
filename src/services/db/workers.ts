@@ -10,6 +10,18 @@ export async function findAllWorkers(userId: string): Promise<IWorker[]> {
   `;
 }
 
+export async function checkWorkerNameExists(
+  name: string
+): Promise<boolean> {
+  const workers = await sql`
+    SELECT id
+    FROM workers
+    WHERE name = ${name}
+    LIMIT 1
+  `;
+  return workers.length > 0;
+}
+
 export async function findWorkerById(
   userId: string,
   workerId: string

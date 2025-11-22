@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 import { findUserById } from '../services/db';
+import { SelfSchema } from '../types';
+import { jsonResponse } from '../utils/validate';
 
 const users = new Hono();
 
@@ -14,7 +16,7 @@ users.get('/profile', async (c) => {
       return c.json({ error: 'User not found' }, 404);
     }
 
-    return c.json(user);
+    return jsonResponse(c, SelfSchema, user);
   } catch (error) {
     console.error('Failed to fetch user profile:', error);
     return c.json({ error: 'Failed to fetch user profile' }, 500);

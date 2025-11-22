@@ -1,16 +1,16 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Common base schema for resources with timestamps
 export const TimestampsSchema = z.object({
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime()
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
 });
 
 // Common resource schema (id + name + desc + timestamps)
 export const ResourceSchema = TimestampsSchema.extend({
-  id: z.string().uuid(),
+  id: z.uuid(),
   name: z.string().min(1),
-  desc: z.string().nullable()
+  desc: z.string().nullable().optional(),
 });
 
 // Types

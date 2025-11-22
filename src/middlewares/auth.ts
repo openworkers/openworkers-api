@@ -21,9 +21,6 @@ export function createAuthMiddleware() {
 // Middleware to extract userId from JWT payload
 export async function extractUser(c: any, next: any) {
   const payload = c.get("jwtPayload") as JWTPayload;
-
-  console.log("JWT Payload:", payload);
-
   if (!payload) {
     return c.json({ error: "Unauthorized" }, 401);
   }

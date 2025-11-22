@@ -1,9 +1,24 @@
 import { Hono } from 'hono';
 import { workersService } from '../services/workers';
 import { cronsService } from '../services/crons';
-import { WorkerCreateInputSchema, WorkerUpdateInputSchema } from '../types';
+import { checkWorkerNameExists } from '../services/db/workers';
+import { WorkerCreateInputSchema, WorkerUpdateInputSchema, WorkerSchema } from '../types';
+import { jsonResponse, jsonArrayResponse } from '../utils/validate';
 
 const workers = new Hono();
+
+// GET /workers/name-exists/:name - Check if worker name exists (globally unique)
+workers.get('/name-exists/:name', async (c) => {
+  const name = c.req.param('name');
+
+  try {
+    const exists = await checkWorkerNameExists(name);
+    return c.json({ exists });
+  } catch (error) {
+    console.error('Failed to check worker name:', error);
+    return c.json({ error: 'Failed to check worker name' }, 500);
+  }
+});
 
 // GET /workers - List all workers for current user
 workers.get('/', async (c) => {
@@ -11,7 +26,7 @@ workers.get('/', async (c) => {
 
   try {
     const workers = await workersService.findAll(userId);
-    return c.json(workers);
+    return jsonArrayResponse(c, WorkerSchema, workers);
   } catch (error) {
     console.error('Failed to fetch workers:', error);
     return c.json({ error: 'Failed to fetch workers' }, 500);
@@ -30,7 +45,7 @@ workers.get('/:id', async (c) => {
       return c.json({ error: 'Worker not found' }, 404);
     }
 
-    return c.json(worker);
+    return jsonResponse(c, WorkerSchema, worker);
   } catch (error) {
     console.error('Failed to fetch worker:', error);
     return c.json({ error: 'Failed to fetch worker' }, 500);
@@ -52,7 +67,7 @@ workers.post('/', async (c) => {
       environmentId: undefined, // TODO: Handle environment mapping if needed
     });
 
-    return c.json(worker, 201);
+    return jsonResponse(c, WorkerSchema, worker, 201);
   } catch (error) {
     console.error('Failed to create worker:', error);
     return c.json({
@@ -77,7 +92,7 @@ workers.put('/:id', async (c) => {
       return c.json({ error: 'Worker not found' }, 404);
     }
 
-    return c.json(updatedWorker);
+    return jsonResponse(c, WorkerSchema, updatedWorker);
   } catch (error) {
     console.error('Failed to update worker:', error);
     return c.json({
@@ -111,7 +126,7 @@ workers.post('/:id/crons', async (c) => {
 
     // Return updated worker
     const updatedWorker = await workersService.findById(userId, workerId);
-    return c.json(updatedWorker, 201);
+    return jsonResponse(c, WorkerSchema, updatedWorker, 201);
   } catch (error) {
     console.error('Failed to create cron:', error);
     return c.json({

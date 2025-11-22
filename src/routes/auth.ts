@@ -1,7 +1,10 @@
 import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
+import { verify } from "hono/jwt";
 import { authService } from "../services/auth";
-import { github as githubConfig } from "../config";
+import { github as githubConfig, jwt as jwtConfig } from "../config";
+import { LoginResponseSchema, type JWTPayload } from "../types";
+import { jsonResponse } from "../utils/validate";
 
 const auth = new Hono();
 
@@ -81,20 +84,17 @@ auth.get("/callback/github", async (c) => {
     const user = await authService.findOrCreateGitHubUser(githubUser);
 
     // Create JWT tokens
-    const { accessToken, refreshToken } = await authService.createTokens(user);
+    const tokens = await authService.createTokens(user);
 
     // Set access_token cookie (only access token, not refresh)
-    setCookie(c, "access_token", accessToken, {
+    setCookie(c, "access_token", tokens.accessToken, {
       httpOnly: true,
       secure: true,
       sameSite: "Strict",
     });
 
     // Return both tokens in response body
-    return c.json({
-      accessToken,
-      refreshToken,
-    });
+    return jsonResponse(c, LoginResponseSchema, tokens);
   } catch (error) {
     console.error("GitHub OAuth error:", error);
     return c.json(
@@ -117,19 +117,20 @@ auth.post("/refresh", async (c) => {
   }
 
   try {
-    // TODO: Verify refresh token and extract userId
-    // For now, simple implementation
-    const payload = JSON.parse(atob(refreshToken.split(".")[1]));
+    // Verify refresh token with correct secret
+    const payload = await verify(refreshToken, jwtConfig.refresh.secret);
 
-    const { accessToken, refreshToken: newRefreshToken } =
-      await authService.refreshTokens(payload.userId);
+    if (!payload.sub || typeof payload.sub !== "string") {
+      return c.json({ error: "Invalid token payload" }, 401);
+    }
 
-    return c.json({
-      accessToken,
-      refreshToken: newRefreshToken,
-    });
+    // Generate new tokens
+    const tokens = await authService.refreshTokens(payload.sub);
+
+    return jsonResponse(c, LoginResponseSchema, tokens);
   } catch (error) {
-    return c.json({ error: "Invalid refresh token" }, 401);
+    console.error("Refresh token verification failed:", error);
+    return c.json({ error: "Invalid or expired refresh token" }, 401);
   }
 });
 
