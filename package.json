@@ -1,11 +1,12 @@
 {
   "name": "openworkers-api",
-  "module": "index.ts",
+  "module": "src/index.ts",
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun --hot index.ts",
-    "start": "bun index.ts",
+    "dev": "bun --hot src/index.ts",
+    "start": "bun src/index.ts",
+    "compile": "bun build --compile --minify --sourcemap src/index.ts --outfile dist/openworkers-api",
     "test": "bun test"
   },
   "dependencies": {
