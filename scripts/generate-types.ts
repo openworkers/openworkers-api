@@ -1,3 +1,4 @@
+import { version } from "../package.json";
 import { zodToTs } from "zod-to-ts";
 import ts from "typescript";
 import prettier from "prettier";
@@ -227,7 +228,7 @@ export type Dictionary<T> = Record<string, T>;
   // Generate package.json for npm publish
   const packageJson = {
     name: "@openworkers/api-types",
-    version: "1.0.0",
+    version,
     license: "MIT",
     type: "module",
     private: false,
