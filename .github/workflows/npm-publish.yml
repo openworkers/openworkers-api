@@ -3,7 +3,11 @@ name: Publish to npm
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "v*"
+
+permissions:
+  id-token: write # Required for OIDC
+  contents: read
 
 jobs:
   publish:
@@ -28,7 +32,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          registry-url: "https://registry.npmjs.org"
+          registry-url: "https://registry.npmjs.org/"
+
+      # Ensure npm 11.5.1 or later for trusted publishing
+      # https://github.com/orgs/community/discussions/173102#discussioncomment-14367428
+      - name: Update npm to latest
+        run: npm install -g npm@latest
 
       - name: Publish to npm
-        run: cd dist && npm publish --provenance
+        run: cd dist && npm publish
