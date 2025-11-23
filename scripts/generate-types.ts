@@ -241,7 +241,7 @@ export type Dictionary<T> = Record<string, T>;
     keywords: ["openworkers", "types", "typescript"],
     repository: {
       type: "git",
-      url: "https://github.com/openworkers/openworkers-api",
+      url: "git+https://github.com/openworkers/openworkers-api.git",
     },
     publishConfig: {
       access: "public",

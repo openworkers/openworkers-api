@@ -31,4 +31,4 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Publish to npm
-        run: cd dist && npm publish --provenance --access public
+        run: cd dist && npm publish --provenance
