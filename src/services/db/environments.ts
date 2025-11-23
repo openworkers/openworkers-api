@@ -2,7 +2,9 @@ import { sql } from "./client";
 import type { IEnvironment, IEnvironmentValue } from "../../types";
 
 // Environments
-export async function findAllEnvironments(userId: string): Promise<IEnvironment[]> {
+export async function findAllEnvironments(
+  userId: string
+): Promise<IEnvironment[]> {
   return sql`
     SELECT
       e.id,
