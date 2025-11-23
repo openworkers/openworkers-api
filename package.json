@@ -1,6 +1,7 @@
 {
   "name": "openworkers-api",
   "version": "1.0.0",
+  "license": "MIT",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
@@ -8,7 +9,8 @@
     "dev": "bun --hot src/index.ts",
     "start": "bun src/index.ts",
     "compile": "bun build --compile --minify --sourcemap server.ts --outfile dist/openworkers-api",
-    "test": "bun test"
+    "test": "bun test",
+    "generate-types": "bun scripts/generate-types.ts"
   },
   "dependencies": {
     "@openworkers/croner-wasm": "^0.3.0",
@@ -16,7 +18,9 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "prettier": "^3.6.2",
+    "zod-to-ts": "^2.0.0"
   },
   "peerDependencies": {
     "typescript": "^5"

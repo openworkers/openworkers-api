@@ -10,7 +10,7 @@ import environments from "./routes/environments";
 import domains from "./routes/domains";
 import pkg from "../package.json";
 
-const app = new Hono();
+export const app = new Hono();
 
 // Global middlewares
 app.use("*", logger());
