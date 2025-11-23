@@ -245,6 +245,8 @@ export type Dictionary<T> = Record<string, T>;
     },
     publishConfig: {
       access: "public",
+      registry: "https://registry.npmjs.org/",
+      provenance: true,
     },
   };
 
