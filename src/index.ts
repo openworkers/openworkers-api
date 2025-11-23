@@ -40,7 +40,7 @@ v1.route("/", users);
 
 app.route("/api/v1", v1);
 
-import { port } from "./config";
+import { nodeEnv, port } from "./config";
 
 // Start server
 console.log(`OpenWorkers API starting on port ${port}...`);
@@ -48,4 +48,5 @@ console.log(`OpenWorkers API starting on port ${port}...`);
 export default {
   port,
   fetch: app.fetch,
+  development: nodeEnv === "development",
 };

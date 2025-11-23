@@ -18,6 +18,7 @@ FROM installer AS sources
 COPY src /build/src
 COPY examples /build/examples
 COPY tsconfig.json /build/tsconfig.json
+COPY server.ts /build
 
 # Builder Image
 FROM sources AS builder

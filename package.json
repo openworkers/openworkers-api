@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "bun --hot src/index.ts",
     "start": "bun src/index.ts",
-    "compile": "bun build --compile --minify --sourcemap src/index.ts --outfile dist/openworkers-api",
+    "compile": "bun build --compile --minify --sourcemap server.ts --outfile dist/openworkers-api",
     "test": "bun test"
   },
   "dependencies": {
