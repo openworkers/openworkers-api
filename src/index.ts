@@ -8,6 +8,7 @@ import workers from "./routes/workers";
 import crons from "./routes/crons";
 import environments from "./routes/environments";
 import domains from "./routes/domains";
+import pkg from "../package.json";
 
 const app = new Hono();
 
@@ -22,6 +23,11 @@ app.get("/health", (c) => {
 
 // API v1 routes
 const v1 = new Hono();
+
+// Version endpoint (no auth required)
+v1.get("/version", (c) => {
+  return c.json({ version: pkg.version, name: pkg.name });
+});
 
 // Auth routes (no JWT required - these CREATE the tokens)
 v1.route("/", authRoutes);
