@@ -1,10 +1,8 @@
-import { sql } from "./client";
-import type { IEnvironment, IEnvironmentValue } from "../../types";
+import { sql } from './client';
+import type { IEnvironment, IEnvironmentValue } from '../../types';
 
 // Environments
-export async function findAllEnvironments(
-  userId: string
-): Promise<IEnvironment[]> {
+export async function findAllEnvironments(userId: string): Promise<IEnvironment[]> {
   return sql`
     SELECT
       e.id,
@@ -41,10 +39,7 @@ export async function findAllEnvironments(
   `;
 }
 
-export async function findEnvironmentById(
-  userId: string,
-  envId: string
-): Promise<IEnvironment | null> {
+export async function findEnvironmentById(userId: string, envId: string): Promise<IEnvironment | null> {
   const envs = await sql`
     SELECT
       e.id,
@@ -81,11 +76,7 @@ export async function findEnvironmentById(
   return envs[0] || null;
 }
 
-export async function createEnvironment(
-  userId: string,
-  name: string,
-  desc?: string | null
-): Promise<IEnvironment> {
+export async function createEnvironment(userId: string, name: string, desc?: string | null): Promise<IEnvironment> {
   const envs = await sql`
     INSERT INTO environments (name, "desc", user_id)
     VALUES (${name}, ${desc || null}, ${userId})
@@ -96,7 +87,7 @@ export async function createEnvironment(
   return {
     ...envs[0],
     values: [],
-    workers: [],
+    workers: []
   };
 }
 
@@ -124,14 +115,11 @@ export async function updateEnvironment(
   return {
     ...envs[0],
     values: current.values,
-    workers: current.workers,
+    workers: current.workers
   };
 }
 
-export async function deleteEnvironment(
-  userId: string,
-  envId: string
-): Promise<number> {
+export async function deleteEnvironment(userId: string, envId: string): Promise<number> {
   const result = await sql`
     DELETE FROM environments
     WHERE id = ${envId} AND user_id = ${userId}
@@ -177,10 +165,7 @@ export async function updateEnvironmentValue(
   return vals[0] || null;
 }
 
-export async function deleteEnvironmentValue(
-  userId: string,
-  valId: string
-): Promise<number> {
+export async function deleteEnvironmentValue(userId: string, valId: string): Promise<number> {
   const result = await sql`
     DELETE FROM environment_values
     WHERE id = ${valId} AND user_id = ${userId}
@@ -188,10 +173,7 @@ export async function deleteEnvironmentValue(
   return result.count || 0;
 }
 
-export async function deleteEnvironmentValuesByEnvId(
-  userId: string,
-  envId: string
-): Promise<number> {
+export async function deleteEnvironmentValuesByEnvId(userId: string, envId: string): Promise<number> {
   const result = await sql`
         DELETE FROM environment_values
         WHERE environment_id = ${envId} AND user_id = ${userId}

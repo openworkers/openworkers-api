@@ -1,5 +1,5 @@
-import { sql } from "./client";
-import type { IWorker } from "../../types";
+import { sql } from './client';
+import type { IWorker } from '../../types';
 
 export async function findAllWorkers(userId: string): Promise<IWorker[]> {
   return sql`
@@ -10,9 +10,7 @@ export async function findAllWorkers(userId: string): Promise<IWorker[]> {
   `;
 }
 
-export async function checkWorkerNameExists(
-  name: string
-): Promise<boolean> {
+export async function checkWorkerNameExists(name: string): Promise<boolean> {
   const workers = await sql`
     SELECT id
     FROM workers
@@ -22,10 +20,7 @@ export async function checkWorkerNameExists(
   return workers.length > 0;
 }
 
-export async function findWorkerById(
-  userId: string,
-  workerId: string
-): Promise<IWorker | null> {
+export async function findWorkerById(userId: string, workerId: string): Promise<IWorker | null> {
   const workers = await sql`
     SELECT
       w.id,
@@ -80,7 +75,7 @@ export async function createWorker(
   userId: string,
   name: string,
   script: string,
-  language: "javascript" | "typescript",
+  language: 'javascript' | 'typescript',
   environmentId?: string
 ): Promise<IWorker> {
   const workers = await sql`
@@ -97,7 +92,7 @@ export async function updateWorker(
   updates: {
     name?: string;
     script?: string;
-    language?: "javascript" | "typescript";
+    language?: 'javascript' | 'typescript';
     environmentId?: string | null;
     domains?: string[];
   }
@@ -122,17 +117,14 @@ export async function updateWorker(
 
   // Update domains if provided
   if (updates.domains !== undefined) {
-    const { updateWorkerDomains } = await import("./domains");
+    const { updateWorkerDomains } = await import('./domains');
     await updateWorkerDomains(userId, workerId, updates.domains);
   }
 
   return workers[0] || null;
 }
 
-export async function deleteWorker(
-  userId: string,
-  workerId: string
-): Promise<number> {
+export async function deleteWorker(userId: string, workerId: string): Promise<number> {
   const result = await sql`
     DELETE FROM workers
     WHERE id = ${workerId} AND user_id = ${userId}

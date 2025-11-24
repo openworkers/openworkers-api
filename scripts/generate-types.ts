@@ -1,105 +1,86 @@
-import { version } from "../package.json";
-import { zodToTs } from "zod-to-ts";
-import ts from "typescript";
-import prettier from "prettier";
+import { version } from '../package.json';
+import { zodToTs } from 'zod-to-ts';
+import ts from 'typescript';
+import prettier from 'prettier';
 
 // Helper to print TypeScript node as string
 function printNode(node: ts.Node): string {
   const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-  const sourceFile = ts.createSourceFile(
-    "temp.ts",
-    "",
-    ts.ScriptTarget.Latest,
-    false,
-    ts.ScriptKind.TS
-  );
+  const sourceFile = ts.createSourceFile('temp.ts', '', ts.ScriptTarget.Latest, false, ts.ScriptKind.TS);
   return printer.printNode(ts.EmitHint.Unspecified, node, sourceFile);
 }
 
 // Import all schemas
-import {
-  ResourceSchema,
-  TimestampsSchema,
-} from "../src/types/schemas/base.schema";
+import { ResourceSchema, TimestampsSchema } from '../src/types/schemas/base.schema';
 
-import { LoginResponseSchema } from "../src/types/schemas/auth.schema";
+import { LoginResponseSchema } from '../src/types/schemas/auth.schema';
 
-import {
-  SelfSchema,
-  ResourceLimitsSchema,
-} from "../src/types/schemas/user.schema";
+import { SelfSchema, ResourceLimitsSchema } from '../src/types/schemas/user.schema';
 
 import {
   EnvironmentSchema,
   EnvironmentCreateInputSchema,
   EnvironmentUpdateInputSchema,
   EnvironmentValueSchema,
-  EnvironmentValueUpdateInputSchema,
-} from "../src/types/schemas/environment.schema";
+  EnvironmentValueUpdateInputSchema
+} from '../src/types/schemas/environment.schema';
 
-import {
-  CronSchema,
-  CronCreateInputSchema,
-  CronUpdateInputSchema,
-} from "../src/types/schemas/cron.schema";
+import { CronSchema, CronCreateInputSchema, CronUpdateInputSchema } from '../src/types/schemas/cron.schema';
 
-import {
-  DomainSchema,
-  DomainCreateInputSchema,
-} from "../src/types/schemas/domain.schema";
+import { DomainSchema, DomainCreateInputSchema } from '../src/types/schemas/domain.schema';
 
 import {
   WorkerSchema,
   WorkerCreateInputSchema,
   WorkerUpdateInputSchema,
-  WorkerLanguageSchema,
-} from "../src/types/schemas/worker.schema";
+  WorkerLanguageSchema
+} from '../src/types/schemas/worker.schema';
 
 // Schema definitions to generate
 const schemas = [
   // Base schemas
-  { schema: ResourceSchema, name: "Resource" },
-  { schema: TimestampsSchema, name: "Timestamps" },
+  { schema: ResourceSchema, name: 'Resource' },
+  { schema: TimestampsSchema, name: 'Timestamps' },
 
   // Auth
-  { schema: LoginResponseSchema, name: "LoginResponse" },
+  { schema: LoginResponseSchema, name: 'LoginResponse' },
 
   // User
-  { schema: SelfSchema, name: "Self" },
-  { schema: ResourceLimitsSchema, name: "ResourceLimits" },
+  { schema: SelfSchema, name: 'Self' },
+  { schema: ResourceLimitsSchema, name: 'ResourceLimits' },
 
   // Environment
-  { schema: EnvironmentSchema, name: "Environment" },
-  { schema: EnvironmentCreateInputSchema, name: "EnvironmentCreateInput" },
-  { schema: EnvironmentUpdateInputSchema, name: "EnvironmentUpdateInput" },
-  { schema: EnvironmentValueSchema, name: "EnvironmentValue" },
+  { schema: EnvironmentSchema, name: 'Environment' },
+  { schema: EnvironmentCreateInputSchema, name: 'EnvironmentCreateInput' },
+  { schema: EnvironmentUpdateInputSchema, name: 'EnvironmentUpdateInput' },
+  { schema: EnvironmentValueSchema, name: 'EnvironmentValue' },
   {
     schema: EnvironmentValueUpdateInputSchema,
-    name: "EnvironmentValueUpdateInput",
+    name: 'EnvironmentValueUpdateInput'
   },
 
   // Cron
-  { schema: CronSchema, name: "Cron" },
-  { schema: CronCreateInputSchema, name: "CronCreateInput" },
-  { schema: CronUpdateInputSchema, name: "CronUpdateInput" },
+  { schema: CronSchema, name: 'Cron' },
+  { schema: CronCreateInputSchema, name: 'CronCreateInput' },
+  { schema: CronUpdateInputSchema, name: 'CronUpdateInput' },
 
   // Domain
-  { schema: DomainSchema, name: "Domain" },
-  { schema: DomainCreateInputSchema, name: "DomainCreateInput" },
+  { schema: DomainSchema, name: 'Domain' },
+  { schema: DomainCreateInputSchema, name: 'DomainCreateInput' },
 
   // Worker
-  { schema: WorkerSchema, name: "Worker" },
-  { schema: WorkerCreateInputSchema, name: "WorkerCreateInput" },
-  { schema: WorkerUpdateInputSchema, name: "WorkerUpdateInput" },
-  { schema: WorkerLanguageSchema, name: "WorkerLanguage" },
+  { schema: WorkerSchema, name: 'Worker' },
+  { schema: WorkerCreateInputSchema, name: 'WorkerCreateInput' },
+  { schema: WorkerUpdateInputSchema, name: 'WorkerUpdateInput' },
+  { schema: WorkerLanguageSchema, name: 'WorkerLanguage' }
 ];
 
 async function generateTypes() {
-  console.log("🔄 Generating TypeScript types from Zod schemas...");
+  console.log('🔄 Generating TypeScript types from Zod schemas...');
 
   // Clean dist directory
   const distDir = `${import.meta.dir}/../dist`;
-  console.log("  🧹 Cleaning dist directory...");
+  console.log('  🧹 Cleaning dist directory...');
   try {
     await Bun.$`rm -rf ${distDir}`;
   } catch (error) {
@@ -111,16 +92,16 @@ async function generateTypes() {
   let idCounter = 0;
   const auxiliaryTypeStore = {
     nextId: () => `T${idCounter++}`,
-    definitions: new Map(),
+    definitions: new Map()
   };
 
-  console.log("  📋 First pass: building types map...");
+  console.log('  📋 First pass: building types map...');
   for (const { schema, name } of schemas) {
     try {
       const { node } = zodToTs(schema, { auxiliaryTypeStore });
       let typeStr = printNode(node);
       // Normalize whitespace for better matching
-      typeStr = typeStr.replace(/\s+/g, " ").trim();
+      typeStr = typeStr.replace(/\s+/g, ' ').trim();
       typesMap.set(typeStr, name);
     } catch (error) {
       console.error(`❌ Failed to generate type for ${name}:`, error);
@@ -128,13 +109,11 @@ async function generateTypes() {
   }
 
   // SECOND PASS: Replace nested types with references
-  console.log("  🔄 Second pass: replacing nested types...");
+  console.log('  🔄 Second pass: replacing nested types...');
   const finalTypesMap = new Map<string, string>();
 
   // Sort types by length (longest first) for better matching
-  const sortedTypes = Array.from(typesMap.entries()).sort(
-    ([a], [b]) => b.length - a.length
-  );
+  const sortedTypes = Array.from(typesMap.entries()).sort(([a], [b]) => b.length - a.length);
 
   for (const [typeStr, name] of typesMap) {
     let updatedTypeStr = typeStr;
@@ -143,10 +122,7 @@ async function generateTypes() {
     for (const [otherTypeStr, otherName] of sortedTypes) {
       if (otherName !== name && updatedTypeStr.includes(otherTypeStr)) {
         // Use a more precise replacement to avoid partial matches
-        updatedTypeStr = updatedTypeStr.replaceAll(
-          otherTypeStr,
-          `I${otherName}`
-        );
+        updatedTypeStr = updatedTypeStr.replaceAll(otherTypeStr, `I${otherName}`);
       }
     }
 
@@ -154,7 +130,7 @@ async function generateTypes() {
   }
 
   // THIRD PASS: Recursive replacement until no more changes
-  console.log("  🔁 Third pass: recursive replacement...");
+  console.log('  🔁 Third pass: recursive replacement...');
   let changed = true;
   let iterations = 0;
   const maxIterations = 10;
@@ -168,10 +144,7 @@ async function generateTypes() {
 
       for (const [otherTypeStr, otherName] of sortedTypes) {
         if (otherName !== name && updatedTypeStr.includes(otherTypeStr)) {
-          const newStr = updatedTypeStr.replaceAll(
-            otherTypeStr,
-            `I${otherName}`
-          );
+          const newStr = updatedTypeStr.replaceAll(otherTypeStr, `I${otherName}`);
           if (newStr !== updatedTypeStr) {
             updatedTypeStr = newStr;
             changed = true;
@@ -214,12 +187,12 @@ export type Dictionary<T> = Record<string, T>;
   }
 
   // Format with prettier
-  console.log("  🎨 Formatting with prettier...");
+  console.log('  🎨 Formatting with prettier...');
   const formatted = await prettier.format(output, {
-    parser: "typescript",
+    parser: 'typescript',
     semi: true,
     singleQuote: true,
-    trailingComma: "all",
+    trailingComma: 'all'
   });
 
   // Write types file
@@ -227,33 +200,30 @@ export type Dictionary<T> = Record<string, T>;
 
   // Generate package.json for npm publish
   const packageJson = {
-    name: "@openworkers/api-types",
+    name: '@openworkers/api-types',
     version,
-    license: "MIT",
-    type: "module",
+    license: 'MIT',
+    type: 'module',
     private: false,
-    main: "./types.d.ts",
-    types: "./types.d.ts",
+    main: './types.d.ts',
+    types: './types.d.ts',
     exports: {
-      ".": "./types.d.ts",
+      '.': './types.d.ts'
     },
-    description: "TypeScript types for OpenWorkers API",
-    keywords: ["openworkers", "types", "typescript"],
+    description: 'TypeScript types for OpenWorkers API',
+    keywords: ['openworkers', 'types', 'typescript'],
     repository: {
-      type: "git",
-      url: "git+https://github.com/openworkers/openworkers-api.git",
+      type: 'git',
+      url: 'git+https://github.com/openworkers/openworkers-api.git'
     },
     publishConfig: {
-      access: "public",
-      registry: "https://registry.npmjs.org/",
-      provenance: true,
-    },
+      access: 'public',
+      registry: 'https://registry.npmjs.org/',
+      provenance: true
+    }
   };
 
-  await Bun.write(
-    `${distDir}/package.json`,
-    JSON.stringify(packageJson, null, 2)
-  );
+  await Bun.write(`${distDir}/package.json`, JSON.stringify(packageJson, null, 2));
 
   // Copy LICENSE
   const license = await Bun.file(`${import.meta.dir}/../LICENSE`).text();

@@ -136,7 +136,7 @@ The `db.ts` service can be swapped between implementations:
 **Current**: Bun native Postgres
 
 ```typescript
-import { sql } from "bun";
+import { sql } from 'bun';
 ```
 
 **Future**: Postgres Gateway (HTTP-based)

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 // Domain schema
 export const DomainSchema = z.object({
@@ -6,12 +6,12 @@ export const DomainSchema = z.object({
   workerId: z.uuid(),
   userId: z.uuid(),
   createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
+  updatedAt: z.coerce.date()
 });
 
 export const DomainCreateInputSchema = z.object({
   name: z.string().min(1),
-  workerId: z.uuid(),
+  workerId: z.uuid()
 });
 
 // Types

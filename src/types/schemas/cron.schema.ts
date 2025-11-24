@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 // Cron
 export const CronSchema = z.object({
@@ -9,21 +9,21 @@ export const CronSchema = z.object({
   nextRun: z.coerce.date().nullable().optional(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
-  deletedAt: z.coerce.date().nullable().optional(),
+  deletedAt: z.coerce.date().nullable().optional()
 });
 
 export const CronExpressionInputSchema = z.object({
-  expression: z.string().min(1),
+  expression: z.string().min(1)
 });
 
 // Legacy GraphQL compatibility
 export const CronCreateInputSchema = z.object({
   value: z.string().min(1),
-  workerId: z.uuid(),
+  workerId: z.uuid()
 });
 
 export const CronUpdateInputSchema = z.object({
-  expression: z.string().min(1),
+  expression: z.string().min(1)
 });
 
 // Types

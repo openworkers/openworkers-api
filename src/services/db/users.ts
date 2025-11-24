@@ -1,5 +1,5 @@
-import { sql } from "./client";
-import type { ISelf } from "../../types";
+import { sql } from './client';
+import type { ISelf } from '../../types';
 
 export async function findUserById(userId: string): Promise<ISelf | null> {
   const users = await sql`
@@ -10,9 +10,7 @@ export async function findUserById(userId: string): Promise<ISelf | null> {
   return users[0] || null;
 }
 
-export async function findUserByGitHub(
-  externalId: string
-): Promise<ISelf | null> {
+export async function findUserByGitHub(externalId: string): Promise<ISelf | null> {
   const users = await sql`
     SELECT u.id, u.username, u.avatar_url as "avatarUrl", u.resource_limits as "resourceLimits", u.created_at as "createdAt", u.updated_at as "updatedAt"
     FROM users u
@@ -22,11 +20,7 @@ export async function findUserByGitHub(
   return users[0] || null;
 }
 
-export async function createUserWithGitHub(
-  externalId: string,
-  username: string,
-  avatarUrl: string
-): Promise<ISelf> {
+export async function createUserWithGitHub(externalId: string, username: string, avatarUrl: string): Promise<ISelf> {
   return await sql.begin(async (tx) => {
     // Create user (DB auto-generates id, created_at, updated_at)
     const users = await tx`

@@ -1,7 +1,7 @@
-import { sign } from "hono/jwt";
-import { findUserByGitHub, createUserWithGitHub, findUserById } from "./db";
-import type { ISelf } from "../types";
-import { jwt as jwtConfig } from "../config";
+import { sign } from 'hono/jwt';
+import { findUserByGitHub, createUserWithGitHub, findUserById } from './db';
+import type { ISelf } from '../types';
+import { jwt as jwtConfig } from '../config';
 
 interface GitHubUser {
   id: number;
@@ -15,13 +15,13 @@ function parseExpiration(exp: string): number {
   const unit = exp.slice(-1);
 
   switch (unit) {
-    case "s":
+    case 's':
       return value;
-    case "m":
+    case 'm':
       return value * 60;
-    case "h":
+    case 'h':
       return value * 60 * 60;
-    case "d":
+    case 'd':
       return value * 24 * 60 * 60;
     default:
       return parseInt(exp); // Assume seconds if no unit
@@ -39,27 +39,19 @@ export class AuthService {
     }
 
     // Create new user
-    return createUserWithGitHub(
-      externalId,
-      githubProfile.login,
-      githubProfile.avatar_url
-    );
+    return createUserWithGitHub(externalId, githubProfile.login, githubProfile.avatar_url);
   }
 
-  async createTokens(
-    user: ISelf
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  async createTokens(user: ISelf): Promise<{ accessToken: string; refreshToken: string }> {
     const payload = {
       sub: user.id,
-      iat: Math.floor(Date.now() / 1000),
+      iat: Math.floor(Date.now() / 1000)
     };
 
     const accessToken = await sign(
       {
         ...payload,
-        exp:
-          Math.floor(Date.now() / 1000) +
-          parseExpiration(jwtConfig.access.expiresIn),
+        exp: Math.floor(Date.now() / 1000) + parseExpiration(jwtConfig.access.expiresIn)
       },
       jwtConfig.access.secret
     );
@@ -67,9 +59,7 @@ export class AuthService {
     const refreshToken = await sign(
       {
         ...payload,
-        exp:
-          Math.floor(Date.now() / 1000) +
-          parseExpiration(jwtConfig.refresh.expiresIn),
+        exp: Math.floor(Date.now() / 1000) + parseExpiration(jwtConfig.refresh.expiresIn)
       },
       jwtConfig.refresh.secret
     );
@@ -77,13 +67,11 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async refreshTokens(
-    userId: string
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  async refreshTokens(userId: string): Promise<{ accessToken: string; refreshToken: string }> {
     const user = await findUserById(userId);
 
     if (!user) {
-      throw new Error("User not found");
+      throw new Error('User not found');
     }
 
     return this.createTokens(user);

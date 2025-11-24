@@ -1,11 +1,8 @@
-import { sql } from "./client";
-import type { ICron } from "../../types";
-import { findWorkerById } from "./workers";
+import { sql } from './client';
+import type { ICron } from '../../types';
+import { findWorkerById } from './workers';
 
-export async function findCronById(
-  userId: string,
-  cronId: string
-): Promise<ICron | null> {
+export async function findCronById(userId: string, cronId: string): Promise<ICron | null> {
   const crons = await sql`
     SELECT c.id, c.value, c.worker_id as "workerId", c.next_run as "nextRun", c.last_run as "lastRun", c.created_at as "createdAt", c.updated_at as "updatedAt"
     FROM crons c
@@ -15,16 +12,11 @@ export async function findCronById(
   return crons[0] || null;
 }
 
-export async function createCron(
-  userId: string,
-  workerId: string,
-  value: string,
-  nextRun: Date
-): Promise<ICron> {
+export async function createCron(userId: string, workerId: string, value: string, nextRun: Date): Promise<ICron> {
   // Verify worker ownership first
   const worker = await findWorkerById(userId, workerId);
   if (!worker) {
-    throw new Error("Worker not found or unauthorized");
+    throw new Error('Worker not found or unauthorized');
   }
 
   const crons = await sql`
@@ -35,12 +27,7 @@ export async function createCron(
   return crons[0];
 }
 
-export async function updateCron(
-  userId: string,
-  cronId: string,
-  value: string,
-  nextRun: Date
-): Promise<ICron | null> {
+export async function updateCron(userId: string, cronId: string, value: string, nextRun: Date): Promise<ICron | null> {
   // Verify ownership via join (updated_at auto-updated by trigger)
   const crons = await sql`
     UPDATE crons c
@@ -54,10 +41,7 @@ export async function updateCron(
   return crons[0] || null;
 }
 
-export async function deleteCron(
-  userId: string,
-  cronId: string
-): Promise<number> {
+export async function deleteCron(userId: string, cronId: string): Promise<number> {
   const result = await sql`
     DELETE FROM crons c
     USING workers w

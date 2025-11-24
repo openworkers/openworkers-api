@@ -10,6 +10,7 @@
     "start": "bun src/index.ts",
     "compile": "bun build --compile --minify --sourcemap server.ts --outfile dist/openworkers-api",
     "test": "bun test",
+    "lint": "prettier --write .",
     "generate-types": "bun scripts/generate-types.ts"
   },
   "dependencies": {

@@ -1,7 +1,7 @@
-import type { Context } from "hono";
-import type { ContentfulStatusCode } from "hono/utils/http-status";
-import { z } from "zod";
-import { nodeEnv } from "../config";
+import type { Context } from 'hono';
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
+import { z } from 'zod';
+import { nodeEnv } from '../config';
 
 /**
  * Validates data against a Zod schema and returns a JSON response
@@ -16,19 +16,19 @@ export function jsonResponse<T extends z.ZodTypeAny>(
   const result = schema.safeParse(data);
 
   if (!result.success) {
-    console.error("API Response validation failed:", result.error.issues);
-    console.error("Invalid data:", JSON.stringify(data, null, 2));
+    console.error('API Response validation failed:', result.error.issues);
+    console.error('Invalid data:', JSON.stringify(data, null, 2));
 
     // In production, return generic error to client
     // In development, show detailed validation errors
-    if (nodeEnv === "production") {
-      return c.json({ error: "Internal server error" }, 500);
+    if (nodeEnv === 'production') {
+      return c.json({ error: 'Internal server error' }, 500);
     } else {
       return c.json(
         {
-          error: "Response validation failed",
+          error: 'Response validation failed',
           issues: result.error.issues,
-          data,
+          data
         },
         500
       );

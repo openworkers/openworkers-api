@@ -1,5 +1,5 @@
-import * as db from "./db";
-import type { IDomain } from "../types";
+import * as db from './db';
+import type { IDomain } from '../types';
 
 export class DomainsService {
   async findAll(userId: string): Promise<IDomain[]> {
@@ -10,14 +10,11 @@ export class DomainsService {
     return db.findDomainByName(name);
   }
 
-  async create(
-    userId: string,
-    input: { name: string; workerId: string }
-  ): Promise<IDomain> {
+  async create(userId: string, input: { name: string; workerId: string }): Promise<IDomain> {
     // Check if domain already exists
     const existing = await db.findDomainByName(input.name);
     if (existing) {
-      throw new Error("Domain already exists");
+      throw new Error('Domain already exists');
     }
 
     return db.createDomain(userId, input.workerId, input.name);

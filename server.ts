@@ -11,16 +11,16 @@
  * For development, use `bun --hot src/index.ts` which relies on
  * the default export and lets Bun handle hot reload lifecycle.
  */
-import app from "./src";
+import app from './src';
 
 const server = Bun.serve(app);
 
-process.on("SIGTERM", () => {
-  console.log("SIGTERM received, shutting down gracefully...");
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
   server.stop(true);
 });
 
-process.on("SIGINT", () => {
-  console.log("SIGINT received, shutting down gracefully...");
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully...');
   server.stop(true);
 });

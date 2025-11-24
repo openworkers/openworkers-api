@@ -1,5 +1,5 @@
-import { SQL } from "bun";
-import { database } from "../../config";
+import { SQL } from 'bun';
+import { database } from '../../config';
 
 // Initialize DB connection
 export const sql = new SQL({
@@ -8,6 +8,6 @@ export const sql = new SQL({
   user: database.user,
   password: database.password,
   database: database.name,
-  adapter: "postgres",
-  max: 10,
+  adapter: 'postgres',
+  max: 10
 });
