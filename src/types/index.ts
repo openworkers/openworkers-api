@@ -55,3 +55,12 @@ export {
 } from './schemas/worker.schema';
 
 export type { IWorker, IWorkerLanguage, IWorkerCreateInput, IWorkerUpdateInput } from './schemas/worker.schema';
+
+export {
+  DatabaseSchema,
+  DatabaseCreateInputSchema,
+  SqlOperationSchema,
+  DatabaseRulesSchema
+} from './schemas/database.schema';
+
+export type { IDatabase, IDatabaseCreateInput, ISqlOperation, IDatabaseRules } from './schemas/database.schema';

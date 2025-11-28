@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+// UUID-like pattern (less strict than RFC 4122)
+const uuidLike = z.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, 'Invalid UUID format');
+
 // Environment schema
 const EnvironmentSchema = z.enum(['development', 'staging', 'production', 'test']);
 
@@ -10,15 +13,6 @@ const ConfigSchema = z.object({
 
   // Server
   port: z.coerce.number().int().positive().default(7000),
-
-  // Database (Postgres)
-  database: z.object({
-    host: z.string().default('localhost'),
-    port: z.coerce.number().int().positive().default(5432),
-    user: z.string().default('postgres'),
-    password: z.string().default('password'),
-    name: z.string().default('openworkers')
-  }),
 
   // JWT
   jwt: z.object({
@@ -36,6 +30,16 @@ const ConfigSchema = z.object({
   github: z.object({
     clientId: z.string().optional(),
     clientSecret: z.string().optional()
+  }),
+
+  // Postgate (SQL proxy)
+  postgate: z.object({
+    url: z.string().url().default('http://localhost:6080'),
+    // Admin database (tenant management functions) - mode schema on public
+    adminDatabaseId: uuidLike.default('00000000-0000-0000-0000-000000000000'),
+    // OpenWorkers database (API data) - mode dedicated
+    openworkersDatabaseId: uuidLike,
+    jwtSecret: z.string().min(32, 'POSTGATE_JWT_SECRET must be at least 32 characters')
   })
 });
 
@@ -48,13 +52,6 @@ function loadConfig(): Config {
   const rawConfig = {
     nodeEnv: process.env.NODE_ENV,
     port: process.env.PORT,
-    database: {
-      host: process.env.POSTGRES_HOST,
-      port: process.env.POSTGRES_PORT,
-      user: process.env.POSTGRES_USER,
-      password: process.env.POSTGRES_PASSWORD,
-      name: process.env.POSTGRES_DB
-    },
     jwt: {
       access: {
         secret: process.env.JWT_ACCESS_SECRET,
@@ -68,33 +65,34 @@ function loadConfig(): Config {
     github: {
       clientId: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET
+    },
+    postgate: {
+      url: process.env.POSTGATE_URL,
+      adminDatabaseId: process.env.POSTGATE_ADMIN_DATABASE_ID,
+      openworkersDatabaseId: process.env.POSTGATE_OPENWORKERS_DATABASE_ID,
+      jwtSecret: process.env.POSTGATE_JWT_SECRET
     }
   };
 
   try {
     const config = ConfigSchema.parse(rawConfig);
 
-    // Sanity check: test database should end with "test"
-    if (config.nodeEnv === 'test' && !config.database.name.endsWith('test')) {
-      throw new Error(`Database name should end with "test" in test mode, got "${config.database.name}"`);
-    }
-
     // Log configuration status
     if (config.nodeEnv === 'development') {
-      console.log('🔧 Running in DEVELOPMENT mode');
+      console.log('Running in DEVELOPMENT mode');
     } else if (config.nodeEnv === 'production') {
-      console.log('🚀 Running in PRODUCTION mode');
+      console.log('Running in PRODUCTION mode');
     }
 
     // Warn about missing GitHub OAuth
     if (!config.github.clientId || !config.github.clientSecret) {
-      console.warn('⚠️  GitHub OAuth not configured (GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET missing)');
+      console.warn('GitHub OAuth not configured (GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET missing)');
     }
 
     return config;
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error('❌ Configuration validation failed:');
+      console.error('Configuration validation failed:');
       error.issues.forEach((err) => {
         console.error(`  - ${err.path.join('.')}: ${err.message}`);
       });
@@ -104,8 +102,10 @@ function loadConfig(): Config {
   }
 }
 
+console.log('Loading configuration...', process.env.POSTGATE_OPENWORKERS_DATABASE_ID);
+
 // Export singleton config instance
 export const config = loadConfig();
 
 // Export individual sections for convenience
-export const { nodeEnv, port, database, jwt, github } = config;
+export const { nodeEnv, port, jwt, github, postgate } = config;

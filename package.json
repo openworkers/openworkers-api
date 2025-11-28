@@ -1,6 +1,6 @@
 {
   "name": "openworkers-api",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "license": "MIT",
   "module": "src/index.ts",
   "type": "module",

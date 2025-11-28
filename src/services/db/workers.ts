@@ -1,32 +1,56 @@
 import { sql } from './client';
 import type { IWorker } from '../../types';
 
+interface WorkerRow {
+  id: string;
+  name: string;
+  script: string;
+  language: 'javascript' | 'typescript';
+  userId: string;
+  environmentId?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  environment?: IWorker['environment'];
+  crons?: IWorker['crons'];
+  domains?: IWorker['domains'];
+}
+
 export async function findAllWorkers(userId: string): Promise<IWorker[]> {
-  return sql`
-    SELECT id, name, script, language, user_id as "userId", environment_id as "environmentId", created_at as "createdAt", updated_at as "updatedAt"
+  return sql<WorkerRow>(
+    `SELECT
+      id,
+      name,
+      script,
+      language::text as language,
+      user_id as "userId",
+      environment_id as "environmentId",
+      created_at as "createdAt",
+      updated_at as "updatedAt"
     FROM workers
-    WHERE user_id = ${userId}
-    ORDER BY created_at DESC
-  `;
+    WHERE user_id = $1::uuid
+    ORDER BY created_at DESC`,
+    [userId]
+  );
 }
 
 export async function checkWorkerNameExists(name: string): Promise<boolean> {
-  const workers = await sql`
-    SELECT id
+  const workers = await sql<{ id: string }>(
+    `SELECT id
     FROM workers
-    WHERE name = ${name}
-    LIMIT 1
-  `;
+    WHERE name = $1
+    LIMIT 1`,
+    [name]
+  );
   return workers.length > 0;
 }
 
 export async function findWorkerById(userId: string, workerId: string): Promise<IWorker | null> {
-  const workers = await sql`
-    SELECT
+  const workers = await sql<WorkerRow>(
+    `SELECT
       w.id,
       w.name,
       w.script,
-      w.language,
+      w.language::text as language,
       w.user_id as "userId",
       w.created_at as "createdAt",
       w.updated_at as "updatedAt",
@@ -66,9 +90,10 @@ export async function findWorkerById(userId: string, workerId: string): Promise<
         WHERE d.worker_id = w.id
       ) as domains
     FROM workers w
-    WHERE w.id = ${workerId} AND w.user_id = ${userId}
-  `;
-  return workers[0] || null;
+    WHERE w.id = $1::uuid AND w.user_id = $2::uuid`,
+    [workerId, userId]
+  );
+  return workers[0] ?? null;
 }
 
 export async function createWorker(
@@ -78,12 +103,21 @@ export async function createWorker(
   language: 'javascript' | 'typescript',
   environmentId?: string
 ): Promise<IWorker> {
-  const workers = await sql`
-    INSERT INTO workers (name, script, language, user_id, environment_id)
-    VALUES (${name}, ${script}, ${language}, ${userId}, ${environmentId || null})
-    RETURNING id, name, script, language, user_id as "userId", environment_id as "environmentId", created_at as "createdAt", updated_at as "updatedAt"
-  `;
-  return workers[0];
+  const workers = await sql<WorkerRow>(
+    `INSERT INTO workers (name, script, language, user_id, environment_id)
+    VALUES ($1, $2, $3, $4::uuid, $5::uuid)
+    RETURNING
+      id,
+      name,
+      script,
+      language::text as language,
+      user_id as "userId",
+      environment_id as "environmentId",
+      created_at as "createdAt",
+      updated_at as "updatedAt"`,
+    [name, script, language, userId, environmentId ?? null]
+  );
+  return workers[0]!;
 }
 
 export async function updateWorker(
@@ -104,16 +138,32 @@ export async function updateWorker(
   }
 
   // Update worker fields (updated_at auto-updated by trigger)
-  const workers = await sql`
-    UPDATE workers
+  const workers = await sql<WorkerRow>(
+    `UPDATE workers
     SET
-      name = ${updates.name ?? current.name},
-      script = ${updates.script ?? current.script},
-      language = ${updates.language ?? current.language},
-      environment_id = ${updates.environmentId === undefined ? (current.environment?.id ?? null) : updates.environmentId}
-    WHERE id = ${workerId} AND user_id = ${userId}
-    RETURNING id, name, script, language, user_id as "userId", environment_id as "environmentId", created_at as "createdAt", updated_at as "updatedAt"
-  `;
+      name = $1,
+      script = $2,
+      language = $3::enum_workers_language,
+      environment_id = $4::uuid
+    WHERE id = $5::uuid AND user_id = $6::uuid
+    RETURNING
+      id,
+      name,
+      script,
+      language::text as language,
+      user_id as "userId",
+      environment_id as "environmentId",
+      created_at as "createdAt",
+      updated_at as "updatedAt"`,
+    [
+      updates.name ?? current.name,
+      updates.script ?? current.script,
+      updates.language ?? current.language,
+      updates.environmentId === undefined ? (current.environment?.id ?? null) : updates.environmentId,
+      workerId,
+      userId
+    ]
+  );
 
   // Update domains if provided
   if (updates.domains !== undefined) {
@@ -121,13 +171,15 @@ export async function updateWorker(
     await updateWorkerDomains(userId, workerId, updates.domains);
   }
 
-  return workers[0] || null;
+  return workers[0] ?? null;
 }
 
 export async function deleteWorker(userId: string, workerId: string): Promise<number> {
-  const result = await sql`
-    DELETE FROM workers
-    WHERE id = ${workerId} AND user_id = ${userId}
-  `;
-  return result.count || 0;
+  const result = await sql<{ id: string }>(
+    `DELETE FROM workers
+    WHERE id = $1::uuid AND user_id = $2::uuid
+    RETURNING id`,
+    [workerId, userId]
+  );
+  return result.length;
 }

@@ -1,10 +1,28 @@
 import { sql } from './client';
 import type { IEnvironment, IEnvironmentValue } from '../../types';
 
+interface EnvironmentRow {
+  id: string;
+  name: string;
+  desc: string | null;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  values: IEnvironment['values'];
+  workers: IEnvironment['workers'];
+}
+
+interface EnvironmentValueRow {
+  id: string;
+  key: string;
+  value: string;
+  secret: boolean;
+}
+
 // Environments
 export async function findAllEnvironments(userId: string): Promise<IEnvironment[]> {
-  return sql`
-    SELECT
+  return sql<EnvironmentRow>(
+    `SELECT
       e.id,
       e.name,
       e."desc",
@@ -34,14 +52,15 @@ export async function findAllEnvironments(userId: string): Promise<IEnvironment[
         WHERE w.environment_id = e.id
       ) as workers
     FROM environments e
-    WHERE e.user_id = ${userId}
-    ORDER BY e.created_at DESC
-  `;
+    WHERE e.user_id = $1::uuid
+    ORDER BY e.created_at DESC`,
+    [userId]
+  );
 }
 
 export async function findEnvironmentById(userId: string, envId: string): Promise<IEnvironment | null> {
-  const envs = await sql`
-    SELECT
+  const envs = await sql<EnvironmentRow>(
+    `SELECT
       e.id,
       e.name,
       e."desc",
@@ -71,21 +90,29 @@ export async function findEnvironmentById(userId: string, envId: string): Promis
         WHERE w.environment_id = e.id
       ) as workers
     FROM environments e
-    WHERE e.id = ${envId} AND e.user_id = ${userId}
-  `;
-  return envs[0] || null;
+    WHERE e.id = $1::uuid AND e.user_id = $2::uuid`,
+    [envId, userId]
+  );
+  return envs[0] ?? null;
 }
 
 export async function createEnvironment(userId: string, name: string, desc?: string | null): Promise<IEnvironment> {
-  const envs = await sql`
-    INSERT INTO environments (name, "desc", user_id)
-    VALUES (${name}, ${desc || null}, ${userId})
-    RETURNING id, name, "desc", user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
-  `;
+  const envs = await sql<EnvironmentRow>(
+    `INSERT INTO environments (name, "desc", user_id)
+    VALUES ($1, $2, $3::uuid)
+    RETURNING
+      id,
+      name,
+      "desc",
+      user_id as "userId",
+      created_at as "createdAt",
+      updated_at as "updatedAt"`,
+    [name, desc ?? null, userId]
+  );
 
   // Return with empty values and workers arrays
   return {
-    ...envs[0],
+    ...envs[0]!,
     values: [],
     workers: []
   };
@@ -100,14 +127,26 @@ export async function updateEnvironment(
   const current = await findEnvironmentById(userId, envId);
   if (!current) return null;
 
-  const envs = await sql`
-    UPDATE environments
+  const envs = await sql<EnvironmentRow>(
+    `UPDATE environments
     SET
-      name = ${updates.name ?? current.name},
-      "desc" = ${updates.desc === undefined ? current.desc : updates.desc}
-    WHERE id = ${envId} AND user_id = ${userId}
-    RETURNING id, name, "desc", user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
-  `;
+      name = $1,
+      "desc" = $2
+    WHERE id = $3::uuid AND user_id = $4::uuid
+    RETURNING
+      id,
+      name,
+      "desc",
+      user_id as "userId",
+      created_at as "createdAt",
+      updated_at as "updatedAt"`,
+    [
+      updates.name ?? current.name,
+      updates.desc === undefined ? current.desc : updates.desc,
+      envId,
+      userId
+    ]
+  );
 
   if (!envs[0]) return null;
 
@@ -120,11 +159,13 @@ export async function updateEnvironment(
 }
 
 export async function deleteEnvironment(userId: string, envId: string): Promise<number> {
-  const result = await sql`
-    DELETE FROM environments
-    WHERE id = ${envId} AND user_id = ${userId}
-  `;
-  return result.count || 0;
+  const result = await sql<{ id: string }>(
+    `DELETE FROM environments
+    WHERE id = $1::uuid AND user_id = $2::uuid
+    RETURNING id`,
+    [envId, userId]
+  );
+  return result.length;
 }
 
 // Environment Values
@@ -135,12 +176,21 @@ export async function createEnvironmentValue(
   value: string,
   secret: boolean
 ): Promise<IEnvironmentValue> {
-  const vals = await sql`
-    INSERT INTO environment_values (key, value, secret, environment_id, user_id)
-    VALUES (${key}, ${value}, ${secret}, ${envId}, ${userId})
-    RETURNING id, key, value, secret, environment_id as "environmentId", user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
-  `;
-  return vals[0];
+  const vals = await sql<IEnvironmentValue>(
+    `INSERT INTO environment_values (key, value, secret, environment_id, user_id)
+    VALUES ($1, $2, $3, $4::uuid, $5::uuid)
+    RETURNING
+      id,
+      key,
+      value,
+      secret,
+      environment_id as "environmentId",
+      user_id as "userId",
+      created_at as "createdAt",
+      updated_at as "updatedAt"`,
+    [key, value, secret, envId, userId]
+  );
+  return vals[0]!;
 }
 
 export async function updateEnvironmentValue(
@@ -148,35 +198,61 @@ export async function updateEnvironmentValue(
   valId: string,
   updates: { key?: string; value?: string; secret?: boolean }
 ): Promise<IEnvironmentValue | null> {
-  const current = await sql`
-    SELECT * FROM environment_values WHERE id = ${valId} AND user_id = ${userId}
-  `;
+  const current = await sql<EnvironmentValueRow>(
+    `SELECT
+      id,
+      key,
+      value,
+      secret
+    FROM environment_values
+    WHERE id = $1::uuid AND user_id = $2::uuid`,
+    [valId, userId]
+  );
   if (!current[0]) return null;
 
-  const vals = await sql`
-    UPDATE environment_values
+  const vals = await sql<IEnvironmentValue>(
+    `UPDATE environment_values
     SET
-      key = ${updates.key ?? current[0].key},
-      value = ${updates.value ?? current[0].value},
-      secret = ${updates.secret ?? current[0].secret}
-    WHERE id = ${valId} AND user_id = ${userId}
-    RETURNING id, key, value, secret, environment_id as "environmentId", user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
-  `;
-  return vals[0] || null;
+      key = $1,
+      value = $2,
+      secret = $3
+    WHERE id = $4::uuid AND user_id = $5::uuid
+    RETURNING
+      id,
+      key,
+      value,
+      secret,
+      environment_id as "environmentId",
+      user_id as "userId",
+      created_at as "createdAt",
+      updated_at as "updatedAt"`,
+    [
+      updates.key ?? current[0].key,
+      updates.value ?? current[0].value,
+      updates.secret ?? current[0].secret,
+      valId,
+      userId
+    ]
+  );
+  return vals[0] ?? null;
 }
 
 export async function deleteEnvironmentValue(userId: string, valId: string): Promise<number> {
-  const result = await sql`
-    DELETE FROM environment_values
-    WHERE id = ${valId} AND user_id = ${userId}
-  `;
-  return result.count || 0;
+  const result = await sql<{ id: string }>(
+    `DELETE FROM environment_values
+    WHERE id = $1::uuid AND user_id = $2::uuid
+    RETURNING id`,
+    [valId, userId]
+  );
+  return result.length;
 }
 
 export async function deleteEnvironmentValuesByEnvId(userId: string, envId: string): Promise<number> {
-  const result = await sql`
-        DELETE FROM environment_values
-        WHERE environment_id = ${envId} AND user_id = ${userId}
-    `;
-  return result.count || 0;
+  const result = await sql<{ id: string }>(
+    `DELETE FROM environment_values
+    WHERE environment_id = $1::uuid AND user_id = $2::uuid
+    RETURNING id`,
+    [envId, userId]
+  );
+  return result.length;
 }

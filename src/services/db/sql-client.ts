@@ -1,0 +1,99 @@
+import { postgate as postgateConfig } from '../../config';
+import { PostgateClient } from '../postgate';
+
+/**
+ * Result type for SQL queries
+ */
+export interface SqlResult<T = Record<string, unknown>> extends Array<T> {
+  count?: number;
+}
+
+/**
+ * Named parameters object type
+ */
+export type NamedParams = Record<string, unknown>;
+
+/**
+ * Postgate SQL client interface - supports both positional ($1, $2) and named (:name, :userId) params
+ */
+export interface PostgateSqlClient {
+  <T = Record<string, unknown>>(query: string, params?: unknown[] | NamedParams): Promise<SqlResult<T>>;
+}
+
+/**
+ * Convert named parameters ($name) to positional ($1) and extract values array
+ */
+function convertNamedParams(query: string, params: NamedParams): { query: string; values: unknown[] } {
+  const values: unknown[] = [];
+  const paramMap = new Map<string, number>();
+
+  const convertedQuery = query.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)/g, (match, name) => {
+    if (!paramMap.has(name)) {
+      if (!(name in params)) {
+        throw new Error(`Missing parameter: ${name}`);
+      }
+      paramMap.set(name, values.length + 1);
+      values.push(params[name]);
+    }
+    return `$${paramMap.get(name)}`;
+  });
+
+  return { query: convertedQuery, values };
+}
+
+/**
+ * Check if params is a named params object (not an array)
+ */
+function isNamedParams(params: unknown[] | NamedParams): params is NamedParams {
+  return params !== null && typeof params === 'object' && !Array.isArray(params);
+}
+
+/**
+ * Create a Postgate-backed SQL client
+ */
+function createPostgateClient(baseUrl: string, jwtSecret: string, databaseId: string): PostgateSqlClient {
+  const client = new PostgateClient(baseUrl, jwtSecret);
+
+  return async function sql<T = Record<string, unknown>>(
+    query: string,
+    params?: unknown[] | NamedParams
+  ): Promise<SqlResult<T>> {
+    let finalQuery = query;
+    let finalParams: unknown[] = [];
+
+    if (params) {
+      if (isNamedParams(params)) {
+        const converted = convertNamedParams(query, params);
+        finalQuery = converted.query;
+        finalParams = converted.values;
+      } else {
+        finalParams = params;
+      }
+    }
+
+    const result = await client.query<T>(databaseId, finalQuery, finalParams);
+
+    // Return array-like result with count property
+    const rows = result.rows as SqlResult<T>;
+    rows.count = result.row_count;
+    return rows;
+  };
+}
+
+/**
+ * Create a SQL client for a specific database via postgate
+ * @param databaseId - The database UUID to connect to
+ */
+export function createSqlClient(databaseId: string): PostgateSqlClient {
+  return createPostgateClient(postgateConfig.url, postgateConfig.jwtSecret, databaseId);
+}
+
+/**
+ * Create a SQL client for the admin database (tenant management)
+ */
+export function createAdminSqlClient(): PostgateSqlClient {
+  return createPostgateClient(postgateConfig.url, postgateConfig.jwtSecret, postgateConfig.adminDatabaseId);
+}
+
+// Default export: openworkers database client (dedicated mode)
+export const sql = createPostgateClient(postgateConfig.url, postgateConfig.jwtSecret, postgateConfig.openworkersDatabaseId);
