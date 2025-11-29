@@ -9,7 +9,7 @@ export const DatabaseSchema = ResourceSchema;
 export const DatabaseCreateInputSchema = z.object({
   name: z.string().min(1).max(100).trim(),
   desc: z.string().max(255).trim().nullable().optional(),
-  max_rows: z.number().int().positive().max(10000).optional()
+  maxRows: z.number().int().positive().max(10000).optional()
 });
 
 // Types

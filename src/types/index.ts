@@ -13,7 +13,8 @@ export interface JWTPayload {
 }
 
 // Types-only exports (no Zod runtime, lightweight for frontend)
-export type { Timestamps, Resource } from './schemas/base.schema';
+export type { IResource } from './schemas/base.schema';
+export type { ITimestamps } from './schemas/base.schema';
 
 export { LoginResponseSchema } from './schemas/auth.schema';
 export type { ILoginResponse } from './schemas/auth.schema';

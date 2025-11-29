@@ -102,13 +102,19 @@ async function generateTypes() {
   };
 
   console.log('  📋 First pass: building types map...');
+  // Map from name to type string (not type string to name, to avoid collision issues)
+  const nameToTypeStr = new Map<string, string>();
   for (const { schema, name } of schemas) {
     try {
       const { node } = zodToTs(schema, { auxiliaryTypeStore });
       let typeStr = printNode(node);
       // Normalize whitespace for better matching
       typeStr = typeStr.replace(/\s+/g, ' ').trim();
-      typesMap.set(typeStr, name);
+      nameToTypeStr.set(name, typeStr);
+      // Only add to typesMap if not already present (first wins for deduplication)
+      if (!typesMap.has(typeStr)) {
+        typesMap.set(typeStr, name);
+      }
     } catch (error) {
       console.error(`❌ Failed to generate type for ${name}:`, error);
     }
@@ -121,7 +127,7 @@ async function generateTypes() {
   // Sort types by length (longest first) for better matching
   const sortedTypes = Array.from(typesMap.entries()).sort(([a], [b]) => b.length - a.length);
 
-  for (const [typeStr, name] of typesMap) {
+  for (const [name, typeStr] of nameToTypeStr) {
     let updatedTypeStr = typeStr;
 
     // Replace all occurrences of other types with their names (with I prefix)

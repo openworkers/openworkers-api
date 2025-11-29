@@ -18,13 +18,13 @@ export class DatabasesService {
    * Token is created later via POST /databases/:id/token
    */
   async create(userId: string, input: IDatabaseCreateInput): Promise<IDatabase> {
-    const { name, desc, max_rows } = input;
+    const { name, desc, maxRows } = input;
 
     // Create tenant database using PL/pgSQL function (creates schema + entry)
     // Pass random name to postgate - user's display name stays in openworkers only
     const postgateResult = await adminSql<PostgateDatabaseRow>(
       `SELECT id FROM create_tenant_database($1, $2::integer)`,
-      [crypto.randomUUID(), max_rows || 1000]
+      [crypto.randomUUID(), maxRows || 1000]
     );
 
     if (postgateResult.length === 0) {

@@ -14,5 +14,5 @@ export const ResourceSchema = TimestampsSchema.extend({
 });
 
 // Types
-export type Timestamps = z.infer<typeof TimestampsSchema>;
-export type Resource = z.infer<typeof ResourceSchema>;
+export type ITimestamps = z.infer<typeof TimestampsSchema>;
+export type IResource = z.infer<typeof ResourceSchema>;
