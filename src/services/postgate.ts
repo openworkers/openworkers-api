@@ -1,5 +1,4 @@
-import { postgate as postgateConfig, jwt as jwtConfig } from '../config';
-import { sign } from 'hono/jwt';
+import { postgate as postgateConfig } from '../config';
 
 export interface PostgateQueryRequest {
   sql: string;
@@ -16,47 +15,36 @@ export interface PostgateError {
   message?: string;
 }
 
+export type TokenPermission = 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'CREATE' | 'ALTER' | 'DROP';
+
+export const TENANT_PERMISSIONS: TokenPermission[] = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP'];
+export const DEFAULT_PERMISSIONS: TokenPermission[] = ['SELECT', 'INSERT', 'UPDATE', 'DELETE'];
+
 /**
  * HTTP client for postgate - secure PostgreSQL proxy
+ * Uses API tokens (pg_xxx format) for authentication
  */
 export class PostgateClient {
-  private baseUrl: string;
-  private jwtSecret: string;
+  protected baseUrl: string;
+  protected token: string;
 
-  constructor(baseUrl: string, jwtSecret: string) {
+  constructor(baseUrl: string, token: string) {
     this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
-    this.jwtSecret = jwtSecret;
-  }
-
-  /**
-   * Generate a JWT token for a specific database
-   */
-  private async generateToken(databaseId: string): Promise<string> {
-    const now = Math.floor(Date.now() / 1000);
-    const payload = {
-      sub: databaseId,
-      iat: now,
-      exp: now + 3600 // 1 hour expiry
-    };
-
-    return sign(payload, this.jwtSecret);
+    this.token = token;
   }
 
   /**
    * Execute a SQL query against a tenant database
    */
   async query<T = Record<string, unknown>>(
-    databaseId: string,
     sql: string,
     params?: unknown[]
   ): Promise<PostgateQueryResponse<T>> {
-    const token = await this.generateToken(databaseId);
-
     const response = await fetch(`${this.baseUrl}/query`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${this.token}`
       },
       body: JSON.stringify({ sql, params } satisfies PostgateQueryRequest)
     });
@@ -81,6 +69,56 @@ export class PostgateClient {
   }
 }
 
-// Singleton instance using config - uses postgate secret if configured, else falls back to API JWT secret
-const jwtSecret = postgateConfig.jwtSecret || jwtConfig.access.secret;
-export const postgateClient = new PostgateClient(postgateConfig.url, jwtSecret);
+interface CreateTokenResult {
+  id: string;
+  token: string;
+}
+
+/**
+ * Admin client for postgate - manages tokens and databases via SQL
+ * Uses admin token for authentication (access to public schema)
+ */
+export class PostgateAdminClient extends PostgateClient {
+  constructor(baseUrl: string, adminToken: string) {
+    super(baseUrl, adminToken);
+  }
+
+  /**
+   * Create a new token for a database using PL/pgSQL function
+   * Returns the token secret - must be shown to user only once
+   */
+  async createToken(
+    databaseId: string,
+    name: string = 'default',
+    permissions: TokenPermission[] = DEFAULT_PERMISSIONS
+  ): Promise<CreateTokenResult> {
+    const result = await this.query<CreateTokenResult>(
+      'SELECT * FROM create_tenant_token($1::uuid, $2, $3::text[])',
+      [databaseId, name, permissions]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Failed to create token');
+    }
+
+    return result.rows[0]!;
+  }
+
+  /**
+   * Delete a token using PL/pgSQL function
+   */
+  async deleteToken(tokenId: string): Promise<boolean> {
+    const result = await this.query<{ delete_tenant_token: boolean }>(
+      'SELECT delete_tenant_token($1::uuid)',
+      [tokenId]
+    );
+
+    return result.rows[0]?.delete_tenant_token ?? false;
+  }
+}
+
+// Admin client singleton - uses admin token from config
+export const postgateAdminClient = new PostgateAdminClient(
+  postgateConfig.url,
+  postgateConfig.adminToken
+);

@@ -2,9 +2,10 @@ import { z } from 'zod';
 
 // Resource Limits
 export const ResourceLimitsSchema = z.object({
-  environments: z.number().int().min(0),
+  databases: z.number().int().min(0).default(3),
+  environments: z.number().int().min(0).default(3),
   secondPrecision: z.boolean().default(false),
-  workers: z.number().int().min(0)
+  workers: z.number().int().min(0).default(3)
 });
 
 // User / Self

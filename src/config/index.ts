@@ -35,11 +35,10 @@ const ConfigSchema = z.object({
   // Postgate (SQL proxy)
   postgate: z.object({
     url: z.string().url().default('http://localhost:6080'),
-    // Admin database (tenant management functions) - mode schema on public
-    adminDatabaseId: uuidLike.default('00000000-0000-0000-0000-000000000000'),
-    // OpenWorkers database (API data) - mode dedicated
-    openworkersDatabaseId: uuidLike,
-    jwtSecret: z.string().min(32, 'POSTGATE_JWT_SECRET must be at least 32 characters')
+    // Admin token (pg_xxx format) - for managing databases and creating tokens
+    adminToken: z.string().regex(/^pg_[a-f0-9]{64}$/, 'POSTGATE_ADMIN_TOKEN must be a valid pg_xxx token'),
+    // OpenWorkers token (pg_xxx format) - for openworkers API database access
+    openworkersToken: z.string().regex(/^pg_[a-f0-9]{64}$/, 'POSTGATE_OPENWORKERS_TOKEN must be a valid pg_xxx token')
   })
 });
 
@@ -68,9 +67,8 @@ function loadConfig(): Config {
     },
     postgate: {
       url: process.env.POSTGATE_URL,
-      adminDatabaseId: process.env.POSTGATE_ADMIN_DATABASE_ID,
-      openworkersDatabaseId: process.env.POSTGATE_OPENWORKERS_DATABASE_ID,
-      jwtSecret: process.env.POSTGATE_JWT_SECRET
+      adminToken: process.env.POSTGATE_ADMIN_TOKEN,
+      openworkersToken: process.env.POSTGATE_OPENWORKERS_TOKEN
     }
   };
 
@@ -101,8 +99,6 @@ function loadConfig(): Config {
     throw error;
   }
 }
-
-console.log('Loading configuration...', process.env.POSTGATE_OPENWORKERS_DATABASE_ID);
 
 // Export singleton config instance
 export const config = loadConfig();

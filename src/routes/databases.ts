@@ -79,4 +79,27 @@ databases.delete('/:id', async (c) => {
   }
 });
 
+// POST /databases/:id/token - Regenerate token for database
+databases.post('/:id/token', async (c) => {
+  const userId = c.get('userId');
+  const id = c.req.param('id');
+
+  try {
+    const result = await databasesService.regenerateToken(userId, id);
+
+    if (!result) {
+      return c.json({ error: 'Database not found' }, 404);
+    }
+
+    return c.json({
+      token: result.token,
+      tokenId: result.tokenId,
+      message: 'Store this token securely. It will not be shown again.'
+    });
+  } catch (error) {
+    console.error('Failed to regenerate token:', error);
+    return c.json({ error: 'Failed to regenerate token' }, 500);
+  }
+});
+
 export default databases;

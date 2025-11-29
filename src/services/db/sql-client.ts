@@ -49,10 +49,10 @@ function isNamedParams(params: unknown[] | NamedParams): params is NamedParams {
 }
 
 /**
- * Create a Postgate-backed SQL client
+ * Create a Postgate-backed SQL client from a token
  */
-function createPostgateClient(baseUrl: string, jwtSecret: string, databaseId: string): PostgateSqlClient {
-  const client = new PostgateClient(baseUrl, jwtSecret);
+function createPostgateClientFromToken(baseUrl: string, token: string): PostgateSqlClient {
+  const client = new PostgateClient(baseUrl, token);
 
   return async function sql<T = Record<string, unknown>>(
     query: string,
@@ -71,7 +71,7 @@ function createPostgateClient(baseUrl: string, jwtSecret: string, databaseId: st
       }
     }
 
-    const result = await client.query<T>(databaseId, finalQuery, finalParams);
+    const result = await client.query<T>(finalQuery, finalParams);
 
     // Return array-like result with count property
     const rows = result.rows as SqlResult<T>;
@@ -82,18 +82,19 @@ function createPostgateClient(baseUrl: string, jwtSecret: string, databaseId: st
 
 /**
  * Create a SQL client for a specific database via postgate
- * @param databaseId - The database UUID to connect to
+ * @param token - The pg_xxx token for authentication
  */
-export function createSqlClient(databaseId: string): PostgateSqlClient {
-  return createPostgateClient(postgateConfig.url, postgateConfig.jwtSecret, databaseId);
+export function createSqlClient(token: string): PostgateSqlClient {
+  return createPostgateClientFromToken(postgateConfig.url, token);
 }
 
 /**
  * Create a SQL client for the admin database (tenant management)
+ * Uses the admin token from config
  */
 export function createAdminSqlClient(): PostgateSqlClient {
-  return createPostgateClient(postgateConfig.url, postgateConfig.jwtSecret, postgateConfig.adminDatabaseId);
+  return createPostgateClientFromToken(postgateConfig.url, postgateConfig.adminToken);
 }
 
-// Default export: openworkers database client (dedicated mode)
-export const sql = createPostgateClient(postgateConfig.url, postgateConfig.jwtSecret, postgateConfig.openworkersDatabaseId);
+// Default export: openworkers database client (uses openworkers token)
+export const sql = createPostgateClientFromToken(postgateConfig.url, postgateConfig.openworkersToken);

@@ -3,9 +3,10 @@ import { sql } from './client';
 interface DatabaseRow {
   id: string;
   name: string;
+  desc: string | null;
   userId: string;
   postgateId: string;
-  schemaName: string | null;
+  tokenId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,9 +16,10 @@ export async function findAllDatabases(userId: string): Promise<DatabaseRow[]> {
     `SELECT
       id,
       name,
+      "desc",
       user_id as "userId",
       postgate_id as "postgateId",
-      schema_name as "schemaName",
+      token_id as "tokenId",
       created_at as "createdAt",
       updated_at as "updatedAt"
     FROM databases
@@ -32,9 +34,10 @@ export async function findDatabaseById(userId: string, id: string): Promise<Data
     `SELECT
       id,
       name,
+      "desc",
       user_id as "userId",
       postgate_id as "postgateId",
-      schema_name as "schemaName",
+      token_id as "tokenId",
       created_at as "createdAt",
       updated_at as "updatedAt"
     FROM databases
@@ -48,20 +51,21 @@ export async function createDatabase(
   userId: string,
   name: string,
   postgateId: string,
-  schemaName: string | null
+  desc?: string | null
 ): Promise<DatabaseRow> {
   const rows = await sql<DatabaseRow>(
-    `INSERT INTO databases (name, user_id, postgate_id, schema_name)
-    VALUES ($1, $2::uuid, $3::uuid, $4)
+    `INSERT INTO databases (name, "desc", user_id, postgate_id)
+    VALUES ($1, $2, $3::uuid, $4::uuid)
     RETURNING
       id,
       name,
+      "desc",
       user_id as "userId",
       postgate_id as "postgateId",
-      schema_name as "schemaName",
+      token_id as "tokenId",
       created_at as "createdAt",
       updated_at as "updatedAt"`,
-    [name, userId, postgateId, schemaName]
+    [name, desc ?? null, userId, postgateId]
   );
   return rows[0]!;
 }
@@ -74,4 +78,15 @@ export async function deleteDatabase(userId: string, id: string): Promise<number
     [id, userId]
   );
   return result.length;
+}
+
+export async function updateTokenId(userId: string, id: string, tokenId: string): Promise<boolean> {
+  const result = await sql<{ id: string }>(
+    `UPDATE databases
+    SET token_id = $3::uuid, updated_at = NOW()
+    WHERE id = $1::uuid AND user_id = $2::uuid
+    RETURNING id`,
+    [id, userId, tokenId]
+  );
+  return result.length > 0;
 }

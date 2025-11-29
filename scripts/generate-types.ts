@@ -36,12 +36,7 @@ import {
   WorkerLanguageSchema
 } from '../src/types/schemas/worker.schema';
 
-import {
-  DatabaseSchema,
-  DatabaseCreateInputSchema,
-  DatabaseRulesSchema,
-  SqlOperationSchema
-} from '../src/types/schemas/database.schema';
+import { DatabaseSchema, DatabaseCreateInputSchema } from '../src/types/schemas/database.schema';
 
 // Schema definitions to generate
 const schemas = [
@@ -83,9 +78,7 @@ const schemas = [
 
   // Database
   { schema: DatabaseSchema, name: 'Database' },
-  { schema: DatabaseCreateInputSchema, name: 'DatabaseCreateInput' },
-  { schema: DatabaseRulesSchema, name: 'DatabaseRules' },
-  { schema: SqlOperationSchema, name: 'SqlOperation' }
+  { schema: DatabaseCreateInputSchema, name: 'DatabaseCreateInput' }
 ];
 
 async function generateTypes() {
