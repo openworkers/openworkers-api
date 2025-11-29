@@ -15,7 +15,9 @@ export const app = new Hono();
 
 // Global middlewares
 app.use('*', logger());
-app.use('*', cors());
+if (nodeEnv === 'development') {
+  app.use('*', cors());
+}
 
 // Health check (no auth required)
 app.get('/health', (c) => {
