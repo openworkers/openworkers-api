@@ -5,9 +5,8 @@ Lightweight REST API for OpenWorkers platform using Hono framework and Bun runti
 ## Features
 
 - **Hono** - Ultra-fast web framework
-- **Bun native Postgres** - `Bun.sql()` for database access
+- **Postgate** - HTTP-based PostgreSQL access via [postgate](https://github.com/openworkers/postgate)
 - **Zod validation** - Type-safe input/output validation
-- **Isolated services** - Easy to swap Postgres with gateway later
 - **Pure REST** - No GraphQL complexity
 - **JWT auth** - Using `hono/jwt`
 - **Standalone binary** - Compile to single executable
@@ -18,15 +17,18 @@ Lightweight REST API for OpenWorkers platform using Hono framework and Bun runti
 src/
 ├── services/
 │   ├── db/
-│   │   ├── client.ts        - Bun Postgres client
+│   │   ├── sql-client.ts    - Postgate SQL client (named params support)
 │   │   ├── users.ts         - User DB queries
 │   │   ├── workers.ts       - Worker DB queries
 │   │   ├── crons.ts         - Cron DB queries
+│   │   ├── databases.ts     - Database DB queries
 │   │   ├── environments.ts  - Environment DB queries
 │   │   └── domains.ts       - Domain DB queries
+│   ├── postgate.ts          - Postgate HTTP client
 │   ├── auth.ts              - Authentication logic
 │   ├── workers.ts           - Workers business logic
 │   ├── crons.ts             - Crons business logic
+│   ├── databases.ts         - Databases business logic
 │   ├── environments.ts      - Environments business logic
 │   └── domains.ts           - Domains business logic
 ├── routes/
@@ -34,6 +36,7 @@ src/
 │   ├── users.ts             - User endpoints
 │   ├── workers.ts           - Workers endpoints
 │   ├── crons.ts             - Crons endpoints
+│   ├── databases.ts         - Databases endpoints
 │   ├── environments.ts      - Environments endpoints
 │   └── domains.ts           - Domains endpoints
 ├── middlewares/
@@ -57,7 +60,7 @@ bun install
 
 # Create .env from example
 cp .env.example .env
-# Edit .env with your DATABASE_URL and JWT secrets
+# Edit .env with your Postgate URL/tokens and JWT secrets
 
 # Run development server (hot reload)
 bun run dev
@@ -129,42 +132,49 @@ OAuth flow:
 5. Issues JWT tokens (access + refresh)
 6. Returns tokens in response body + sets cookie
 
-## Database Service Abstraction
+## Database Access via Postgate
 
-The `db.ts` service can be swapped between implementations:
-
-**Current**: Bun native Postgres
+All database access goes through [Postgate](https://github.com/openworkers/postgate) - a secure HTTP proxy for PostgreSQL.
 
 ```typescript
-import { sql } from 'bun';
+import { sql } from './services/db/sql-client';
+
+// Named parameters ($name style)
+const users = await sql<User>('SELECT * FROM users WHERE id = $id', { id: 1 });
+
+// Positional parameters ($1 style)
+const users = await sql<User>('SELECT * FROM users WHERE id = $1', [1]);
+
+// Result is an array with .count property
+console.log(users[0], users.count);
 ```
 
-**Future**: Postgres Gateway (HTTP-based)
-
-```typescript
-fetch('http://postgres-gateway:8080/query', ...)
-```
-
-Change only happens in `src/services/db/` - all other code stays the same.
+**Why Postgate?**
+- No native Postgres driver needed - just HTTP `fetch()`
+- Multi-tenant isolation via schema separation
+- SQL validation and injection prevention
+- Token-based access control per database
+- Same API works from workers (edge runtime)
 
 ## Status
 
-### ✅ Implemented
+### Implemented
 
 - [x] Auth routes (GitHub OAuth, refresh)
 - [x] Users routes (profile)
 - [x] Workers routes (CRUD + name uniqueness check)
+- [x] Databases routes (CRUD + token management via Postgate)
 - [x] Environments routes (CRUD + values management)
 - [x] Domains routes (CRUD)
 - [x] Crons routes (CRUD)
 - [x] Zod input/output validation
 - [x] JWT authentication middleware
 - [x] Standalone binary compilation
+- [x] Postgate integration (HTTP-based Postgres access)
 
-### 🚧 TODO
+### TODO
 
 - [ ] Error handling middleware (standardized error responses)
-- [ ] Request validation middleware
 - [ ] Rate limiting
 - [ ] Tests (unit + integration)
 - [ ] API documentation (OpenAPI/Swagger)
