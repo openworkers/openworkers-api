@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
-import { createAuthMiddleware, extractUser } from './middlewares/auth';
+import { createAuthMiddleware, extractUser, errorHandler } from './middlewares/auth';
 import authRoutes from './routes/auth';
 import users from './routes/users';
 import workers from './routes/workers';
@@ -15,6 +15,8 @@ export const app = new Hono();
 
 // Global middlewares
 app.use('*', logger());
+app.onError(errorHandler);
+
 if (nodeEnv === 'development') {
   app.use('*', cors());
 }
