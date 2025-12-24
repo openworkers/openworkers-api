@@ -39,6 +39,15 @@ const ConfigSchema = z.object({
     adminToken: z.string().regex(/^pg_[a-f0-9]{64}$/, 'POSTGATE_ADMIN_TOKEN must be a valid pg_xxx token'),
     // OpenWorkers token (pg_xxx format) - for openworkers API database access
     openworkersToken: z.string().regex(/^pg_[a-f0-9]{64}$/, 'POSTGATE_OPENWORKERS_TOKEN must be a valid pg_xxx token')
+  }),
+
+  // AI Services
+  mistral: z.object({
+    apiKey: z.string().optional()
+  }),
+
+  anthropic: z.object({
+    apiKey: z.string().optional()
   })
 });
 
@@ -69,6 +78,12 @@ function loadConfig(): Config {
       url: process.env.POSTGATE_URL,
       adminToken: process.env.POSTGATE_ADMIN_TOKEN,
       openworkersToken: process.env.POSTGATE_OPENWORKERS_TOKEN
+    },
+    mistral: {
+      apiKey: process.env.MISTRAL_API_KEY
+    },
+    anthropic: {
+      apiKey: process.env.ANTHROPIC_API_KEY
     }
   };
 
@@ -104,4 +119,4 @@ function loadConfig(): Config {
 export const config = loadConfig();
 
 // Export individual sections for convenience
-export const { nodeEnv, port, jwt, github, postgate } = config;
+export const { nodeEnv, port, jwt, github, postgate, mistral, anthropic } = config;

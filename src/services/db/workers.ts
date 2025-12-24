@@ -105,7 +105,7 @@ export async function createWorker(
 ): Promise<IWorker> {
   const workers = await sql<WorkerRow>(
     `INSERT INTO workers (name, script, language, user_id, environment_id)
-    VALUES ($1, $2, $3, $4::uuid, $5::uuid)
+    VALUES ($1, $2, $3::enum_workers_language, $4::uuid, $5::uuid)
     RETURNING
       id,
       name,

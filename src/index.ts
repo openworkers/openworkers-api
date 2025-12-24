@@ -9,6 +9,7 @@ import crons from './routes/crons';
 import environments from './routes/environments';
 import domains from './routes/domains';
 import databases from './routes/databases';
+import ai from './routes/ai';
 import pkg from '../package.json';
 
 export const app = new Hono();
@@ -47,6 +48,7 @@ v1.route('/crons', crons);
 v1.route('/environments', environments);
 v1.route('/domains', domains);
 v1.route('/databases', databases);
+v1.route('/ai', ai);
 v1.route('/', users);
 
 app.route('/api/v1', v1);
