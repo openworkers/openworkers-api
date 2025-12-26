@@ -16,7 +16,7 @@ interface EnvironmentValueRow {
   id: string;
   key: string;
   value: string;
-  secret: boolean;
+  type: string;
 }
 
 // Environments
@@ -33,8 +33,8 @@ export async function findAllEnvironments(userId: string): Promise<IEnvironment[
         SELECT coalesce(json_agg(json_build_object(
           'id', ev.id,
           'key', ev.key,
-          'value', CASE WHEN ev.secret THEN '********' ELSE ev.value END,
-          'secret', ev.secret
+          'value', CASE WHEN ev.type = 'secret' THEN '********' ELSE ev.value END,
+          'type', ev.type
         )), '[]'::json)
         FROM environment_values ev
         WHERE ev.environment_id = e.id
@@ -71,8 +71,8 @@ export async function findEnvironmentById(userId: string, envId: string): Promis
         SELECT coalesce(json_agg(json_build_object(
           'id', ev.id,
           'key', ev.key,
-          'value', CASE WHEN ev.secret THEN '********' ELSE ev.value END,
-          'secret', ev.secret
+          'value', CASE WHEN ev.type = 'secret' THEN '********' ELSE ev.value END,
+          'type', ev.type
         )), '[]'::json)
         FROM environment_values ev
         WHERE ev.environment_id = e.id
@@ -174,21 +174,21 @@ export async function createEnvironmentValue(
   envId: string,
   key: string,
   value: string,
-  secret: boolean
+  type: string = 'var'
 ): Promise<IEnvironmentValue> {
   const vals = await sql<IEnvironmentValue>(
-    `INSERT INTO environment_values (key, value, secret, environment_id, user_id)
-    VALUES ($1, $2, $3, $4::uuid, $5::uuid)
+    `INSERT INTO environment_values (key, value, type, environment_id, user_id)
+    VALUES ($1, $2, $3::enum_binding_type, $4::uuid, $5::uuid)
     RETURNING
       id,
       key,
       value,
-      secret,
+      type,
       environment_id as "environmentId",
       user_id as "userId",
       created_at as "createdAt",
       updated_at as "updatedAt"`,
-    [key, value, secret, envId, userId]
+    [key, value, type, envId, userId]
   );
   return vals[0]!;
 }
@@ -196,14 +196,14 @@ export async function createEnvironmentValue(
 export async function updateEnvironmentValue(
   userId: string,
   valId: string,
-  updates: { key?: string; value?: string; secret?: boolean }
+  updates: { key?: string; value?: string; type?: string }
 ): Promise<IEnvironmentValue | null> {
   const current = await sql<EnvironmentValueRow>(
     `SELECT
       id,
       key,
       value,
-      secret
+      type
     FROM environment_values
     WHERE id = $1::uuid AND user_id = $2::uuid`,
     [valId, userId]
@@ -215,13 +215,13 @@ export async function updateEnvironmentValue(
     SET
       key = $1,
       value = $2,
-      secret = $3
+      type = $3::enum_binding_type
     WHERE id = $4::uuid AND user_id = $5::uuid
     RETURNING
       id,
       key,
       value,
-      secret,
+      type,
       environment_id as "environmentId",
       user_id as "userId",
       created_at as "createdAt",
@@ -229,7 +229,7 @@ export async function updateEnvironmentValue(
     [
       updates.key ?? current[0].key,
       updates.value ?? current[0].value,
-      updates.secret ?? current[0].secret,
+      updates.type ?? current[0].type,
       valId,
       userId
     ]

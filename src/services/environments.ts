@@ -66,11 +66,11 @@ export class EnvironmentsService {
         await db.updateEnvironmentValue(userId, val.id, {
           key: val.key,
           value: val.value,
-          secret: val.secret
+          type: val.type
         });
       } else {
         // Create: key and value are required in schema when id is missing
-        await db.createEnvironmentValue(userId, envId, val.key!, val.value!, val.secret ?? false);
+        await db.createEnvironmentValue(userId, envId, val.key!, val.value!, val.type ?? 'var');
       }
     }
   }

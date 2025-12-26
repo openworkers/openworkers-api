@@ -2,11 +2,13 @@ import { z } from 'zod';
 import { ResourceSchema } from './base.schema';
 
 // Environment Value
+export const BindingTypeSchema = z.enum(['var', 'secret', 'assets', 'storage', 'kv']);
+
 export const EnvironmentValueSchema = z.object({
   id: z.uuid(),
   key: z.string().min(1),
   value: z.string(),
-  secret: z.boolean()
+  type: BindingTypeSchema
 });
 
 export const EnvironmentValueUpdateInputSchema = z.union([
@@ -15,14 +17,14 @@ export const EnvironmentValueUpdateInputSchema = z.union([
     id: z.uuid(),
     key: z.string().min(1).optional(),
     value: z.string().nullable().optional(),
-    secret: z.boolean().optional()
+    type: BindingTypeSchema.optional()
   }),
   // Create: ID missing, fields required
   z.object({
     id: z.undefined().optional(),
     key: z.string().min(1),
     value: z.string(),
-    secret: z.boolean().optional().default(false)
+    type: BindingTypeSchema.optional().default('var')
   })
 ]);
 
