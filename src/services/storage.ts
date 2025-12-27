@@ -132,6 +132,13 @@ export class StorageService {
     const deleted = await db.deleteStorageConfig(userId, id);
     return deleted > 0;
   }
+
+  /**
+   * Get storage config with credentials (for internal use like presigning)
+   */
+  async getConfigWithCredentials(userId: string, id: string): Promise<db.StorageConfigRow | null> {
+    return db.findStorageConfigById(userId, id);
+  }
 }
 
 export const storageService = new StorageService();

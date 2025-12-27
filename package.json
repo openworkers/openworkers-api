@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@openworkers/croner-wasm": "^0.3.0",
+    "aws4fetch": "^1.0.20",
     "hono": "^4.10.6",
     "zod": "^4.1.12"
   },
