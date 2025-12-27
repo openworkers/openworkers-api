@@ -31,5 +31,13 @@ export {
 
 export { DomainSchema, DomainCreateInputSchema } from './schemas/domain.schema';
 
+export { DatabaseSchema, DatabaseCreateInputSchema } from './schemas/database.schema';
+
+export {
+  KvNamespaceSchema,
+  KvNamespaceCreateInputSchema,
+  KvNamespaceUpdateInputSchema
+} from './schemas/kv.schema';
+
 // Re-export types for convenience
 export type * from './index';

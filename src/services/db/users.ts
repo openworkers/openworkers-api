@@ -1,55 +1,93 @@
 import { sql } from './client';
-import type { ISelf } from '../../types';
+import type { ISelf, IResourceLimits } from '../../types';
+
+// Helper to build limits object from flat columns
+interface UserRow {
+  id: string;
+  username: string;
+  avatarUrl: string | null;
+  limitWorkers: number;
+  limitEnvironments: number;
+  limitDatabases: number;
+  limitKv: number;
+  limitAssets: number;
+  limitStorage: number;
+  secondPrecision: boolean;
+}
+
+function rowToUser(row: UserRow): ISelf {
+  return {
+    id: row.id,
+    username: row.username,
+    avatarUrl: row.avatarUrl,
+    limits: {
+      workers: row.limitWorkers,
+      environments: row.limitEnvironments,
+      databases: row.limitDatabases,
+      kv: row.limitKv,
+      assets: row.limitAssets,
+      storage: row.limitStorage,
+      secondPrecision: row.secondPrecision
+    }
+  };
+}
+
+const USER_SELECT = `
+  id,
+  username,
+  avatar_url as "avatarUrl",
+  limit_workers as "limitWorkers",
+  limit_environments as "limitEnvironments",
+  limit_databases as "limitDatabases",
+  limit_kv as "limitKv",
+  limit_assets as "limitAssets",
+  limit_storage as "limitStorage",
+  second_precision as "secondPrecision"
+`;
 
 export async function findUserById(userId: string): Promise<ISelf | null> {
-  const users = await sql<ISelf>(
-    `SELECT
-      id,
-      username,
-      avatar_url as "avatarUrl",
-      resource_limits as "resourceLimits",
-      created_at as "createdAt",
-      updated_at as "updatedAt"
+  const users = await sql<UserRow>(
+    `SELECT ${USER_SELECT}
     FROM users
     WHERE id = $1::uuid`,
     [userId]
   );
-  return users[0] ?? null;
+
+  return users[0] ? rowToUser(users[0]) : null;
 }
 
 export async function findUserByGitHub(externalId: string): Promise<ISelf | null> {
-  const users = await sql<ISelf>(
+  const users = await sql<UserRow>(
     `SELECT
       u.id,
       u.username,
       u.avatar_url as "avatarUrl",
-      u.resource_limits as "resourceLimits",
-      u.created_at as "createdAt",
-      u.updated_at as "updatedAt"
+      u.limit_workers as "limitWorkers",
+      u.limit_environments as "limitEnvironments",
+      u.limit_databases as "limitDatabases",
+      u.limit_kv as "limitKv",
+      u.limit_assets as "limitAssets",
+      u.limit_storage as "limitStorage",
+      u.second_precision as "secondPrecision"
     FROM users u
     INNER JOIN external_users eu ON u.id = eu.user_id
     WHERE eu.external_id = $1 AND eu.provider = 'github'`,
     [externalId]
   );
-  return users[0] ?? null;
+
+  return users[0] ? rowToUser(users[0]) : null;
 }
 
 export async function createUserWithGitHub(externalId: string, username: string, avatarUrl: string): Promise<ISelf> {
   // Create user (DB auto-generates id, created_at, updated_at)
-  const users = await sql<ISelf>(
+  const users = await sql<UserRow>(
     `INSERT INTO users (username, avatar_url)
     VALUES ($1, $2)
-    RETURNING
-      id,
-      username,
-      avatar_url as "avatarUrl",
-      resource_limits as "resourceLimits",
-      created_at as "createdAt",
-      updated_at as "updatedAt"`,
+    RETURNING ${USER_SELECT}`,
     [username, avatarUrl]
   );
 
-  const user = users[0]!;
+  const user = rowToUser(users[0]!);
 
   // Link GitHub account (DB auto-generates created_at, updated_at)
   await sql(

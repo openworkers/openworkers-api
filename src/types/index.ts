@@ -60,3 +60,15 @@ export type { IWorker, IWorkerLanguage, IWorkerCreateInput, IWorkerUpdateInput }
 export { DatabaseSchema, DatabaseCreateInputSchema } from './schemas/database.schema';
 
 export type { IDatabase, IDatabaseCreateInput } from './schemas/database.schema';
+
+export {
+  KvNamespaceSchema,
+  KvNamespaceCreateInputSchema,
+  KvNamespaceUpdateInputSchema
+} from './schemas/kv.schema';
+
+export type {
+  IKvNamespace,
+  IKvNamespaceCreateInput,
+  IKvNamespaceUpdateInput
+} from './schemas/kv.schema';

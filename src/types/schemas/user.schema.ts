@@ -1,11 +1,14 @@
 import { z } from 'zod';
 
-// Resource Limits
+// Resource Limits (now as dedicated columns)
 export const ResourceLimitsSchema = z.object({
+  workers: z.number().int().min(0).default(5),
+  environments: z.number().int().min(0).default(5),
   databases: z.number().int().min(0).default(3),
-  environments: z.number().int().min(0).default(3),
-  secondPrecision: z.boolean().default(false),
-  workers: z.number().int().min(0).default(3)
+  kv: z.number().int().min(0).default(3),
+  assets: z.number().int().min(0).default(3),
+  storage: z.number().int().min(0).default(3),
+  secondPrecision: z.boolean().default(false)
 });
 
 // User / Self
@@ -13,7 +16,7 @@ export const SelfSchema = z.object({
   id: z.string().uuid(),
   username: z.string().min(1),
   avatarUrl: z.string().nullable().optional(),
-  resourceLimits: ResourceLimitsSchema
+  limits: ResourceLimitsSchema
 });
 
 // Types

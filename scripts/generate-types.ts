@@ -38,6 +38,12 @@ import {
 
 import { DatabaseSchema, DatabaseCreateInputSchema } from '../src/types/schemas/database.schema';
 
+import {
+  KvNamespaceSchema,
+  KvNamespaceCreateInputSchema,
+  KvNamespaceUpdateInputSchema
+} from '../src/types/schemas/kv.schema';
+
 // Schema definitions to generate
 const schemas = [
   // Base schemas
@@ -78,7 +84,12 @@ const schemas = [
 
   // Database
   { schema: DatabaseSchema, name: 'Database' },
-  { schema: DatabaseCreateInputSchema, name: 'DatabaseCreateInput' }
+  { schema: DatabaseCreateInputSchema, name: 'DatabaseCreateInput' },
+
+  // KV
+  { schema: KvNamespaceSchema, name: 'KvNamespace' },
+  { schema: KvNamespaceCreateInputSchema, name: 'KvNamespaceCreateInput' },
+  { schema: KvNamespaceUpdateInputSchema, name: 'KvNamespaceUpdateInput' }
 ];
 
 async function generateTypes() {
