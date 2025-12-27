@@ -81,8 +81,8 @@ workers.post('/', async (c) => {
   }
 });
 
-// PUT /workers/:id - Update worker
-workers.put('/:id', async (c) => {
+// PATCH /workers/:id - Update worker
+workers.patch('/:id', async (c) => {
   const userId = c.get('userId');
   const id = c.req.param('id');
   const body = await c.req.json();

@@ -49,8 +49,8 @@ environments.post('/', async (c) => {
   }
 });
 
-// PUT /environments/:id - Update environment
-environments.put('/:id', async (c) => {
+// PATCH /environments/:id - Update environment
+environments.patch('/:id', async (c) => {
   const userId = c.get('userId');
   const id = c.req.param('id');
   const body = await c.req.json();

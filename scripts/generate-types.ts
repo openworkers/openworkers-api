@@ -44,6 +44,12 @@ import {
   KvNamespaceUpdateInputSchema
 } from '../src/types/schemas/kv.schema';
 
+import {
+  StorageConfigSchema,
+  StorageConfigCreateInputSchema,
+  StorageConfigUpdateInputSchema
+} from '../src/types/schemas/storage.schema';
+
 // Schema definitions to generate
 const schemas = [
   // Base schemas
@@ -89,7 +95,12 @@ const schemas = [
   // KV
   { schema: KvNamespaceSchema, name: 'KvNamespace' },
   { schema: KvNamespaceCreateInputSchema, name: 'KvNamespaceCreateInput' },
-  { schema: KvNamespaceUpdateInputSchema, name: 'KvNamespaceUpdateInput' }
+  { schema: KvNamespaceUpdateInputSchema, name: 'KvNamespaceUpdateInput' },
+
+  // Storage
+  { schema: StorageConfigSchema, name: 'StorageConfig' },
+  { schema: StorageConfigCreateInputSchema, name: 'StorageConfigCreateInput' },
+  { schema: StorageConfigUpdateInputSchema, name: 'StorageConfigUpdateInput' }
 ];
 
 async function generateTypes() {

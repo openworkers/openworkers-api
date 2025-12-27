@@ -72,3 +72,15 @@ export type {
   IKvNamespaceCreateInput,
   IKvNamespaceUpdateInput
 } from './schemas/kv.schema';
+
+export {
+  StorageConfigSchema,
+  StorageConfigCreateInputSchema,
+  StorageConfigUpdateInputSchema
+} from './schemas/storage.schema';
+
+export type {
+  IStorageConfig,
+  IStorageConfigCreateInput,
+  IStorageConfigUpdateInput
+} from './schemas/storage.schema';

@@ -41,6 +41,15 @@ const ConfigSchema = z.object({
     openworkersToken: z.string().regex(/^pg_[a-f0-9]{64}$/, 'POSTGATE_OPENWORKERS_TOKEN must be a valid pg_xxx token')
   }),
 
+  // Shared S3/R2 for assets and storage bindings
+  sharedStorage: z.object({
+    bucket: z.string().optional(),
+    endpoint: z.string().optional(),
+    accessKeyId: z.string().optional(),
+    secretAccessKey: z.string().optional(),
+    publicUrl: z.string().optional()
+  }),
+
   // AI Services
   mistral: z.object({
     apiKey: z.string().optional()
@@ -78,6 +87,13 @@ function loadConfig(): Config {
       url: process.env.POSTGATE_URL,
       adminToken: process.env.POSTGATE_ADMIN_TOKEN,
       openworkersToken: process.env.POSTGATE_OPENWORKERS_TOKEN
+    },
+    sharedStorage: {
+      bucket: process.env.SHARED_STORAGE_BUCKET,
+      endpoint: process.env.SHARED_STORAGE_ENDPOINT,
+      accessKeyId: process.env.SHARED_STORAGE_ACCESS_KEY_ID,
+      secretAccessKey: process.env.SHARED_STORAGE_SECRET_ACCESS_KEY,
+      publicUrl: process.env.SHARED_STORAGE_PUBLIC_URL
     },
     mistral: {
       apiKey: process.env.MISTRAL_API_KEY
@@ -119,4 +135,4 @@ function loadConfig(): Config {
 export const config = loadConfig();
 
 // Export individual sections for convenience
-export const { nodeEnv, port, jwt, github, postgate, mistral, anthropic } = config;
+export const { nodeEnv, port, jwt, github, postgate, sharedStorage, mistral, anthropic } = config;

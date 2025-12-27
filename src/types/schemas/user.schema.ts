@@ -6,7 +6,6 @@ export const ResourceLimitsSchema = z.object({
   environments: z.number().int().min(0).default(5),
   databases: z.number().int().min(0).default(3),
   kv: z.number().int().min(0).default(3),
-  assets: z.number().int().min(0).default(3),
   storage: z.number().int().min(0).default(3),
   secondPrecision: z.boolean().default(false)
 });

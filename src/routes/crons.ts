@@ -6,8 +6,8 @@ import { jsonResponse } from '../utils/validate';
 
 const crons = new Hono();
 
-// PUT /crons/:id - Update cron
-crons.put('/:id', async (c) => {
+// PATCH /crons/:id - Update cron
+crons.patch('/:id', async (c) => {
   const userId = c.get('userId');
   const id = c.req.param('id');
   const body = await c.req.json();

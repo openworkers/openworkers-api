@@ -10,7 +10,6 @@ interface UserRow {
   limitEnvironments: number;
   limitDatabases: number;
   limitKv: number;
-  limitAssets: number;
   limitStorage: number;
   secondPrecision: boolean;
 }
@@ -25,7 +24,6 @@ function rowToUser(row: UserRow): ISelf {
       environments: row.limitEnvironments,
       databases: row.limitDatabases,
       kv: row.limitKv,
-      assets: row.limitAssets,
       storage: row.limitStorage,
       secondPrecision: row.secondPrecision
     }
@@ -40,7 +38,6 @@ const USER_SELECT = `
   limit_environments as "limitEnvironments",
   limit_databases as "limitDatabases",
   limit_kv as "limitKv",
-  limit_assets as "limitAssets",
   limit_storage as "limitStorage",
   second_precision as "secondPrecision"
 `;
@@ -66,7 +63,6 @@ export async function findUserByGitHub(externalId: string): Promise<ISelf | null
       u.limit_environments as "limitEnvironments",
       u.limit_databases as "limitDatabases",
       u.limit_kv as "limitKv",
-      u.limit_assets as "limitAssets",
       u.limit_storage as "limitStorage",
       u.second_precision as "secondPrecision"
     FROM users u
