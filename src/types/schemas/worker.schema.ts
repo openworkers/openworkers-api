@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { ResourceSchema } from './base.schema';
+import { ResourceCreateInputSchema } from './base.schema';
+import { ResourceUpdateInputSchema } from './base.schema';
 import { CronSchema } from './cron.schema';
 
 // Worker Language
@@ -14,16 +16,12 @@ export const WorkerSchema = ResourceSchema.extend({
   domains: z.array(z.object({ name: z.string().min(1) })).optional()
 });
 
-export const WorkerCreateInputSchema = z.object({
-  name: z.string().min(1),
-  desc: z.string().nullable().optional(),
+export const WorkerCreateInputSchema = ResourceCreateInputSchema.extend({
   language: WorkerLanguageSchema,
   script: z.string().optional()
 });
 
-export const WorkerUpdateInputSchema = z.object({
-  name: z.string().min(1).optional(),
-  desc: z.string().nullable().optional(),
+export const WorkerUpdateInputSchema = ResourceUpdateInputSchema.extend({
   script: z.string().optional(),
   environment: z.uuid().nullable().optional(),
   domains: z.array(z.string()).optional()

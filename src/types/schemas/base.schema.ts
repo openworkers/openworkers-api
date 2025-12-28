@@ -9,8 +9,18 @@ export const TimestampsSchema = z.object({
 // Common resource schema (id + name + desc + timestamps)
 export const ResourceSchema = TimestampsSchema.extend({
   id: z.uuid(),
-  name: z.string().min(1),
-  desc: z.string().nullable().optional()
+  name: z.string().min(1).max(100).trim(),
+  desc: z.string().max(255).trim().nullable().optional()
+});
+
+export const ResourceCreateInputSchema = z.object({
+  name: z.string().min(1).max(100).trim(),
+  desc: z.string().max(255).trim().optional()
+});
+
+export const ResourceUpdateInputSchema = z.object({
+  name: z.string().min(1).max(100).trim().optional(),
+  desc: z.string().max(255).trim().nullable().optional()
 });
 
 // Types

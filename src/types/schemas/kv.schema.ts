@@ -1,22 +1,21 @@
 import { z } from 'zod';
 import { ResourceSchema } from './base.schema';
+import { ResourceCreateInputSchema } from './base.schema';
+import { ResourceUpdateInputSchema } from './base.schema';
 
 // KV Namespace
 export const KvNamespaceSchema = ResourceSchema.extend({
-  name: z.string().min(1).max(255),
-  desc: z.string().max(255).nullable().optional()
+  // No additional fields
 });
 
 // Create input
-export const KvNamespaceCreateInputSchema = z.object({
-  name: z.string().min(1).max(255),
-  desc: z.string().max(255).optional()
+export const KvNamespaceCreateInputSchema = ResourceCreateInputSchema.extend({
+  // No additional fields
 });
 
 // Update input
-export const KvNamespaceUpdateInputSchema = z.object({
-  name: z.string().min(1).max(255).optional(),
-  desc: z.string().max(255).nullable().optional()
+export const KvNamespaceUpdateInputSchema = ResourceUpdateInputSchema.extend({
+  // No additional fields
 });
 
 // Types

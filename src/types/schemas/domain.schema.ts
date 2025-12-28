@@ -1,16 +1,15 @@
 import { z } from 'zod';
+import { TimestampsSchema } from './base.schema';
 
 // Domain schema
-export const DomainSchema = z.object({
-  name: z.string().min(1),
+export const DomainSchema = TimestampsSchema.extend({
+  name: z.hostname().min(1).trim(),
   workerId: z.uuid(),
-  userId: z.uuid(),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date()
+  userId: z.uuid()
 });
 
 export const DomainCreateInputSchema = z.object({
-  name: z.string().min(1),
+  name: z.hostname().min(1).trim(),
   workerId: z.uuid()
 });
 
