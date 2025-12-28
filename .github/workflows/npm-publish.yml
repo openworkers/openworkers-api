@@ -27,6 +27,8 @@ jobs:
 
       - name: Generate types package
         run: bun run generate-types
+        env:
+          GIT_COMMIT: ${{ github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

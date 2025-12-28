@@ -57,9 +57,27 @@ export {
 
 export type { IWorker, IWorkerLanguage, IWorkerCreateInput, IWorkerUpdateInput } from './schemas/worker.schema';
 
-export { DatabaseSchema, DatabaseCreateInputSchema } from './schemas/database.schema';
+export {
+  DatabaseSchema,
+  DatabaseCreateInputSchema,
+  DatabaseProviderSchema,
+  ColumnDefinitionSchema,
+  ColumnInfoSchema,
+  TableInfoSchema,
+  TableDetailsSchema,
+  CreateTableInputSchema
+} from './schemas/database.schema';
 
-export type { IDatabase, IDatabaseCreateInput } from './schemas/database.schema';
+export type {
+  IDatabase,
+  IDatabaseCreateInput,
+  DatabaseProvider,
+  IColumnDefinition,
+  IColumnInfo,
+  ITableInfo,
+  ITableDetails,
+  ICreateTableInput
+} from './schemas/database.schema';
 
 export {
   KvNamespaceSchema,

@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
 // UUID-like pattern (less strict than RFC 4122)
-const uuidLike = z.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, 'Invalid UUID format');
+const uuidLike = z
+  .string()
+  .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, 'Invalid UUID format');
 
 // Environment schema
 const EnvironmentSchema = z.enum(['development', 'staging', 'production', 'test']);

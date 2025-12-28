@@ -1,48 +1,76 @@
-import { createAdminSqlClient } from './db/client';
-import { postgateAdminClient, TENANT_PERMISSIONS } from './postgate';
+import { sql } from './db/client';
 import * as db from './db/databases';
 import type { IDatabase, IDatabaseCreateInput } from '../types';
 
-// Admin SQL client for postgate database management
-const adminSql = createAdminSqlClient();
+/**
+ * Generate a unique schema name for platform provider
+ * Format: tenant_<uuid_with_underscores>
+ */
+function generateSchemaName(): string {
+  return `tenant_${crypto.randomUUID().replace(/-/g, '_')}`;
+}
 
-interface PostgateDatabaseRow {
+/**
+ * Map database row to API response
+ */
+function toApiResponse(row: {
   id: string;
+  name: string;
+  desc: string | null;
+  provider: 'platform' | 'postgres';
+  maxRows: number;
+  timeoutSeconds: number;
+  createdAt: Date;
+  updatedAt: Date;
+}): IDatabase {
+  return {
+    id: row.id,
+    name: row.name,
+    desc: row.desc,
+    provider: row.provider,
+    maxRows: row.maxRows,
+    timeoutSeconds: row.timeoutSeconds,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt
+  };
 }
 
 export class DatabasesService {
   /**
-   * Create a new tenant database
-   * 1. Create entry in postgate_databases (via admin sql)
-   * 2. Create entry in openworkers databases table
-   * Token is created later via POST /databases/:id/token
+   * Create a new database config
+   * - platform provider: creates schema on shared pool
+   * - postgres provider: stores connection string
    */
   async create(userId: string, input: IDatabaseCreateInput): Promise<IDatabase> {
-    const { name, desc, maxRows } = input;
+    if (input.provider === 'platform') {
+      // Generate unique schema name
+      const schemaName = generateSchemaName();
 
-    // Create tenant database using PL/pgSQL function (creates schema + entry)
-    // Pass random name to postgate - user's display name stays in openworkers only
-    const postgateResult = await adminSql<PostgateDatabaseRow>(
-      `SELECT id FROM create_tenant_database($1, $2::integer)`,
-      [crypto.randomUUID(), maxRows || 1000]
-    );
+      // Create schema on shared pool
+      await sql(`SELECT create_tenant_schema($1)`, [schemaName]);
 
-    if (postgateResult.length === 0) {
-      throw new Error('Failed to create database in postgate');
+      // Create database config
+      const row = await db.createPlatformDatabase(userId, {
+        name: input.name,
+        desc: input.desc,
+        schemaName,
+        maxRows: input.maxRows,
+        timeoutSeconds: input.timeoutSeconds
+      });
+
+      return toApiResponse(row);
+    } else {
+      // postgres provider - store connection string directly
+      const row = await db.createPostgresDatabase(userId, {
+        name: input.name,
+        desc: input.desc,
+        connectionString: input.connectionString,
+        maxRows: input.maxRows,
+        timeoutSeconds: input.timeoutSeconds
+      });
+
+      return toApiResponse(row);
     }
-
-    const postgateDb = postgateResult[0]!;
-
-    // Create in openworkers (no token yet)
-    const owDb = await db.createDatabase(userId, name, postgateDb.id, desc);
-
-    return {
-      id: owDb.id,
-      name: owDb.name,
-      desc: owDb.desc,
-      createdAt: owDb.createdAt,
-      updatedAt: owDb.updatedAt
-    };
   }
 
   /**
@@ -50,14 +78,7 @@ export class DatabasesService {
    */
   async findAll(userId: string): Promise<IDatabase[]> {
     const rows = await db.findAllDatabases(userId);
-
-    return rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      desc: row.desc,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt
-    }));
+    return rows.map(toApiResponse);
   }
 
   /**
@@ -70,70 +91,51 @@ export class DatabasesService {
       return null;
     }
 
-    return {
-      id: row.id,
-      name: row.name,
-      desc: row.desc,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt
-    };
+    return toApiResponse(row);
   }
 
   /**
    * Delete a database
-   * 1. Get openworkers db entry to find postgate_id
-   * 2. Delete from postgate
-   * 3. Delete from openworkers
+   * - platform provider: drops schema from shared pool
+   * - postgres provider: just removes config (no external cleanup)
    */
   async delete(userId: string, id: string): Promise<boolean> {
-    // Get openworkers entry
-    const owDb = await db.findDatabaseById(userId, id);
-    if (!owDb) {
+    const row = await db.findDatabaseById(userId, id);
+
+    if (!row) {
       return false;
     }
 
-    // Delete from postgate using PL/pgSQL function (drops schema + deletes entry)
-    await adminSql(`SELECT delete_tenant_database($1::uuid)`, [owDb.postgateId]);
+    // For platform provider, drop the schema
+    if (row.provider === 'platform' && row.schemaName) {
+      try {
+        await sql(`SELECT drop_tenant_schema($1)`, [row.schemaName]);
+      } catch (error) {
+        console.error('Failed to drop schema:', error);
+        // Continue with deletion even if schema drop fails
+      }
+    }
 
-    // Delete from openworkers
     const deleted = await db.deleteDatabase(userId, id);
-
     return deleted > 0;
   }
 
   /**
-   * Regenerate token for a database
-   * 1. Delete existing token (if any)
-   * 2. Create new token via postgate API
-   * 3. Update token_id in openworkers
-   * Returns the new token (shown only once)
+   * Update database config (name, desc, limits)
+   * Note: provider and connection details cannot be changed
    */
-  async regenerateToken(userId: string, id: string): Promise<{ token: string; tokenId: string } | null> {
-    // Get openworkers entry
-    const owDb = await db.findDatabaseById(userId, id);
-    if (!owDb) {
+  async update(
+    userId: string,
+    id: string,
+    input: { name?: string; desc?: string | null; maxRows?: number; timeoutSeconds?: number }
+  ): Promise<IDatabase | null> {
+    const row = await db.updateDatabase(userId, id, input);
+
+    if (!row) {
       return null;
     }
 
-    // Delete existing token if there is one
-    if (owDb.tokenId) {
-      try {
-        await postgateAdminClient.deleteToken(owDb.tokenId);
-      } catch {
-        // Token might already be deleted, continue
-      }
-    }
-
-    // Create new token with tenant permissions (DML + DDL)
-    const tokenResponse = await postgateAdminClient.createToken(owDb.postgateId, 'default', TENANT_PERMISSIONS);
-
-    // Update token_id in openworkers
-    await db.updateTokenId(userId, id, tokenResponse.id);
-
-    return {
-      token: tokenResponse.token,
-      tokenId: tokenResponse.id
-    };
+    return toApiResponse(row);
   }
 }
 

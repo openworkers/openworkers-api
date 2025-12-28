@@ -1,9 +1,13 @@
 {
   "name": "openworkers-api",
-  "version": "1.0.8",
+  "version": "1.1.0",
   "license": "MIT",
   "module": "src/index.ts",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openworkers/openworkers-api.git"
+  },
   "private": true,
   "scripts": {
     "dev": "bun --hot src/index.ts",

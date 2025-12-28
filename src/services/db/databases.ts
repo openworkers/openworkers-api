@@ -1,78 +1,125 @@
 import { sql } from './client';
+import type { DatabaseProvider } from '../../types';
 
-interface DatabaseRow {
+interface DatabaseConfigRow {
   id: string;
   name: string;
   desc: string | null;
   userId: string;
-  postgateId: string;
-  tokenId: string | null;
+  provider: DatabaseProvider;
+  connectionString: string | null;
+  schemaName: string | null;
+  maxRows: number;
+  timeoutSeconds: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export async function findAllDatabases(userId: string): Promise<DatabaseRow[]> {
-  return sql<DatabaseRow>(
-    `SELECT
-      id,
-      name,
-      "desc",
-      user_id as "userId",
-      postgate_id as "postgateId",
-      token_id as "tokenId",
-      created_at as "createdAt",
-      updated_at as "updatedAt"
-    FROM databases
+const SELECT_FIELDS = `
+  id,
+  name,
+  "desc",
+  user_id as "userId",
+  provider,
+  connection_string as "connectionString",
+  schema_name as "schemaName",
+  max_rows as "maxRows",
+  timeout_seconds as "timeoutSeconds",
+  created_at as "createdAt",
+  updated_at as "updatedAt"
+`;
+
+export async function findAllDatabases(userId: string): Promise<DatabaseConfigRow[]> {
+  return sql<DatabaseConfigRow>(
+    `SELECT ${SELECT_FIELDS}
+    FROM database_configs
     WHERE user_id = $1::uuid
     ORDER BY created_at DESC`,
     [userId]
   );
 }
 
-export async function findDatabaseById(userId: string, id: string): Promise<DatabaseRow | null> {
-  const rows = await sql<DatabaseRow>(
-    `SELECT
-      id,
-      name,
-      "desc",
-      user_id as "userId",
-      postgate_id as "postgateId",
-      token_id as "tokenId",
-      created_at as "createdAt",
-      updated_at as "updatedAt"
-    FROM databases
+export async function findDatabaseById(userId: string, id: string): Promise<DatabaseConfigRow | null> {
+  const rows = await sql<DatabaseConfigRow>(
+    `SELECT ${SELECT_FIELDS}
+    FROM database_configs
     WHERE id = $1::uuid AND user_id = $2::uuid`,
     [id, userId]
   );
   return rows[0] ?? null;
 }
 
-export async function createDatabase(
+export async function findDatabaseByName(userId: string, name: string): Promise<DatabaseConfigRow | null> {
+  const rows = await sql<DatabaseConfigRow>(
+    `SELECT ${SELECT_FIELDS}
+    FROM database_configs
+    WHERE name = $1 AND user_id = $2::uuid`,
+    [name, userId]
+  );
+  return rows[0] ?? null;
+}
+
+interface CreatePlatformInput {
+  name: string;
+  desc?: string | null;
+  schemaName: string;
+  maxRows: number;
+  timeoutSeconds: number;
+}
+
+export async function createPlatformDatabase(
   userId: string,
-  name: string,
-  postgateId: string,
-  desc?: string | null
-): Promise<DatabaseRow> {
-  const rows = await sql<DatabaseRow>(
-    `INSERT INTO databases (name, "desc", user_id, postgate_id)
-    VALUES ($1, $2, $3::uuid, $4::uuid)
-    RETURNING
-      id,
+  input: CreatePlatformInput
+): Promise<DatabaseConfigRow> {
+  const rows = await sql<DatabaseConfigRow>(
+    `INSERT INTO database_configs (
+      user_id,
       name,
       "desc",
-      user_id as "userId",
-      postgate_id as "postgateId",
-      token_id as "tokenId",
-      created_at as "createdAt",
-      updated_at as "updatedAt"`,
-    [name, desc ?? null, userId, postgateId]
+      provider,
+      schema_name,
+      max_rows,
+      timeout_seconds
+    )
+    VALUES ($1::uuid, $2, $3, 'platform', $4, $5, $6)
+    RETURNING ${SELECT_FIELDS}`,
+    [userId, input.name, input.desc ?? null, input.schemaName, input.maxRows, input.timeoutSeconds]
+  );
+  return rows[0]!;
+}
+
+interface CreatePostgresInput {
+  name: string;
+  desc?: string | null;
+  connectionString: string;
+  maxRows: number;
+  timeoutSeconds: number;
+}
+
+export async function createPostgresDatabase(
+  userId: string,
+  input: CreatePostgresInput
+): Promise<DatabaseConfigRow> {
+  const rows = await sql<DatabaseConfigRow>(
+    `INSERT INTO database_configs (
+      user_id,
+      name,
+      "desc",
+      provider,
+      connection_string,
+      max_rows,
+      timeout_seconds
+    )
+    VALUES ($1::uuid, $2, $3, 'postgres', $4, $5, $6)
+    RETURNING ${SELECT_FIELDS}`,
+    [userId, input.name, input.desc ?? null, input.connectionString, input.maxRows, input.timeoutSeconds]
   );
   return rows[0]!;
 }
 
 export async function deleteDatabase(userId: string, id: string): Promise<number> {
   const result = await sql<{ id: string }>(
-    `DELETE FROM databases
+    `DELETE FROM database_configs
     WHERE id = $1::uuid AND user_id = $2::uuid
     RETURNING id`,
     [id, userId]
@@ -80,13 +127,58 @@ export async function deleteDatabase(userId: string, id: string): Promise<number
   return result.length;
 }
 
-export async function updateTokenId(userId: string, id: string, tokenId: string): Promise<boolean> {
-  const result = await sql<{ id: string }>(
-    `UPDATE databases
-    SET token_id = $3::uuid, updated_at = NOW()
+interface UpdateDatabaseInput {
+  name?: string;
+  desc?: string | null;
+  maxRows?: number;
+  timeoutSeconds?: number;
+}
+
+export async function updateDatabase(
+  userId: string,
+  id: string,
+  input: UpdateDatabaseInput
+): Promise<DatabaseConfigRow | null> {
+  // Build SET clause dynamically
+  const updates: string[] = [];
+  const params: (string | number | null)[] = [id, userId];
+  let paramIndex = 3;
+
+  if (input.name !== undefined) {
+    updates.push(`name = $${paramIndex}`);
+    params.push(input.name);
+    paramIndex++;
+  }
+
+  if (input.desc !== undefined) {
+    updates.push(`"desc" = $${paramIndex}`);
+    params.push(input.desc);
+    paramIndex++;
+  }
+
+  if (input.maxRows !== undefined) {
+    updates.push(`max_rows = $${paramIndex}`);
+    params.push(input.maxRows);
+    paramIndex++;
+  }
+
+  if (input.timeoutSeconds !== undefined) {
+    updates.push(`timeout_seconds = $${paramIndex}`);
+    params.push(input.timeoutSeconds);
+    paramIndex++;
+  }
+
+  if (updates.length === 0) {
+    return findDatabaseById(userId, id);
+  }
+
+  const rows = await sql<DatabaseConfigRow>(
+    `UPDATE database_configs
+    SET ${updates.join(', ')}, updated_at = NOW()
     WHERE id = $1::uuid AND user_id = $2::uuid
-    RETURNING id`,
-    [id, userId, tokenId]
+    RETURNING ${SELECT_FIELDS}`,
+    params
   );
-  return result.length > 0;
+
+  return rows[0] ?? null;
 }
