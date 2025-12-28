@@ -76,7 +76,8 @@ export type {
 export {
   StorageConfigSchema,
   StorageConfigCreateInputSchema,
-  StorageConfigUpdateInputSchema
+  StorageConfigUpdateInputSchema,
+  MASKED_SECRET
 } from './schemas/storage.schema';
 
 export type {

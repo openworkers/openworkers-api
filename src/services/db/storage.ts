@@ -84,27 +84,46 @@ export async function createStorageConfig(
   return rows[0]!;
 }
 
+export interface StorageConfigUpdateInput {
+  name?: string;
+  desc?: string | null;
+  bucket?: string;
+  prefix?: string | null;
+  accessKeyId?: string;
+  secretAccessKey?: string;
+  endpoint?: string | null;
+  region?: string | null;
+  publicUrl?: string | null;
+}
+
 export async function updateStorageConfig(
   userId: string,
   id: string,
-  name?: string,
-  desc?: string | null
+  input: StorageConfigUpdateInput
 ): Promise<StorageConfigRow | null> {
   // Build dynamic update
   const updates: string[] = [];
   const values: (string | null)[] = [userId, id];
   let paramIndex = 3;
 
-  if (name !== undefined) {
-    updates.push(`name = $${paramIndex}`);
-    values.push(name);
-    paramIndex++;
-  }
+  const fieldMappings: { key: keyof StorageConfigUpdateInput; column: string }[] = [
+    { key: 'name', column: 'name' },
+    { key: 'desc', column: '"desc"' },
+    { key: 'bucket', column: 'bucket' },
+    { key: 'prefix', column: 'prefix' },
+    { key: 'accessKeyId', column: 'access_key_id' },
+    { key: 'secretAccessKey', column: 'secret_access_key' },
+    { key: 'endpoint', column: 'endpoint' },
+    { key: 'region', column: 'region' },
+    { key: 'publicUrl', column: 'public_url' }
+  ];
 
-  if (desc !== undefined) {
-    updates.push(`"desc" = $${paramIndex}`);
-    values.push(desc);
-    paramIndex++;
+  for (const { key, column } of fieldMappings) {
+    if (input[key] !== undefined) {
+      updates.push(`${column} = $${paramIndex}`);
+      values.push(input[key] as string | null);
+      paramIndex++;
+    }
   }
 
   if (updates.length === 0) {

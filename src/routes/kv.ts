@@ -105,4 +105,91 @@ kv.delete('/:id', async (c) => {
   }
 });
 
+// ============ KV Data Routes ============
+
+// GET /kv/:id/data - List keys with pagination and search
+kv.get('/:id/data', async (c) => {
+  const userId = c.get('userId');
+  const id = c.req.param('id');
+  const prefix = c.req.query('prefix');
+  const cursor = c.req.query('cursor');
+  const limit = c.req.query('limit');
+
+  try {
+    // Verify ownership
+    const namespace = await kvService.findById(userId, id);
+
+    if (!namespace) {
+      return c.json({ error: 'KV namespace not found' }, 404);
+    }
+
+    const result = await kvService.listData(id, {
+      prefix,
+      cursor,
+      limit: limit ? parseInt(limit, 10) : undefined
+    });
+
+    return c.json(result);
+  } catch (error) {
+    console.error('Failed to list KV data:', error);
+    return c.json({ error: 'Failed to list KV data' }, 500);
+  }
+});
+
+// PUT /kv/:id/data/:key - Create or update a key
+kv.put('/:id/data/:key', async (c) => {
+  const userId = c.get('userId');
+  const id = c.req.param('id');
+  const key = c.req.param('key');
+  const body = await c.req.json();
+
+  try {
+    // Verify ownership
+    const namespace = await kvService.findById(userId, id);
+
+    if (!namespace) {
+      return c.json({ error: 'KV namespace not found' }, 404);
+    }
+
+    const { value, expiresIn } = body;
+
+    if (typeof value !== 'string') {
+      return c.json({ error: 'Value must be a string' }, 400);
+    }
+
+    const result = await kvService.putData(id, key, value, expiresIn);
+    return c.json(result);
+  } catch (error) {
+    console.error('Failed to put KV data:', error);
+    return c.json({ error: 'Failed to put KV data' }, 500);
+  }
+});
+
+// DELETE /kv/:id/data/:key - Delete a key
+kv.delete('/:id/data/:key', async (c) => {
+  const userId = c.get('userId');
+  const id = c.req.param('id');
+  const key = c.req.param('key');
+
+  try {
+    // Verify ownership
+    const namespace = await kvService.findById(userId, id);
+
+    if (!namespace) {
+      return c.json({ error: 'KV namespace not found' }, 404);
+    }
+
+    const deleted = await kvService.deleteData(id, key);
+
+    if (!deleted) {
+      return c.json({ error: 'Key not found' }, 404);
+    }
+
+    return c.json({ deleted: true });
+  } catch (error) {
+    console.error('Failed to delete KV data:', error);
+    return c.json({ error: 'Failed to delete KV data' }, 500);
+  }
+});
+
 export default kv;

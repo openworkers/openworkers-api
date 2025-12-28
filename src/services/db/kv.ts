@@ -123,3 +123,96 @@ export async function countKvNamespaces(userId: string): Promise<number> {
 
   return parseInt(rows[0]?.count ?? '0', 10);
 }
+
+// ============ KV Data Operations ============
+
+export interface KvDataRow {
+  key: string;
+  value: string;
+  expiresAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface KvDataListResult {
+  items: KvDataRow[];
+  cursor: string | null;
+  hasMore: boolean;
+}
+
+const KV_DATA_SELECT = `
+  key,
+  value,
+  expires_at as "expiresAt",
+  created_at as "createdAt",
+  updated_at as "updatedAt"
+`;
+
+export async function listKvData(
+  namespaceId: string,
+  options: { prefix?: string; cursor?: string; limit?: number }
+): Promise<KvDataListResult> {
+  const limit = Math.min(options.limit ?? 50, 100);
+  const values: (string | number)[] = [namespaceId, limit + 1];
+  let paramIndex = 3;
+
+  let whereClause = 'namespace_id = $1::uuid';
+
+  if (options.prefix) {
+    whereClause += ` AND key LIKE $${paramIndex}`;
+    values.push(options.prefix + '%');
+    paramIndex++;
+  }
+
+  if (options.cursor) {
+    whereClause += ` AND key > $${paramIndex}`;
+    values.push(options.cursor);
+    paramIndex++;
+  }
+
+  const rows = await sql<KvDataRow>(
+    `SELECT ${KV_DATA_SELECT}
+    FROM kv_data
+    WHERE ${whereClause}
+      AND (expires_at IS NULL OR expires_at > now())
+    ORDER BY key ASC
+    LIMIT $2`,
+    values
+  );
+
+  const hasMore = rows.length > limit;
+  const items = hasMore ? rows.slice(0, limit) : rows;
+  const cursor = hasMore ? items[items.length - 1]?.key ?? null : null;
+
+  return { items, cursor, hasMore };
+}
+
+export async function putKvData(
+  namespaceId: string,
+  key: string,
+  value: string,
+  expiresIn?: number
+): Promise<KvDataRow> {
+  const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : null;
+
+  const rows = await sql<KvDataRow>(
+    `INSERT INTO kv_data (namespace_id, key, value, expires_at)
+    VALUES ($1::uuid, $2, $3, $4::timestamptz)
+    ON CONFLICT (namespace_id, key)
+    DO UPDATE SET value = $3, expires_at = $4::timestamptz, updated_at = now()
+    RETURNING ${KV_DATA_SELECT}`,
+    [namespaceId, key, value, expiresAt?.toISOString() ?? null]
+  );
+
+  return rows[0]!;
+}
+
+export async function deleteKvData(namespaceId: string, key: string): Promise<boolean> {
+  const result = await sql(
+    `DELETE FROM kv_data
+    WHERE namespace_id = $1::uuid AND key = $2`,
+    [namespaceId, key]
+  );
+
+  return result.length > 0;
+}

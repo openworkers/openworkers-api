@@ -1,6 +1,7 @@
 import * as db from './db/storage';
 import * as usersDb from './db/users';
 import { sharedStorage } from '../config';
+import { MASKED_SECRET } from '../types';
 import type { IStorageConfig, IStorageConfigCreateInput, IStorageConfigUpdateInput } from '../types';
 
 // Determine mode from storage config row
@@ -21,6 +22,9 @@ function rowToStorageConfig(row: db.StorageConfigRow): IStorageConfig {
     // Expose S3 details for custom mode, hide bucket/endpoint for shared
     bucket: mode === 'custom' ? row.bucket : undefined,
     prefix: row.prefix,
+    // Always mask credentials
+    accessKeyId: mode === 'custom' ? MASKED_SECRET : undefined,
+    secretAccessKey: mode === 'custom' ? MASKED_SECRET : undefined,
     endpoint: mode === 'custom' ? row.endpoint : undefined,
     region: mode === 'custom' ? row.region : undefined,
     publicUrl: row.publicUrl,
@@ -108,7 +112,7 @@ export class StorageService {
   }
 
   async update(userId: string, id: string, input: IStorageConfigUpdateInput): Promise<IStorageConfig | null> {
-    const { name, desc } = input;
+    const { name } = input;
 
     // If renaming, check if new name already exists
     if (name) {
@@ -119,7 +123,7 @@ export class StorageService {
       }
     }
 
-    const row = await db.updateStorageConfig(userId, id, name, desc);
+    const row = await db.updateStorageConfig(userId, id, input);
 
     if (!row) {
       return null;

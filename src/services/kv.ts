@@ -1,6 +1,7 @@
 import * as db from './db/kv';
 import * as usersDb from './db/users';
 import type { IKvNamespace, IKvNamespaceCreateInput, IKvNamespaceUpdateInput } from '../types';
+import type { KvDataRow, KvDataListResult } from './db/kv';
 
 export class KvService {
   async findAll(userId: string): Promise<IKvNamespace[]> {
@@ -95,6 +96,28 @@ export class KvService {
   async delete(userId: string, id: string): Promise<boolean> {
     const deleted = await db.deleteKvNamespace(userId, id);
     return deleted > 0;
+  }
+
+  // ============ KV Data Methods ============
+
+  async listData(
+    namespaceId: string,
+    options: { prefix?: string; cursor?: string; limit?: number }
+  ): Promise<KvDataListResult> {
+    return db.listKvData(namespaceId, options);
+  }
+
+  async putData(
+    namespaceId: string,
+    key: string,
+    value: string,
+    expiresIn?: number
+  ): Promise<KvDataRow> {
+    return db.putKvData(namespaceId, key, value, expiresIn);
+  }
+
+  async deleteData(namespaceId: string, key: string): Promise<boolean> {
+    return db.deleteKvData(namespaceId, key);
   }
 }
 

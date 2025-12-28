@@ -3,6 +3,8 @@ import { ResourceSchema } from './base.schema';
 import { ResourceCreateInputSchema } from './base.schema';
 import { ResourceUpdateInputSchema } from './base.schema';
 
+export const MASKED_SECRET = '********';
+
 // Storage config (S3/R2 credentials) - used for both assets and storage bindings
 // The binding type determines access: assets = read-only, storage = read/write
 export const StorageConfigSchema = ResourceSchema.extend({
@@ -10,6 +12,8 @@ export const StorageConfigSchema = ResourceSchema.extend({
   // Custom mode fields (hidden for shared mode)
   bucket: z.string().max(255).optional(),
   prefix: z.string().max(255).nullable().optional(),
+  accessKeyId: z.string().max(255).optional(), // Always masked as '********'
+  secretAccessKey: z.string().max(255).optional(), // Always masked as '********'
   endpoint: z.string().max(255).nullable().optional(),
   region: z.string().max(50).nullable().optional(),
   publicUrl: z.string().max(255).nullable().optional()
@@ -38,9 +42,15 @@ export const StorageConfigCreateInputSchema = z.discriminatedUnion('mode', [
   StorageConfigCreateCustomInputSchema
 ]);
 
-// Update input (only name/desc can be updated, credentials are immutable)
+// Update input - includes custom config fields
 export const StorageConfigUpdateInputSchema = ResourceUpdateInputSchema.extend({
-  // No additional fields
+  bucket: z.string().min(1).max(255).optional(),
+  prefix: z.string().max(255).nullable().optional(),
+  accessKeyId: z.string().min(1).max(255).optional(),
+  secretAccessKey: z.string().min(1).max(255).optional(),
+  endpoint: z.string().max(255).nullable().optional(),
+  region: z.string().max(50).nullable().optional(),
+  publicUrl: z.string().max(255).nullable().optional()
 });
 
 // Types
