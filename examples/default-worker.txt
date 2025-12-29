@@ -1,4 +1,6 @@
 export default {
+  // Handle HTTP requests
+  // https://openworkers.com/docs/workers/event-fetch
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     try {
       return await handleRequest(request, env);
@@ -7,12 +9,13 @@ export default {
     }
   },
 
+  // Handle scheduled events (cron)
+  // https://openworkers.com/docs/workers/scheduled-tasks
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     console.log(`Scheduled event at ${new Date(event.scheduledTime).toISOString()}`);
   }
 };
 
-// More examples at: https://openworkers.com/docs
 async function handleRequest(request: Request, env: Env): Promise<Response> {
   const { pathname } = new URL(request.url);
 
