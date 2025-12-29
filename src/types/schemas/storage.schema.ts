@@ -8,8 +8,8 @@ export const MASKED_SECRET = '********';
 // Storage config (S3/R2 credentials) - used for both assets and storage bindings
 // The binding type determines access: assets = read-only, storage = read/write
 export const StorageConfigSchema = ResourceSchema.extend({
-  mode: z.enum(['shared', 'custom']),
-  // Custom mode fields (hidden for shared mode)
+  provider: z.enum(['platform', 's3']),
+  // S3 provider fields (hidden for platform provider)
   bucket: z.string().max(255).optional(),
   prefix: z.string().max(255).nullable().optional(),
   accessKeyId: z.string().max(255).optional(), // Always masked as '********'
@@ -19,14 +19,14 @@ export const StorageConfigSchema = ResourceSchema.extend({
   publicUrl: z.string().max(255).nullable().optional()
 });
 
-// Create input - shared mode (uses platform R2, no credentials needed)
-export const StorageConfigCreateSharedInputSchema = ResourceCreateInputSchema.extend({
-  mode: z.literal('shared')
+// Create input - platform provider (uses shared R2, no credentials needed)
+export const StorageConfigCreatePlatformInputSchema = ResourceCreateInputSchema.extend({
+  provider: z.literal('platform')
 });
 
-// Create input - custom mode (user provides S3/R2 credentials)
-export const StorageConfigCreateCustomInputSchema = ResourceCreateInputSchema.extend({
-  mode: z.literal('custom'),
+// Create input - s3 provider (user provides S3/R2 credentials)
+export const StorageConfigCreateS3InputSchema = ResourceCreateInputSchema.extend({
+  provider: z.literal('s3'),
   bucket: z.string().min(1).max(255),
   prefix: z.string().max(255).optional(),
   accessKeyId: z.string().min(1).max(255),
@@ -37,12 +37,12 @@ export const StorageConfigCreateCustomInputSchema = ResourceCreateInputSchema.ex
 });
 
 // Union of both create inputs
-export const StorageConfigCreateInputSchema = z.discriminatedUnion('mode', [
-  StorageConfigCreateSharedInputSchema,
-  StorageConfigCreateCustomInputSchema
+export const StorageConfigCreateInputSchema = z.discriminatedUnion('provider', [
+  StorageConfigCreatePlatformInputSchema,
+  StorageConfigCreateS3InputSchema
 ]);
 
-// Update input - includes custom config fields
+// Update input - includes S3 config fields
 export const StorageConfigUpdateInputSchema = ResourceUpdateInputSchema.extend({
   bucket: z.string().min(1).max(255).optional(),
   prefix: z.string().max(255).nullable().optional(),

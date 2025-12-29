@@ -4,29 +4,29 @@ import { sharedStorage } from '../config';
 import { MASKED_SECRET } from '../types';
 import type { IStorageConfig, IStorageConfigCreateInput, IStorageConfigUpdateInput } from '../types';
 
-// Determine mode from storage config row
-function getMode(row: db.StorageConfigRow): 'shared' | 'custom' {
-  // Shared mode uses platform R2 (endpoint is null or matches sharedStorage endpoint)
-  // Custom mode has user-provided endpoint
-  return row.endpoint === null || row.endpoint === sharedStorage.endpoint ? 'shared' : 'custom';
+// Determine provider from storage config row
+function getProvider(row: db.StorageConfigRow): 'platform' | 's3' {
+  // Platform provider uses shared R2 (endpoint is null or matches sharedStorage endpoint)
+  // S3 provider has user-provided endpoint
+  return row.endpoint === null || row.endpoint === sharedStorage.endpoint ? 'platform' : 's3';
 }
 
 function rowToStorageConfig(row: db.StorageConfigRow): IStorageConfig {
-  const mode = getMode(row);
+  const provider = getProvider(row);
 
   return {
     id: row.id,
     name: row.name,
     desc: row.desc,
-    mode,
-    // Expose S3 details for custom mode, hide bucket/endpoint for shared
-    bucket: mode === 'custom' ? row.bucket : undefined,
+    provider,
+    // Expose S3 details for s3 provider, hide bucket/endpoint for platform
+    bucket: provider === 's3' ? row.bucket : undefined,
     prefix: row.prefix,
     // Always mask credentials
-    accessKeyId: mode === 'custom' ? MASKED_SECRET : undefined,
-    secretAccessKey: mode === 'custom' ? MASKED_SECRET : undefined,
-    endpoint: mode === 'custom' ? row.endpoint : undefined,
-    region: mode === 'custom' ? row.region : undefined,
+    accessKeyId: provider === 's3' ? MASKED_SECRET : undefined,
+    secretAccessKey: provider === 's3' ? MASKED_SECRET : undefined,
+    endpoint: provider === 's3' ? row.endpoint : undefined,
+    region: provider === 's3' ? row.region : undefined,
     publicUrl: row.publicUrl,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt
@@ -50,7 +50,7 @@ export class StorageService {
   }
 
   async create(userId: string, input: IStorageConfigCreateInput): Promise<IStorageConfig> {
-    const { name, desc, mode } = input;
+    const { name, desc, provider } = input;
 
     // Check limit
     const user = await usersDb.findUserById(userId);
@@ -74,8 +74,8 @@ export class StorageService {
 
     let row: db.StorageConfigRow;
 
-    if (mode === 'shared') {
-      // Shared mode: use platform R2 credentials with user-specific prefix
+    if (provider === 'platform') {
+      // Platform provider: use shared R2 credentials with user-specific prefix
       if (!sharedStorage.bucket || !sharedStorage.accessKeyId || !sharedStorage.secretAccessKey) {
         throw new Error('Shared storage is not configured on this platform');
       }
@@ -93,7 +93,7 @@ export class StorageService {
         sharedStorage.publicUrl ?? undefined
       );
     } else {
-      // Custom mode: use user-provided credentials
+      // S3 provider: use user-provided credentials
       row = await db.createStorageConfig(
         userId,
         name,
