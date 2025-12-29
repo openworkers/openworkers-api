@@ -1,36 +1,29 @@
-addEventListener("fetch", (event: FetchEvent) => {
-  event.respondWith(
-    handleRequest(event.request).catch(
-      (err: Error) => new Response(err.stack, { status: 500 })
-    )
-  );
-});
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    try {
+      return await handleRequest(request, env);
+    } catch (err: any) {
+      return new Response(err.stack, { status: 500 });
+    }
+  },
 
-addEventListener("scheduled", (event: ScheduledEvent) => {
-  event.waitUntil(handleSchedule(event.scheduledTime));
-});
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    console.log(`Scheduled event at ${new Date(event.scheduledTime).toISOString()}`);
+  }
+};
 
-async function handleSchedule(scheduledTime: number): Promise<void> {
-  console.log(`Scheduled event at ${new Date(scheduledTime).toISOString()}`);
-}
-
-// More examples available at: https://openworkers.com/docs
-async function handleRequest(request: Request): Promise<Response> {
+// More examples at: https://openworkers.com/docs
+async function handleRequest(request: Request, env: Env): Promise<Response> {
   const { pathname } = new URL(request.url);
 
-  // Return a 404 response for requests to /favicon.ico.
-  if (pathname.startsWith("/favicon.ico")) {
+  if (pathname === "/favicon.ico") {
     return new Response("Not found", { status: 404 });
   }
 
-  // Return a JSON response for requests to /api containing the requested pathname.
   if (pathname.startsWith("/api")) {
-    return new Response(JSON.stringify({ pathname }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ pathname });
   }
 
-  // Return a HTML response for all other requests.
   return new Response("<h3>Hello world!</h3>", {
     headers: { "Content-Type": "text/html" },
   });
