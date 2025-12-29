@@ -144,9 +144,10 @@ export async function updateStorageConfig(
 }
 
 export async function deleteStorageConfig(userId: string, id: string): Promise<number> {
-  const result = await sql(
+  const result = await sql<{ id: string }>(
     `DELETE FROM storage_configs
-    WHERE user_id = $1::uuid AND id = $2::uuid`,
+    WHERE user_id = $1::uuid AND id = $2::uuid
+    RETURNING id`,
     [userId, id]
   );
 

@@ -104,9 +104,10 @@ export async function updateKvNamespace(
 }
 
 export async function deleteKvNamespace(userId: string, id: string): Promise<number> {
-  const result = await sql(
+  const result = await sql<{ id: string }>(
     `DELETE FROM kv_configs
-    WHERE user_id = $1::uuid AND id = $2::uuid`,
+    WHERE user_id = $1::uuid AND id = $2::uuid
+    RETURNING id`,
     [userId, id]
   );
 
@@ -208,9 +209,10 @@ export async function putKvData(
 }
 
 export async function deleteKvData(namespaceId: string, key: string): Promise<boolean> {
-  const result = await sql(
+  const result = await sql<{ key: string }>(
     `DELETE FROM kv_data
-    WHERE namespace_id = $1::uuid AND key = $2`,
+    WHERE namespace_id = $1::uuid AND key = $2
+    RETURNING key`,
     [namespaceId, key]
   );
 

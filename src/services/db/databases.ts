@@ -20,7 +20,7 @@ const SELECT_FIELDS = `
   name,
   "desc",
   user_id as "userId",
-  provider,
+  provider::text,
   connection_string as "connectionString",
   schema_name as "schemaName",
   max_rows as "maxRows",
@@ -67,10 +67,7 @@ interface CreatePlatformInput {
   timeoutSeconds: number;
 }
 
-export async function createPlatformDatabase(
-  userId: string,
-  input: CreatePlatformInput
-): Promise<DatabaseConfigRow> {
+export async function createPlatformDatabase(userId: string, input: CreatePlatformInput): Promise<DatabaseConfigRow> {
   const rows = await sql<DatabaseConfigRow>(
     `INSERT INTO database_configs (
       user_id,
@@ -96,10 +93,7 @@ interface CreatePostgresInput {
   timeoutSeconds: number;
 }
 
-export async function createPostgresDatabase(
-  userId: string,
-  input: CreatePostgresInput
-): Promise<DatabaseConfigRow> {
+export async function createPostgresDatabase(userId: string, input: CreatePostgresInput): Promise<DatabaseConfigRow> {
   const rows = await sql<DatabaseConfigRow>(
     `INSERT INTO database_configs (
       user_id,
