@@ -1,0 +1,33 @@
+export default {
+  // Handle HTTP requests
+  // https://openworkers.com/docs/workers/event-fetch
+  async fetch(request, env, ctx) {
+    try {
+      return await handleRequest(request, env);
+    } catch (err) {
+      return new Response(err.stack, { status: 500 });
+    }
+  },
+
+  // Handle scheduled events (cron)
+  // https://openworkers.com/docs/workers/scheduled-tasks
+  async scheduled(event, env, ctx) {
+    console.log(`Scheduled event at ${new Date(event.scheduledTime).toISOString()}`);
+  }
+};
+
+async function handleRequest(request, env) {
+  const { pathname } = new URL(request.url);
+
+  if (pathname === "/favicon.ico") {
+    return new Response("Not found", { status: 404 });
+  }
+
+  if (pathname.startsWith("/api")) {
+    return Response.json({ pathname });
+  }
+
+  return new Response("<h3>Hello world!</h3>", {
+    headers: { "Content-Type": "text/html" },
+  });
+}

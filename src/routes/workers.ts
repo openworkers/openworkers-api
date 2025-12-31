@@ -4,7 +4,8 @@ import { cronsService } from '../services/crons';
 import { checkWorkerNameExists } from '../services/db/workers';
 import { WorkerCreateInputSchema, WorkerUpdateInputSchema, WorkerSchema } from '../types';
 import { jsonResponse, jsonArrayResponse } from '../utils/validate';
-import defaultWorkerScript from '../../examples/default-worker.txt';
+import defaultWorkerJs from '../../examples/default-worker-js.txt';
+import defaultWorkerTs from '../../examples/default-worker-ts.txt';
 
 const workers = new Hono();
 
@@ -60,10 +61,11 @@ workers.post('/', async (c) => {
 
   try {
     const payload = WorkerCreateInputSchema.parse(body);
+    const defaultScript = payload.language === 'typescript' ? defaultWorkerTs : defaultWorkerJs;
 
     const worker = await workersService.create(userId, {
       name: payload.name,
-      script: payload.script || defaultWorkerScript,
+      script: payload.script || defaultScript,
       language: payload.language,
       environmentId: undefined // TODO: Handle environment mapping if needed
     });
