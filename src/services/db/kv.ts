@@ -129,7 +129,7 @@ export async function countKvNamespaces(userId: string): Promise<number> {
 
 export interface KvDataRow {
   key: string;
-  value: string;
+  value: unknown;  // JSONB - can be any JSON value
   expiresAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -191,18 +191,21 @@ export async function listKvData(
 export async function putKvData(
   namespaceId: string,
   key: string,
-  value: string,
+  value: unknown,
   expiresIn?: number
 ): Promise<KvDataRow> {
   const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : null;
 
+  // Serialize value to JSON string for JSONB column
+  const jsonValue = JSON.stringify(value);
+
   const rows = await sql<KvDataRow>(
     `INSERT INTO kv_data (namespace_id, key, value, expires_at)
-    VALUES ($1::uuid, $2, $3, $4::timestamptz)
+    VALUES ($1::uuid, $2, $3::jsonb, $4::timestamptz)
     ON CONFLICT (namespace_id, key)
-    DO UPDATE SET value = $3, expires_at = $4::timestamptz, updated_at = now()
+    DO UPDATE SET value = $3::jsonb, expires_at = $4::timestamptz, updated_at = now()
     RETURNING ${KV_DATA_SELECT}`,
-    [namespaceId, key, value, expiresAt?.toISOString() ?? null]
+    [namespaceId, key, jsonValue, expiresAt?.toISOString() ?? null]
   );
 
   return rows[0]!;

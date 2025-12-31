@@ -153,8 +153,16 @@ kv.put('/:id/data/:key', async (c) => {
 
     const { value, expiresIn } = body;
 
-    if (typeof value !== 'string') {
-      return c.json({ error: 'Value must be a string' }, 400);
+    if (value === undefined) {
+      return c.json({ error: 'Value is required' }, 400);
+    }
+
+    // Check value size (100KB limit)
+    const valueSize = JSON.stringify(value).length;
+    const MAX_VALUE_SIZE = 100 * 1024;
+
+    if (valueSize > MAX_VALUE_SIZE) {
+      return c.json({ error: `Value too large: ${valueSize} bytes (max ${MAX_VALUE_SIZE} bytes)` }, 400);
     }
 
     const result = await kvService.putData(id, key, value, expiresIn);
