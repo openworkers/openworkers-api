@@ -13,6 +13,7 @@ import kv from './routes/kv';
 import storage from './routes/storage';
 import ai from './routes/ai';
 import pkg from '../package.json';
+import { sql } from './services/db/client';
 
 export const app = new Hono();
 
@@ -24,9 +25,22 @@ if (nodeEnv === 'development') {
   app.use('*', cors());
 }
 
+// API routes (no version prefix for health checks)
+const api = new Hono();
+
 // Health check (no auth required)
-app.get('/health', (c) => {
+api.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Postgate connection test (no auth required)
+api.get('/postgate', async (c) => {
+  try {
+    const result = await sql<{ result: number }>('SELECT 1 + 1 AS result');
+    return c.json({ status: 'ok', result: result[0]?.result });
+  } catch (error) {
+    return c.json({ status: 'error', error: String(error) }, 500);
+  }
 });
 
 // API v1 routes
@@ -55,7 +69,8 @@ v1.route('/storage', storage);
 v1.route('/ai', ai);
 v1.route('/', users);
 
-app.route('/api/v1', v1);
+api.route('/v1', v1);
+app.route('/api', api);
 
 import { nodeEnv, port } from './config';
 

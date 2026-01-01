@@ -76,12 +76,9 @@ interface CreateTokenResult {
 
 /**
  * Admin client for postgate - manages tokens and databases via SQL
- * Uses admin token for authentication (access to public schema)
+ * Uses the main token for authentication (access to public schema)
  */
 export class PostgateAdminClient extends PostgateClient {
-  constructor(baseUrl: string, adminToken: string) {
-    super(baseUrl, adminToken);
-  }
 
   /**
    * Create a new token for a database using PL/pgSQL function
@@ -117,8 +114,8 @@ export class PostgateAdminClient extends PostgateClient {
   }
 }
 
-// Admin client singleton - uses admin token from config
+// Admin client singleton - uses token from config
 export const postgateAdminClient = new PostgateAdminClient(
   postgateConfig.url,
-  postgateConfig.adminToken
+  postgateConfig.token
 );

@@ -88,13 +88,5 @@ export function createSqlClient(token: string): PostgateSqlClient {
   return createPostgateClientFromToken(postgateConfig.url, token);
 }
 
-/**
- * Create a SQL client for the admin database (tenant management)
- * Uses the admin token from config
- */
-export function createAdminSqlClient(): PostgateSqlClient {
-  return createPostgateClientFromToken(postgateConfig.url, postgateConfig.adminToken);
-}
-
-// Default export: openworkers database client (uses openworkers token)
-export const sql = createPostgateClientFromToken(postgateConfig.url, postgateConfig.openworkersToken);
+// Default SQL client for OpenWorkers database
+export const sql = createPostgateClientFromToken(postgateConfig.url, postgateConfig.token);

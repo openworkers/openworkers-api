@@ -37,10 +37,8 @@ const ConfigSchema = z.object({
   // Postgate (SQL proxy)
   postgate: z.object({
     url: z.string().url().default('http://localhost:6080'),
-    // Admin token (pg_xxx format) - for managing databases and creating tokens
-    adminToken: z.string().regex(/^pg_[a-f0-9]{64}$/, 'POSTGATE_ADMIN_TOKEN must be a valid pg_xxx token'),
-    // OpenWorkers token (pg_xxx format) - for openworkers API database access
-    openworkersToken: z.string().regex(/^pg_[a-f0-9]{64}$/, 'POSTGATE_OPENWORKERS_TOKEN must be a valid pg_xxx token')
+    // Token (pg_xxx format) - for accessing OpenWorkers database
+    token: z.string().regex(/^pg_[a-f0-9]{64}$/, 'POSTGATE_TOKEN must be a valid pg_xxx token')
   }),
 
   // Shared S3/R2 for assets and storage bindings
@@ -87,8 +85,7 @@ function loadConfig(): Config {
     },
     postgate: {
       url: process.env.POSTGATE_URL,
-      adminToken: process.env.POSTGATE_ADMIN_TOKEN,
-      openworkersToken: process.env.POSTGATE_OPENWORKERS_TOKEN
+      token: process.env.POSTGATE_TOKEN
     },
     sharedStorage: {
       bucket: process.env.SHARED_STORAGE_BUCKET,
