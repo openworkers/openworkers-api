@@ -12,6 +12,7 @@ import databases from './routes/databases';
 import kv from './routes/kv';
 import storage from './routes/storage';
 import ai from './routes/ai';
+import apiKeys from './routes/api-keys';
 import pkg from '../package.json';
 import { sql } from './services/db/client';
 
@@ -67,6 +68,7 @@ v1.route('/databases', databases);
 v1.route('/kv', kv);
 v1.route('/storage', storage);
 v1.route('/ai', ai);
+v1.route('/api-keys', apiKeys);
 v1.route('/', users);
 
 api.route('/v1', v1);
