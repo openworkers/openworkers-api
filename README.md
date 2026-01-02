@@ -154,7 +154,7 @@ console.log(users[0], users.count);
 - Multi-tenant isolation via schema separation
 - SQL validation and injection prevention
 - Token-based access control per database
-- Same API works from workers (edge runtime)
+- Same API works from workers (OpenWorkers runtime)
 
 ## Status
 

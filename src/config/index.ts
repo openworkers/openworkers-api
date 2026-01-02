@@ -36,7 +36,7 @@ const ConfigSchema = z.object({
 
   // Postgate (SQL proxy)
   postgate: z.object({
-    url: z.string().url().default('http://localhost:6080'),
+    url: z.url().default('http://localhost:6080'),
     // Token (pg_xxx format) - for accessing OpenWorkers database
     token: z.string().regex(/^pg_[a-f0-9]{64}$/, 'POSTGATE_TOKEN must be a valid pg_xxx token')
   }),
