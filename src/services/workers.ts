@@ -2,7 +2,7 @@ import * as db from './db';
 import type { IWorker, IWorkerCreateInput, IWorkerUpdateInput } from '../types';
 
 export class WorkersService {
-  async findAll(userId: string): Promise<IWorker[]> {
+  async findAll(userId: string): Promise<Omit<IWorker, 'script'>[]> {
     return db.findAllWorkers(userId);
   }
 

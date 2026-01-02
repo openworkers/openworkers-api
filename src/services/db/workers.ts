@@ -15,12 +15,11 @@ interface WorkerRow {
   domains?: IWorker['domains'];
 }
 
-export async function findAllWorkers(userId: string): Promise<IWorker[]> {
-  return sql<WorkerRow>(
+export async function findAllWorkers(userId: string): Promise<Omit<IWorker, 'script'>[]> {
+  return sql<Omit<WorkerRow, 'script'>>(
     `SELECT
       id,
       name,
-      script,
       language::text as language,
       user_id as "userId",
       environment_id as "environmentId",

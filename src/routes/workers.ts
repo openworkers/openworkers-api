@@ -28,7 +28,7 @@ workers.get('/', async (c) => {
 
   try {
     const workers = await workersService.findAll(userId);
-    return jsonArrayResponse(c, WorkerSchema, workers);
+    return jsonArrayResponse(c, WorkerSchema.omit({ script: true }), workers);
   } catch (error) {
     console.error('Failed to fetch workers:', error);
     return c.json({ error: 'Failed to fetch workers' }, 500);
