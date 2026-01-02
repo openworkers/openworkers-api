@@ -58,6 +58,12 @@ import {
   StorageConfigUpdateInputSchema
 } from '../src/types/schemas/storage.schema';
 
+import {
+  ApiKeySchema,
+  ApiKeyCreateInputSchema,
+  ApiKeyCreateResponseSchema
+} from '../src/types/schemas/api-key.schema';
+
 // Schema definitions to generate
 const schemas = [
   // Base schemas
@@ -113,7 +119,12 @@ const schemas = [
   // Storage
   { schema: StorageConfigSchema, name: 'StorageConfig' },
   { schema: StorageConfigCreateInputSchema, name: 'StorageConfigCreateInput' },
-  { schema: StorageConfigUpdateInputSchema, name: 'StorageConfigUpdateInput' }
+  { schema: StorageConfigUpdateInputSchema, name: 'StorageConfigUpdateInput' },
+
+  // API Keys
+  { schema: ApiKeySchema, name: 'ApiKey' },
+  { schema: ApiKeyCreateInputSchema, name: 'ApiKeyCreateInput' },
+  { schema: ApiKeyCreateResponseSchema, name: 'ApiKeyCreateResponse' }
 ];
 
 async function generateTypes() {

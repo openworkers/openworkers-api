@@ -120,3 +120,15 @@ export type {
   IStorageConfigCreateInput,
   IStorageConfigUpdateInput
 } from './schemas/storage.schema';
+
+export {
+  ApiKeySchema,
+  ApiKeyCreateInputSchema,
+  ApiKeyCreateResponseSchema
+} from './schemas/api-key.schema';
+
+export type {
+  IApiKey,
+  IApiKeyCreateInput,
+  IApiKeyCreateResponse
+} from './schemas/api-key.schema';
