@@ -57,7 +57,19 @@ const ConfigSchema = z.object({
 
   anthropic: z.object({
     apiKey: z.string().optional()
-  })
+  }),
+
+  // SMTP for email (verification, password reset)
+  smtp: z.object({
+    host: z.string().optional(),
+    port: z.coerce.number().int().positive().default(587),
+    user: z.string().optional(),
+    pass: z.string().optional(),
+    from: z.string().default('noreply@openworkers.dev')
+  }),
+
+  // App URLs for email links
+  appUrl: z.string().url().default('http://localhost:4200')
 });
 
 // Type inference
@@ -99,7 +111,15 @@ function loadConfig(): Config {
     },
     anthropic: {
       apiKey: process.env.ANTHROPIC_API_KEY
-    }
+    },
+    smtp: {
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+      from: process.env.SMTP_FROM
+    },
+    appUrl: process.env.APP_URL
   };
 
   try {
@@ -115,6 +135,11 @@ function loadConfig(): Config {
     // Warn about missing GitHub OAuth
     if (!config.github.clientId || !config.github.clientSecret) {
       console.warn('GitHub OAuth not configured (GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET missing)');
+    }
+
+    // Warn about missing SMTP
+    if (!config.smtp.host) {
+      console.warn('SMTP not configured (SMTP_HOST missing) - email features disabled');
     }
 
     return config;
@@ -134,4 +159,4 @@ function loadConfig(): Config {
 export const config = loadConfig();
 
 // Export individual sections for convenience
-export const { nodeEnv, port, jwt, github, postgate, sharedStorage, mistral, anthropic } = config;
+export const { nodeEnv, port, jwt, github, postgate, sharedStorage, mistral, anthropic, smtp, appUrl } = config;

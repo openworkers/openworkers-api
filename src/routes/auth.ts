@@ -1,14 +1,27 @@
 import { Hono } from 'hono';
 import { setCookie } from 'hono/cookie';
 import { verify } from 'hono/jwt';
+import { ZodError } from 'zod';
+
 import { authService } from '../services/auth';
 import { github as githubConfig, jwt as jwtConfig } from '../config';
-import { LoginResponseSchema } from '../types';
+import {
+  LoginResponseSchema,
+  RegisterInputSchema,
+  SetPasswordInputSchema,
+  LoginInputSchema,
+  ForgotPasswordInputSchema,
+  ResetPasswordInputSchema,
+  ResendSetPasswordInputSchema
+} from '../types';
 import { jsonResponse } from '../utils/validate';
 
 const auth = new Hono();
 
-// GitHub OAuth endpoints
+// ============================================================================
+// GitHub OAuth
+// ============================================================================
+
 auth.post('/openid/github', (c) => {
   if (!githubConfig.clientId) {
     return c.json({ error: 'GitHub OAuth not configured' }, 500);
@@ -102,7 +115,176 @@ auth.get('/callback/github', async (c) => {
   }
 });
 
-// Refresh token endpoint
+// ============================================================================
+// Password Authentication (Email-first flow)
+// ============================================================================
+
+// Step 1: Register with email only (sends set-password link)
+auth.post('/register', async (c) => {
+  try {
+    const body = await c.req.json();
+    const input = RegisterInputSchema.parse(body);
+
+    await authService.registerWithEmail(input.email);
+
+    return c.json({
+      message: 'Check your email to set your password and complete registration.'
+    }, 201);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return c.json({ error: 'Invalid email format' }, 400);
+    }
+
+    if (error instanceof Error && error.message === 'Email already registered') {
+      return c.json({ error: 'Email already registered' }, 409);
+    }
+
+    console.error('Registration error:', error);
+    return c.json({ error: 'Registration failed' }, 500);
+  }
+});
+
+// Step 2: Set password using token from email
+auth.post('/set-password', async (c) => {
+  try {
+    const body = await c.req.json();
+    const input = SetPasswordInputSchema.parse(body);
+
+    const user = await authService.setPassword(input.token, input.password);
+    const tokens = await authService.createTokens(user);
+
+    setCookie(c, 'access_token', tokens.accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Strict'
+    });
+
+    return jsonResponse(c, LoginResponseSchema, tokens);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return c.json({ error: 'Invalid token or password format' }, 400);
+    }
+
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      return c.json({ error: 'Invalid or expired link' }, 400);
+    }
+
+    console.error('Set password error:', error);
+    return c.json({ error: 'Failed to set password' }, 500);
+  }
+});
+
+// Login with email and password
+auth.post('/login', async (c) => {
+  try {
+    const body = await c.req.json();
+    const input = LoginInputSchema.parse(body);
+
+    const user = await authService.loginWithPassword(input.email, input.password);
+    const tokens = await authService.createTokens(user);
+
+    setCookie(c, 'access_token', tokens.accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Strict'
+    });
+
+    return jsonResponse(c, LoginResponseSchema, tokens);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return c.json({ error: 'Invalid email or password format' }, 400);
+    }
+
+    if (error instanceof Error && error.message === 'Invalid credentials') {
+      return c.json({ error: 'Invalid email or password' }, 401);
+    }
+
+    console.error('Login error:', error);
+    return c.json({ error: 'Login failed' }, 500);
+  }
+});
+
+// Request password reset
+auth.post('/forgot-password', async (c) => {
+  try {
+    const body = await c.req.json();
+    const input = ForgotPasswordInputSchema.parse(body);
+
+    await authService.requestPasswordReset(input.email);
+
+    // Always return success to prevent user enumeration
+    return c.json({
+      message: 'If an account exists with this email, you will receive a password reset link.'
+    });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return c.json({ error: 'Invalid email format' }, 400);
+    }
+
+    console.error('Password reset request error:', error);
+    return c.json({
+      message: 'If an account exists with this email, you will receive a password reset link.'
+    });
+  }
+});
+
+// Reset password with token
+auth.post('/reset-password', async (c) => {
+  try {
+    const body = await c.req.json();
+    const input = ResetPasswordInputSchema.parse(body);
+
+    const user = await authService.resetPassword(input.token, input.password);
+    const tokens = await authService.createTokens(user);
+
+    setCookie(c, 'access_token', tokens.accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Strict'
+    });
+
+    return jsonResponse(c, LoginResponseSchema, tokens);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return c.json({ error: 'Invalid token or password format' }, 400);
+    }
+
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      return c.json({ error: 'Invalid or expired reset link' }, 400);
+    }
+
+    console.error('Password reset error:', error);
+    return c.json({ error: 'Password reset failed' }, 500);
+  }
+});
+
+// Resend set-password email
+auth.post('/resend-set-password', async (c) => {
+  try {
+    const body = await c.req.json();
+    const input = ResendSetPasswordInputSchema.parse(body);
+
+    await authService.resendSetPasswordEmail(input.email);
+
+    return c.json({
+      message: 'If a pending account exists with this email, a new link has been sent.'
+    });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return c.json({ error: 'Invalid email format' }, 400);
+    }
+
+    console.error('Resend set-password error:', error);
+    return c.json({
+      message: 'If a pending account exists with this email, a new link has been sent.'
+    });
+  }
+});
+
+// ============================================================================
+// Token Refresh
+// ============================================================================
+
 auth.post('/refresh', async (c) => {
   const body = await c.req.json();
   const refreshToken = body.refreshToken;
@@ -112,17 +294,14 @@ auth.post('/refresh', async (c) => {
   }
 
   try {
-    // Verify refresh token with correct secret
     const payload = await verify(refreshToken, jwtConfig.refresh.secret);
 
     if (!payload.sub || typeof payload.sub !== 'string') {
       return c.json({ error: 'Invalid token payload' }, 401);
     }
 
-    // Generate new tokens
     const tokens = await authService.refreshTokens(payload.sub);
 
-    // Set access_token cookie
     setCookie(c, 'access_token', tokens.accessToken, {
       httpOnly: true,
       secure: true,

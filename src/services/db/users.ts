@@ -94,3 +94,56 @@ export async function createUserWithGitHub(externalId: string, username: string,
 
   return user;
 }
+
+// ============================================================================
+// Password Authentication (Email-first flow)
+// ============================================================================
+
+export async function findUserByEmail(email: string): Promise<ISelf | null> {
+  const users = await sql<UserRow>(
+    `SELECT ${USER_SELECT}
+     FROM users
+     WHERE username = $1`,
+    [email]
+  );
+
+  return users[0] ? rowToUser(users[0]) : null;
+}
+
+export async function emailExists(email: string): Promise<boolean> {
+  const result = await sql<{ exists: boolean }>(
+    `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1) as exists`,
+    [email]
+  );
+
+  return result[0]?.exists ?? false;
+}
+
+export async function getPasswordHash(email: string): Promise<string | null> {
+  const result = await sql<{ passwordHash: string | null }>(
+    `SELECT password_hash as "passwordHash"
+     FROM users
+     WHERE username = $1`,
+    [email]
+  );
+
+  return result[0]?.passwordHash ?? null;
+}
+
+export async function createUserWithEmail(email: string): Promise<ISelf> {
+  const users = await sql<UserRow>(
+    `INSERT INTO users (username)
+     VALUES ($1)
+     RETURNING ${USER_SELECT}`,
+    [email]
+  );
+
+  return rowToUser(users[0]!);
+}
+
+export async function updatePassword(userId: string, passwordHash: string): Promise<void> {
+  await sql(
+    `UPDATE users SET password_hash = $1 WHERE id = $2::uuid`,
+    [passwordHash, userId]
+  );
+}

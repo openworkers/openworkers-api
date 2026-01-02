@@ -16,8 +16,25 @@ export interface JWTPayload {
 export type { IResource } from './schemas/base.schema';
 export type { ITimestamps } from './schemas/base.schema';
 
-export { LoginResponseSchema } from './schemas/auth.schema';
-export type { ILoginResponse } from './schemas/auth.schema';
+export {
+  LoginResponseSchema,
+  RegisterInputSchema,
+  SetPasswordInputSchema,
+  LoginInputSchema,
+  ForgotPasswordInputSchema,
+  ResetPasswordInputSchema,
+  ResendSetPasswordInputSchema
+} from './schemas/auth.schema';
+
+export type {
+  ILoginResponse,
+  IRegisterInput,
+  ISetPasswordInput,
+  ILoginInput,
+  IForgotPasswordInput,
+  IResetPasswordInput,
+  IResendSetPasswordInput
+} from './schemas/auth.schema';
 
 export { SelfSchema, ResourceLimitsSchema } from './schemas/user.schema';
 export type { ISelf, IResourceLimits } from './schemas/user.schema';
