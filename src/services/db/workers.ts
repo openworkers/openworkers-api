@@ -182,3 +182,43 @@ export async function deleteWorker(userId: string, workerId: string): Promise<nu
   );
   return result.length;
 }
+
+export interface WorkerAssetsBinding {
+  storageConfigId: string;
+  bucket: string;
+  prefix: string | null;
+  accessKeyId: string;
+  secretAccessKey: string;
+  endpoint: string | null;
+  region: string | null;
+}
+
+/**
+ * Get worker's ASSETS binding with storage config credentials.
+ * Returns null if worker has no ASSETS binding.
+ */
+export async function findWorkerAssetsBinding(
+  userId: string,
+  workerId: string
+): Promise<WorkerAssetsBinding | null> {
+  const rows = await sql<WorkerAssetsBinding>(
+    `SELECT
+      sc.id as "storageConfigId",
+      sc.bucket,
+      sc.prefix,
+      sc.access_key_id as "accessKeyId",
+      sc.secret_access_key as "secretAccessKey",
+      sc.endpoint,
+      sc.region
+    FROM workers w
+    JOIN environment_values ev ON ev.environment_id = w.environment_id
+    JOIN storage_configs sc ON sc.id = ev.value::uuid
+    WHERE w.id = $1::uuid
+      AND w.user_id = $2::uuid
+      AND ev.type = 'assets'
+    LIMIT 1`,
+    [workerId, userId]
+  );
+
+  return rows[0] ?? null;
+}

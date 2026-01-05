@@ -19,6 +19,7 @@ export class WorkersService {
       name: input.name,
       script: input.script,
       environmentId: input.environment,
+      language: input.language,
       domains: input.domains
     });
 

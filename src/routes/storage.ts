@@ -1,11 +1,32 @@
 import { Hono } from 'hono';
-import { AwsClient } from 'aws4fetch';
 import { storageService } from '../services/storage';
 import { StorageConfigSchema, StorageConfigCreateInputSchema, StorageConfigUpdateInputSchema } from '../types';
 import { jsonResponse, jsonArrayResponse } from '../utils/validate';
+import { S3Client, type S3Config } from '../utils/s3';
 import { sharedStorage } from '../config';
+import type { StorageConfigRow } from '../services/db/storage';
 
 const storage = new Hono();
+
+/**
+ * Build S3Config from storage config row, using sharedStorage as fallback.
+ */
+function buildS3Config(config: StorageConfigRow): S3Config | null {
+  const endpoint = config.endpoint ?? sharedStorage.endpoint;
+
+  if (!endpoint) {
+    return null;
+  }
+
+  return {
+    bucket: config.bucket,
+    endpoint,
+    accessKeyId: config.accessKeyId,
+    secretAccessKey: config.secretAccessKey,
+    region: config.region,
+    prefix: config.prefix
+  };
+}
 
 // GET /storage - List all storage configs for current user
 storage.get('/', async (c) => {
@@ -98,63 +119,38 @@ storage.post('/:id/presign', async (c) => {
     filename: string;
     filesize: number;
     filetype: string;
-    checksum: string; // Base64-encoded SHA-256
+    checksum: string;
   };
 
   if (!filename || !filesize || !filetype || !checksum) {
     return c.json({ error: 'Missing required fields: filename, filesize, filetype, checksum' }, 400);
   }
 
-  // 100MB limit
   if (filesize > 100 * 1024 * 1024) {
     return c.json({ error: 'File too large. Maximum size is 100MB.' }, 413);
   }
 
   try {
-    // Get storage config with credentials
     const config = await storageService.getConfigWithCredentials(userId, id);
 
     if (!config) {
       return c.json({ error: 'Storage config not found' }, 404);
     }
 
-    // Build the S3 key with prefix
-    const key = config.prefix ? `${config.prefix}/${filename}` : filename;
+    const s3Config = buildS3Config(config);
 
-    // Determine endpoint
-    const endpoint = config.endpoint ?? sharedStorage.endpoint;
-
-    if (!endpoint) {
+    if (!s3Config) {
       return c.json({ error: 'Storage endpoint not configured' }, 500);
     }
 
-    // Create AWS client
-    const client = new AwsClient({
-      region: config.region ?? 'auto',
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-      service: 's3'
+    const client = new S3Client(s3Config);
+    const url = await client.presignPut(filename, {
+      contentType: filetype,
+      contentLength: filesize,
+      checksum
     });
 
-    // Build presigned URL
-    const url = new URL(`${endpoint}/${config.bucket}/${key}`);
-    url.searchParams.append('X-Amz-Expires', '300'); // 5 minutes
-
-    const req = new Request(url.toString(), {
-      method: 'PUT',
-      headers: {
-        'Content-Type': filetype,
-        'Content-Length': String(filesize),
-        'x-amz-checksum-sha256': checksum
-      }
-    });
-
-    const signedReq = await client.sign(req, { aws: { signQuery: true, allHeaders: true } });
-
-    return c.json({
-      url: signedReq.url,
-      key
-    });
+    return c.json({ url, key: filename });
   } catch (error) {
     console.error('Failed to create presigned URL:', error);
     return c.json(
@@ -171,7 +167,7 @@ storage.post('/:id/presign', async (c) => {
 storage.get('/:id/files', async (c) => {
   const userId = c.get('userId');
   const id = c.req.param('id');
-  const prefix = c.req.query('prefix') ?? '';
+  const prefix = c.req.query('prefix');
   const cursor = c.req.query('cursor');
 
   try {
@@ -181,71 +177,16 @@ storage.get('/:id/files', async (c) => {
       return c.json({ error: 'Storage config not found' }, 404);
     }
 
-    const endpoint = config.endpoint ?? sharedStorage.endpoint;
+    const s3Config = buildS3Config(config);
 
-    if (!endpoint) {
+    if (!s3Config) {
       return c.json({ error: 'Storage endpoint not configured' }, 500);
     }
 
-    const client = new AwsClient({
-      region: config.region ?? 'auto',
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-      service: 's3'
-    });
+    const client = new S3Client(s3Config);
+    const result = await client.list(prefix, cursor);
 
-    // Build the full prefix (config prefix + user prefix)
-    const fullPrefix = config.prefix ? (prefix ? `${config.prefix}/${prefix}` : `${config.prefix}/`) : prefix;
-
-    const url = new URL(`${endpoint}/${config.bucket}`);
-    url.searchParams.append('list-type', '2');
-    url.searchParams.append('prefix', fullPrefix);
-    url.searchParams.append('max-keys', '100');
-
-    if (cursor) {
-      url.searchParams.append('continuation-token', cursor);
-    }
-
-    const req = new Request(url.toString(), { method: 'GET' });
-    const signedReq = await client.sign(req);
-    const res = await fetch(signedReq);
-
-    if (!res.ok) {
-      const text = await res.text();
-      console.error('S3 list failed:', text);
-      return c.json({ error: 'Failed to list files' }, 500);
-    }
-
-    const xml = await res.text();
-
-    // Parse XML response
-    const files: { key: string; size: number; lastModified: string }[] = [];
-    const contentRegex = /<Contents>([\s\S]*?)<\/Contents>/g;
-    let match;
-
-    while ((match = contentRegex.exec(xml)) !== null) {
-      const content = match[1]!;
-      const key = content.match(/<Key>(.*?)<\/Key>/)?.[1] ?? '';
-      const size = parseInt(content.match(/<Size>(.*?)<\/Size>/)?.[1] ?? '0', 10);
-      const lastModified = content.match(/<LastModified>(.*?)<\/LastModified>/)?.[1] ?? '';
-
-      // Strip the config prefix from the key for display
-      const displayKey =
-        config.prefix && key.startsWith(config.prefix + '/') ? key.slice(config.prefix.length + 1) : key;
-
-      // Skip empty keys (folder markers)
-      if (!displayKey) continue;
-
-      files.push({ key: displayKey, size, lastModified });
-    }
-
-    const isTruncated = xml.includes('<IsTruncated>true</IsTruncated>');
-    const nextCursor = xml.match(/<NextContinuationToken>(.*?)<\/NextContinuationToken>/)?.[1];
-
-    return c.json({
-      files,
-      cursor: isTruncated ? nextCursor : null
-    });
+    return c.json(result);
   } catch (error) {
     console.error('Failed to list files:', error);
     return c.json({ error: 'Failed to list files' }, 500);
@@ -269,29 +210,16 @@ storage.get('/:id/files/*/presign', async (c) => {
       return c.json({ error: 'Storage config not found' }, 404);
     }
 
-    const endpoint = config.endpoint ?? sharedStorage.endpoint;
+    const s3Config = buildS3Config(config);
 
-    if (!endpoint) {
+    if (!s3Config) {
       return c.json({ error: 'Storage endpoint not configured' }, 500);
     }
 
-    const client = new AwsClient({
-      region: config.region ?? 'auto',
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-      service: 's3'
-    });
+    const client = new S3Client(s3Config);
+    const url = await client.presignGet(key);
 
-    // Build full key with prefix
-    const fullKey = config.prefix ? `${config.prefix}/${key}` : key;
-
-    const url = new URL(`${endpoint}/${config.bucket}/${fullKey}`);
-    url.searchParams.append('X-Amz-Expires', '300'); // 5 minutes
-
-    const req = new Request(url.toString(), { method: 'GET' });
-    const signedReq = await client.sign(req, { aws: { signQuery: true } });
-
-    return c.json({ url: signedReq.url });
+    return c.json({ url });
   } catch (error) {
     console.error('Failed to create presigned URL:', error);
     return c.json({ error: 'Failed to create presigned URL' }, 500);
@@ -315,30 +243,16 @@ storage.delete('/:id/files/*', async (c) => {
       return c.json({ error: 'Storage config not found' }, 404);
     }
 
-    const endpoint = config.endpoint ?? sharedStorage.endpoint;
+    const s3Config = buildS3Config(config);
 
-    if (!endpoint) {
+    if (!s3Config) {
       return c.json({ error: 'Storage endpoint not configured' }, 500);
     }
 
-    const client = new AwsClient({
-      region: config.region ?? 'auto',
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-      service: 's3'
-    });
+    const client = new S3Client(s3Config);
+    const deleted = await client.delete(key);
 
-    // Build full key with prefix
-    const fullKey = config.prefix ? `${config.prefix}/${key}` : key;
-
-    const url = new URL(`${endpoint}/${config.bucket}/${fullKey}`);
-    const req = new Request(url.toString(), { method: 'DELETE' });
-    const signedReq = await client.sign(req);
-    const res = await fetch(signedReq);
-
-    if (!res.ok && res.status !== 204) {
-      const text = await res.text();
-      console.error('S3 delete failed:', text);
+    if (!deleted) {
       return c.json({ error: 'Failed to delete file' }, 500);
     }
 

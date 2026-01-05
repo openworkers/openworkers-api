@@ -1,6 +1,6 @@
 {
   "name": "openworkers-api",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "license": "MIT",
   "module": "src/index.ts",
   "type": "module",
@@ -21,7 +21,9 @@
     "@openworkers/croner-wasm": "^0.3.0",
     "aws4fetch": "^1.0.20",
     "hono": "^4.10.6",
+    "jszip": "^3.10.1",
     "nodemailer": "^7.0.12",
+    "p-limit": "^7.2.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {

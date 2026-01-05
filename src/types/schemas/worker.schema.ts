@@ -24,6 +24,7 @@ export const WorkerCreateInputSchema = ResourceCreateInputSchema.extend({
 export const WorkerUpdateInputSchema = ResourceUpdateInputSchema.extend({
   script: z.string().optional(),
   environment: z.uuid().nullable().optional(),
+  language: WorkerLanguageSchema.optional(),
   domains: z.array(z.string()).optional()
 });
 
