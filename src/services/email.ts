@@ -1,47 +1,67 @@
-import { createTransport, type Transporter } from 'nodemailer';
+import { email, appUrl } from '../config';
 
-import { smtp, appUrl } from '../config';
+interface ScalewayEmailRequest {
+  from: { email: string; name?: string };
+  to: { email: string; name?: string }[];
+  subject: string;
+  text: string;
+  html: string;
+  project_id: string;
+}
 
-let transporter: Transporter | null = null;
-
-function getTransporter(): Transporter | null {
-  if (!smtp.host) {
-    return null;
+async function sendWithScaleway(to: string, subject: string, text: string, html: string): Promise<boolean> {
+  if (!email.secretKey || !email.projectId) {
+    console.error('[Email] Scaleway not configured (missing SCW_SECRET_KEY or SCW_PROJECT_ID)');
+    return false;
   }
 
-  if (!transporter) {
-    transporter = createTransport({
-      host: smtp.host,
-      port: smtp.port,
-      secure: smtp.port === 465,
-      auth: smtp.user && smtp.pass ? {
-        user: smtp.user,
-        pass: smtp.pass
-      } : undefined
+  const url = `https://api.scaleway.com/transactional-email/v1alpha1/regions/${email.region}/emails`;
+
+  const body: ScalewayEmailRequest = {
+    from: { email: email.from },
+    to: [{ email: to }],
+    subject,
+    text,
+    html,
+    project_id: email.projectId
+  };
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-Auth-Token': email.secretKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
     });
-  }
 
-  return transporter;
+    if (!res.ok) {
+      const error = await res.text();
+      console.error('[Email] Scaleway API error:', res.status, error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('[Email] Failed to send email:', error);
+    return false;
+  }
 }
 
 export function isEmailConfigured(): boolean {
-  return !!smtp.host;
+  return email.provider === 'scaleway' && !!email.secretKey && !!email.projectId;
 }
 
-export async function sendSetPasswordEmail(email: string, token: string): Promise<boolean> {
-  const transport = getTransporter();
-
-  if (!transport) {
-    console.log(`[Email] Set password link for ${email}: ${appUrl}/sign-in/set-password?token=${token}`);
+export async function sendSetPasswordEmail(emailTo: string, token: string): Promise<boolean> {
+  if (!isEmailConfigured()) {
+    console.log(`[Email] Set password link for ${emailTo}: ${appUrl}/sign-in/set-password?token=${token}`);
     return true;
   }
 
-  try {
-    await transport.sendMail({
-      from: smtp.from,
-      to: email,
-      subject: 'Complete your OpenWorkers registration',
-      text: `Welcome to OpenWorkers!
+  const subject = 'Complete your OpenWorkers registration';
+
+  const text = `Welcome to OpenWorkers!
 
 Click the link below to set your password and complete your registration:
 
@@ -49,8 +69,9 @@ ${appUrl}/sign-in/set-password?token=${token}
 
 This link expires in 24 hours.
 
-If you didn't create an account, you can ignore this email.`,
-      html: `
+If you didn't create an account, you can ignore this email.`;
+
+  const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -70,30 +91,20 @@ If you didn't create an account, you can ignore this email.`,
     <p class="footer">This link expires in 24 hours. If you didn't create an account, you can ignore this email.</p>
   </div>
 </body>
-</html>`
-    });
+</html>`;
 
-    return true;
-  } catch (error) {
-    console.error('[Email] Failed to send set password email:', error);
-    return false;
-  }
+  return sendWithScaleway(emailTo, subject, text, html);
 }
 
-export async function sendPasswordResetEmail(email: string, token: string): Promise<boolean> {
-  const transport = getTransporter();
-
-  if (!transport) {
-    console.log(`[Email] Password reset link for ${email}: ${appUrl}/sign-in/reset-password?token=${token}`);
+export async function sendPasswordResetEmail(emailTo: string, token: string): Promise<boolean> {
+  if (!isEmailConfigured()) {
+    console.log(`[Email] Password reset link for ${emailTo}: ${appUrl}/sign-in/reset-password?token=${token}`);
     return true;
   }
 
-  try {
-    await transport.sendMail({
-      from: smtp.from,
-      to: email,
-      subject: 'Reset your OpenWorkers password',
-      text: `You requested a password reset for your OpenWorkers account.
+  const subject = 'Reset your OpenWorkers password';
+
+  const text = `You requested a password reset for your OpenWorkers account.
 
 Click the link below to reset your password:
 
@@ -101,8 +112,9 @@ ${appUrl}/sign-in/reset-password?token=${token}
 
 This link expires in 1 hour.
 
-If you didn't request this, you can ignore this email.`,
-      html: `
+If you didn't request this, you can ignore this email.`;
+
+  const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -122,12 +134,7 @@ If you didn't request this, you can ignore this email.`,
     <p class="footer">This link expires in 1 hour. If you didn't request this, you can ignore this email.</p>
   </div>
 </body>
-</html>`
-    });
+</html>`;
 
-    return true;
-  } catch (error) {
-    console.error('[Email] Failed to send password reset email:', error);
-    return false;
-  }
+  return sendWithScaleway(emailTo, subject, text, html);
 }

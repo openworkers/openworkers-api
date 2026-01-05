@@ -59,13 +59,14 @@ const ConfigSchema = z.object({
     apiKey: z.string().optional()
   }),
 
-  // SMTP for email (verification, password reset)
-  smtp: z.object({
-    host: z.string().optional(),
-    port: z.coerce.number().int().positive().default(587),
-    user: z.string().optional(),
-    pass: z.string().optional(),
-    from: z.string().default('noreply@openworkers.dev')
+  // Email provider (verification, password reset)
+  email: z.object({
+    provider: z.enum(['scaleway']).optional(),
+    from: z.string().default('noreply@openworkers.dev'),
+    // Scaleway-specific
+    secretKey: z.string().optional(),
+    projectId: z.string().optional(),
+    region: z.string().default('fr-par')
   }),
 
   // App URLs for email links
@@ -112,12 +113,12 @@ function loadConfig(): Config {
     anthropic: {
       apiKey: process.env.ANTHROPIC_API_KEY
     },
-    smtp: {
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-      from: process.env.SMTP_FROM
+    email: {
+      provider: process.env.EMAIL_PROVIDER,
+      from: process.env.EMAIL_FROM,
+      secretKey: process.env.SCW_SECRET_KEY,
+      projectId: process.env.SCW_PROJECT_ID,
+      region: process.env.SCW_REGION
     },
     appUrl: process.env.APP_URL
   };
@@ -137,9 +138,9 @@ function loadConfig(): Config {
       console.warn('GitHub OAuth not configured (GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET missing)');
     }
 
-    // Warn about missing SMTP
-    if (!config.smtp.host) {
-      console.warn('SMTP not configured (SMTP_HOST missing) - email features disabled');
+    // Warn about missing email provider
+    if (!config.email.provider) {
+      console.warn('Email not configured (EMAIL_PROVIDER missing) - email features disabled');
     }
 
     return config;
@@ -159,4 +160,4 @@ function loadConfig(): Config {
 export const config = loadConfig();
 
 // Export individual sections for convenience
-export const { nodeEnv, port, jwt, github, postgate, sharedStorage, mistral, anthropic, smtp, appUrl } = config;
+export const { nodeEnv, port, jwt, github, postgate, sharedStorage, mistral, anthropic, email, appUrl } = config;

@@ -286,9 +286,7 @@ workers.post('/:id/upload', async (c) => {
 
     // 8. Return success with worker URL
     const workerDomain = worker.domains?.[0]?.name;
-    const workerUrl = workerDomain
-      ? `https://${workerDomain}`
-      : `https://${worker.name}.openworkers.dev`;
+    const workerUrl = workerDomain ? `https://${workerDomain}` : `https://${worker.name}.workers.rocks`;
 
     return c.json({
       success: true,
