@@ -41,7 +41,11 @@ export const DatabaseCreateInputSchema = z.discriminatedUnion('provider', [
 
 // Column definition for creating tables/columns
 export const ColumnDefinitionSchema = z.object({
-  name: z.string().min(1).max(63).regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/),
+  name: z
+    .string()
+    .min(1)
+    .max(63)
+    .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/),
   type: z.string().min(1).max(100),
   primaryKey: z.boolean().optional(),
   notNull: z.boolean().optional(),
@@ -72,7 +76,11 @@ export const TableDetailsSchema = z.object({
 
 // Create table input
 export const CreateTableInputSchema = z.object({
-  name: z.string().min(1).max(63).regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/),
+  name: z
+    .string()
+    .min(1)
+    .max(63)
+    .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/),
   columns: z.array(ColumnDefinitionSchema).min(1).max(100)
 });
 

@@ -127,9 +127,12 @@ auth.post('/register', async (c) => {
 
     await authService.registerWithEmail(input.email);
 
-    return c.json({
-      message: 'Check your email to set your password and complete registration.'
-    }, 201);
+    return c.json(
+      {
+        message: 'Check your email to set your password and complete registration.'
+      },
+      201
+    );
   } catch (error) {
     if (error instanceof ZodError) {
       return c.json({ error: 'Invalid email format' }, 400);

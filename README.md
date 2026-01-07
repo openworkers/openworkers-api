@@ -150,6 +150,7 @@ console.log(users[0], users.count);
 ```
 
 **Why Postgate?**
+
 - No native Postgres driver needed - just HTTP `fetch()`
 - Multi-tenant isolation via schema separation
 - SQL validation and injection prevention

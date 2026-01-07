@@ -36,7 +36,9 @@ function rowToApiKey(row: ApiKeyRow): ApiKey {
 function generateToken(): string {
   const bytes = new Uint8Array(24);
   crypto.getRandomValues(bytes);
-  const random = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  const random = Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
   return `ow_${random}`;
 }
 
@@ -46,7 +48,7 @@ async function hashToken(token: string): Promise<string> {
   const data = encoder.encode(token);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 // Create a new API key - returns the full token (only time it's available)
@@ -114,8 +116,5 @@ export async function deleteApiKey(userId: string, keyId: string): Promise<boole
 
 // Update last used timestamp
 export async function updateApiKeyLastUsed(keyId: string): Promise<void> {
-  await sql(
-    `UPDATE api_keys SET last_used_at = NOW() WHERE id = $1::uuid`,
-    [keyId]
-  );
+  await sql(`UPDATE api_keys SET last_used_at = NOW() WHERE id = $1::uuid`, [keyId]);
 }

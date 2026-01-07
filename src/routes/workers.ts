@@ -31,7 +31,7 @@ workers.get('/', async (c) => {
 
   try {
     const workers = await workersService.findAll(userId);
-    return jsonArrayResponse(c, WorkerSchema.omit({ script: true }), workers);
+    return jsonArrayResponse(c, WorkerSchema, workers);
   } catch (error) {
     console.error('Failed to fetch workers:', error);
     return c.json({ error: 'Failed to fetch workers' }, 500);
@@ -65,13 +65,9 @@ workers.post('/', async (c) => {
   try {
     const payload = WorkerCreateInputSchema.parse(body);
     const defaultScript = payload.language === 'typescript' ? defaultWorkerTs : defaultWorkerJs;
+    const script = payload.script ?? defaultScript;
 
-    const worker = await workersService.create(userId, {
-      name: payload.name,
-      script: payload.script || defaultScript,
-      language: payload.language,
-      environmentId: undefined // TODO: Handle environment mapping if needed
-    });
+    const worker = await workersService.create(userId, payload.name, script, payload.language, undefined);
 
     return jsonResponse(c, WorkerSchema, worker, 201);
   } catch (error) {
@@ -127,6 +123,7 @@ workers.post('/:id/crons', async (c) => {
   try {
     // Verify worker exists and belongs to user
     const worker = await workersService.findById(userId, workerId);
+
     if (!worker) {
       return c.json({ error: 'Worker not found' }, 404);
     }
@@ -217,7 +214,7 @@ workers.post('/:id/upload', async (c) => {
 
     // 5. Find _worker.js or _worker.ts (at root or in first directory)
     let workerScript: string | null = null;
-    let workerLanguage: 'javascript' | 'typescript' = 'javascript';
+    let language: 'javascript' | 'typescript' = 'javascript';
     const assets: { path: string; content: Uint8Array }[] = [];
 
     for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
@@ -229,7 +226,7 @@ workers.post('/:id/upload', async (c) => {
 
       if (filename === '_worker.js' || filename === '_worker.ts') {
         workerScript = await zipEntry.async('string');
-        workerLanguage = filename.endsWith('.ts') ? 'typescript' : 'javascript';
+        language = filename.endsWith('.ts') ? 'typescript' : 'javascript';
       } else if (normalizedPath.startsWith('assets/') || relativePath.startsWith('assets/')) {
         const assetPath = normalizedPath.startsWith('assets/')
           ? normalizedPath.slice('assets/'.length)
@@ -247,7 +244,7 @@ workers.post('/:id/upload', async (c) => {
     }
 
     // 6. Update worker script
-    await workersService.update(userId, workerId, { script: workerScript, language: workerLanguage });
+    await workersService.update(userId, workerId, { script: workerScript });
 
     // 7. Upload assets to S3
     const endpoint = assetsBinding.endpoint ?? sharedStorage.endpoint;
@@ -284,8 +281,11 @@ workers.post('/:id/upload', async (c) => {
 
     const uploadedCount = results.filter(Boolean).length;
 
-    // 8. Return success with worker URL
-    const workerDomain = worker.domains?.[0]?.name;
+    // 8. Get updated worker
+    const updatedWorker = await workersService.findById(userId, workerId);
+
+    // 9. Return success with worker URL
+    const workerDomain = updatedWorker?.domains?.[0]?.name;
     const workerUrl = workerDomain ? `https://${workerDomain}` : `https://${worker.name}.workers.rocks`;
 
     return c.json({

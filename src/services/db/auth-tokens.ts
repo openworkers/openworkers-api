@@ -23,14 +23,12 @@ interface AuthTokenRow {
 function generateToken(): string {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
-  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
-export async function createAuthToken(
-  userId: string,
-  type: TokenType,
-  expiresInMs: number
-): Promise<string> {
+export async function createAuthToken(userId: string, type: TokenType, expiresInMs: number): Promise<string> {
   const token = generateToken();
   const expiresAt = new Date(Date.now() + expiresInMs);
 

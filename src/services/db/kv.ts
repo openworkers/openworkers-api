@@ -48,11 +48,7 @@ export async function findKvNamespaceByName(userId: string, name: string): Promi
   return rows[0] ?? null;
 }
 
-export async function createKvNamespace(
-  userId: string,
-  name: string,
-  desc?: string
-): Promise<KvNamespaceRow> {
+export async function createKvNamespace(userId: string, name: string, desc?: string): Promise<KvNamespaceRow> {
   const rows = await sql<KvNamespaceRow>(
     `INSERT INTO kv_configs (user_id, name, "desc")
     VALUES ($1::uuid, $2, $3)
@@ -129,7 +125,7 @@ export async function countKvNamespaces(userId: string): Promise<number> {
 
 export interface KvDataRow {
   key: string;
-  value: unknown;  // JSONB - can be any JSON value
+  value: unknown; // JSONB - can be any JSON value
   expiresAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -183,7 +179,7 @@ export async function listKvData(
 
   const hasMore = rows.length > limit;
   const items = hasMore ? rows.slice(0, limit) : rows;
-  const cursor = hasMore ? items[items.length - 1]?.key ?? null : null;
+  const cursor = hasMore ? (items[items.length - 1]?.key ?? null) : null;
 
   return { items, cursor, hasMore };
 }

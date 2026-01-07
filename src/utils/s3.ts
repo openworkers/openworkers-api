@@ -98,11 +98,7 @@ export class S3Client {
    * List files with optional prefix filter.
    */
   async list(prefix?: string, cursor?: string): Promise<S3ListResult> {
-    const fullPrefix = this.prefix
-      ? prefix
-        ? `${this.prefix}/${prefix}`
-        : `${this.prefix}/`
-      : prefix ?? '';
+    const fullPrefix = this.prefix ? (prefix ? `${this.prefix}/${prefix}` : `${this.prefix}/`) : (prefix ?? '');
 
     const url = new URL(`${this.endpoint}/${this.bucket}`);
     url.searchParams.append('list-type', '2');
@@ -144,7 +140,7 @@ export class S3Client {
 
     return {
       files,
-      cursor: isTruncated ? nextCursor ?? null : null
+      cursor: isTruncated ? (nextCursor ?? null) : null
     };
   }
 

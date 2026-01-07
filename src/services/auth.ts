@@ -10,13 +10,7 @@ import {
   createUserWithEmail,
   updatePassword
 } from './db';
-import {
-  createAuthToken,
-  findAuthToken,
-  deleteAuthToken,
-  deleteUserTokens,
-  TOKEN_EXPIRY
-} from './db/auth-tokens';
+import { createAuthToken, findAuthToken, deleteAuthToken, deleteUserTokens, TOKEN_EXPIRY } from './db/auth-tokens';
 import { sendSetPasswordEmail, sendPasswordResetEmail } from './email';
 import { hashPassword, verifyPassword } from '../utils/password';
 import type { ISelf } from '../types';

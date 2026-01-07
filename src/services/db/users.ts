@@ -111,10 +111,9 @@ export async function findUserByEmail(email: string): Promise<ISelf | null> {
 }
 
 export async function emailExists(email: string): Promise<boolean> {
-  const result = await sql<{ exists: boolean }>(
-    `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1) as exists`,
-    [email]
-  );
+  const result = await sql<{ exists: boolean }>(`SELECT EXISTS(SELECT 1 FROM users WHERE username = $1) as exists`, [
+    email
+  ]);
 
   return result[0]?.exists ?? false;
 }
@@ -142,8 +141,5 @@ export async function createUserWithEmail(email: string): Promise<ISelf> {
 }
 
 export async function updatePassword(userId: string, passwordHash: string): Promise<void> {
-  await sql(
-    `UPDATE users SET password_hash = $1 WHERE id = $2::uuid`,
-    [passwordHash, userId]
-  );
+  await sql(`UPDATE users SET password_hash = $1 WHERE id = $2::uuid`, [passwordHash, userId]);
 }

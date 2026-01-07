@@ -123,12 +123,7 @@ export class TablesService {
   /**
    * Add a column to a table
    */
-  async addColumn(
-    userId: string,
-    databaseId: string,
-    tableName: string,
-    column: IColumnDefinition
-  ): Promise<void> {
+  async addColumn(userId: string, databaseId: string, tableName: string, column: IColumnDefinition): Promise<void> {
     const dbConfig = await db.findDatabaseById(userId, databaseId);
 
     if (!dbConfig) {
@@ -169,12 +164,7 @@ export class TablesService {
       throw new Error('Schema not configured');
     }
 
-    await sql(`SELECT drop_tenant_column($1::uuid, $2, $3, $4)`, [
-      userId,
-      dbConfig.schemaName,
-      tableName,
-      columnName
-    ]);
+    await sql(`SELECT drop_tenant_column($1::uuid, $2, $3, $4)`, [userId, dbConfig.schemaName, tableName, columnName]);
   }
 }
 

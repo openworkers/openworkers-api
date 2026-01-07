@@ -43,8 +43,6 @@ export async function findAllEnvironments(userId: string): Promise<IEnvironment[
         SELECT coalesce(json_agg(json_build_object(
           'id', w.id,
           'name', w.name,
-          'language', w.language,
-          'userId', w.user_id,
           'createdAt', w.created_at,
           'updatedAt', w.updated_at
         )), '[]'::json)
@@ -81,8 +79,6 @@ export async function findEnvironmentById(userId: string, envId: string): Promis
         SELECT coalesce(json_agg(json_build_object(
           'id', w.id,
           'name', w.name,
-          'language', w.language,
-          'userId', w.user_id,
           'createdAt', w.created_at,
           'updatedAt', w.updated_at
         )), '[]'::json)
@@ -140,12 +136,7 @@ export async function updateEnvironment(
       user_id as "userId",
       created_at as "createdAt",
       updated_at as "updatedAt"`,
-    [
-      updates.name ?? current.name,
-      updates.desc === undefined ? current.desc : updates.desc,
-      envId,
-      userId
-    ]
+    [updates.name ?? current.name, updates.desc === undefined ? current.desc : updates.desc, envId, userId]
   );
 
   if (!envs[0]) return null;
@@ -226,13 +217,7 @@ export async function updateEnvironmentValue(
       user_id as "userId",
       created_at as "createdAt",
       updated_at as "updatedAt"`,
-    [
-      updates.key ?? current[0].key,
-      updates.value ?? current[0].value,
-      updates.type ?? current[0].type,
-      valId,
-      userId
-    ]
+    [updates.key ?? current[0].key, updates.value ?? current[0].value, updates.type ?? current[0].type, valId, userId]
   );
   return vals[0] ?? null;
 }

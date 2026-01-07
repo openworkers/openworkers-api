@@ -107,12 +107,7 @@ export class KvService {
     return db.listKvData(namespaceId, options);
   }
 
-  async putData(
-    namespaceId: string,
-    key: string,
-    value: unknown,
-    expiresIn?: number
-  ): Promise<KvDataRow> {
+  async putData(namespaceId: string, key: string, value: unknown, expiresIn?: number): Promise<KvDataRow> {
     return db.putKvData(namespaceId, key, value, expiresIn);
   }
 

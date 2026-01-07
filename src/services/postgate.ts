@@ -17,7 +17,15 @@ export interface PostgateError {
 
 export type TokenPermission = 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'CREATE' | 'ALTER' | 'DROP';
 
-export const TENANT_PERMISSIONS: TokenPermission[] = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP'];
+export const TENANT_PERMISSIONS: TokenPermission[] = [
+  'SELECT',
+  'INSERT',
+  'UPDATE',
+  'DELETE',
+  'CREATE',
+  'ALTER',
+  'DROP'
+];
 export const DEFAULT_PERMISSIONS: TokenPermission[] = ['SELECT', 'INSERT', 'UPDATE', 'DELETE'];
 
 /**
@@ -36,10 +44,7 @@ export class PostgateClient {
   /**
    * Execute a SQL query against a tenant database
    */
-  async query<T = Record<string, unknown>>(
-    sql: string,
-    params?: unknown[]
-  ): Promise<PostgateQueryResponse<T>> {
+  async query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<PostgateQueryResponse<T>> {
     const response = await fetch(`${this.baseUrl}/query`, {
       method: 'POST',
       headers: {
@@ -79,7 +84,6 @@ interface CreateTokenResult {
  * Uses the main token for authentication (access to public schema)
  */
 export class PostgateAdminClient extends PostgateClient {
-
   /**
    * Create a new token for a database using PL/pgSQL function
    * Returns the token secret - must be shown to user only once
@@ -89,10 +93,11 @@ export class PostgateAdminClient extends PostgateClient {
     name: string = 'default',
     permissions: TokenPermission[] = DEFAULT_PERMISSIONS
   ): Promise<CreateTokenResult> {
-    const result = await this.query<CreateTokenResult>(
-      'SELECT * FROM create_tenant_token($1::uuid, $2, $3::text[])',
-      [databaseId, name, permissions]
-    );
+    const result = await this.query<CreateTokenResult>('SELECT * FROM create_tenant_token($1::uuid, $2, $3::text[])', [
+      databaseId,
+      name,
+      permissions
+    ]);
 
     if (result.rows.length === 0) {
       throw new Error('Failed to create token');
@@ -105,17 +110,13 @@ export class PostgateAdminClient extends PostgateClient {
    * Delete a token using PL/pgSQL function
    */
   async deleteToken(tokenId: string): Promise<boolean> {
-    const result = await this.query<{ delete_tenant_token: boolean }>(
-      'SELECT delete_tenant_token($1::uuid)',
-      [tokenId]
-    );
+    const result = await this.query<{ delete_tenant_token: boolean }>('SELECT delete_tenant_token($1::uuid)', [
+      tokenId
+    ]);
 
     return result.rows[0]?.delete_tenant_token ?? false;
   }
 }
 
 // Admin client singleton - uses token from config
-export const postgateAdminClient = new PostgateAdminClient(
-  postgateConfig.url,
-  postgateConfig.token
-);
+export const postgateAdminClient = new PostgateAdminClient(postgateConfig.url, postgateConfig.token);

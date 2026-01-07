@@ -21,14 +21,17 @@ apiKeys.post('/', async (c) => {
     const { apiKey, token } = await createApiKey(userId, input.name, expiresAt);
 
     // Return the full token - this is the ONLY time it's available
-    return c.json({
-      id: apiKey.id,
-      name: apiKey.name,
-      tokenPrefix: apiKey.tokenPrefix,
-      token, // Full token - user must save this!
-      expiresAt: apiKey.expiresAt?.toISOString() ?? null,
-      createdAt: apiKey.createdAt.toISOString()
-    }, 201);
+    return c.json(
+      {
+        id: apiKey.id,
+        name: apiKey.name,
+        tokenPrefix: apiKey.tokenPrefix,
+        token, // Full token - user must save this!
+        expiresAt: apiKey.expiresAt?.toISOString() ?? null,
+        createdAt: apiKey.createdAt.toISOString()
+      },
+      201
+    );
   } catch (error) {
     if (error instanceof ZodError) {
       return c.json({ error: 'Invalid input', details: error.issues }, 400);
@@ -45,14 +48,16 @@ apiKeys.get('/', async (c) => {
     const userId = c.get('userId');
     const keys = await listApiKeys(userId);
 
-    return c.json(keys.map(key => ({
-      id: key.id,
-      name: key.name,
-      tokenPrefix: key.tokenPrefix,
-      lastUsedAt: key.lastUsedAt?.toISOString() ?? null,
-      expiresAt: key.expiresAt?.toISOString() ?? null,
-      createdAt: key.createdAt.toISOString()
-    })));
+    return c.json(
+      keys.map((key) => ({
+        id: key.id,
+        name: key.name,
+        tokenPrefix: key.tokenPrefix,
+        lastUsedAt: key.lastUsedAt?.toISOString() ?? null,
+        expiresAt: key.expiresAt?.toISOString() ?? null,
+        createdAt: key.createdAt.toISOString()
+      }))
+    );
   } catch (error) {
     console.error('Failed to list API keys:', error);
     return c.json({ error: 'Failed to list API keys' }, 500);

@@ -78,7 +78,18 @@ export async function createStorageConfig(
     `INSERT INTO storage_configs (user_id, name, "desc", bucket, prefix, access_key_id, secret_access_key, endpoint, region, public_url)
     VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     RETURNING ${STORAGE_SELECT}`,
-    [userId, name, desc ?? null, bucket, prefix ?? null, accessKeyId, secretAccessKey, endpoint ?? null, region ?? null, publicUrl ?? null]
+    [
+      userId,
+      name,
+      desc ?? null,
+      bucket,
+      prefix ?? null,
+      accessKeyId,
+      secretAccessKey,
+      endpoint ?? null,
+      region ?? null,
+      publicUrl ?? null
+    ]
   );
 
   return rows[0]!;
