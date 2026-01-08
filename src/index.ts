@@ -82,5 +82,6 @@ console.log(`OpenWorkers API starting on port ${port}...`);
 export default {
   port,
   fetch: app.fetch,
-  development: nodeEnv === 'development'
+  development: nodeEnv === 'development',
+  idleTimeout: 60
 };
