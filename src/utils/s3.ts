@@ -70,7 +70,7 @@ export class S3Client {
   /**
    * Upload a file.
    */
-  async put(key: string, body: BodyInit, contentType?: string): Promise<boolean> {
+  async put(key: string, body: Bun.BodyInit, contentType?: string): Promise<boolean> {
     const req = new Request(this.url(key).toString(), {
       method: 'PUT',
       body,

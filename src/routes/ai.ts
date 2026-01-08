@@ -1,17 +1,218 @@
 import { Hono } from 'hono';
-import { mistral, anthropic } from '../config';
+import type { Context } from 'hono';
+import { streamSSE } from 'hono/streaming';
+import { mistral } from '../config';
+import contextPromptTemplate from './ai.txt';
 
 const VOXTRAL_API_URL = 'https://api.mistral.ai/v1/audio/transcriptions';
 const VOXTRAL_MODEL = 'voxtral-mini-2507';
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
-const CLAUDE_MODEL = 'claude-haiku-4-5-20251001'; // 'claude-sonnet-4-20250514';
+
+// Model mapping
+type ClaudeModelName = 'haiku' | 'sonnet' | 'opus';
+const DEFAULT_MODEL: ClaudeModelName = 'sonnet';
+const CLAUDE_MODELS: Record<ClaudeModelName, string> = {
+  haiku: 'claude-haiku-4-5',
+  sonnet: 'claude-sonnet-4-5',
+  opus: 'claude-opus-4-5'
+};
+
+// OAuth requires this exact system prompt
+const CLAUDE_SYSTEM_PROMPT_OAUTH = "You are Claude Code, Anthropic's official CLI for Claude.";
+const CLAUDE_SYSTEM_PROMPT_API =
+  "You are Claude Code, Anthropic's official CLI for Claude.\nYou are a helpful assistant for OpenWorkers, a Cloudflare Workers-compatible runtime.\nThe user is editing a worker script. Help them with their code.";
+
+// OAuth token refresh
+const TOKEN_URL = 'https://console.anthropic.com/v1/oauth/token';
+const CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e';
+
+// Cache for refreshed tokens: hash(originalRefreshToken) -> { accessToken, refreshToken, expiresAt }
+const tokenCache = new Map<string, { accessToken: string; refreshToken: string; expiresAt: number }>();
+
+// Hash refresh token for cache key
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Refresh access token using refresh token
+async function refreshAccessToken(originalRefreshToken: string): Promise<string> {
+  const cacheKey = await hashToken(originalRefreshToken);
+
+  // Check cache first
+  const cached = tokenCache.get(cacheKey);
+
+  if (cached && cached.expiresAt > Date.now() + 60000) {
+    // Still valid with 1 min buffer
+    return cached.accessToken;
+  }
+
+  // Use the rotated refresh token if we have one, otherwise use the original
+  const currentRefreshToken = cached?.refreshToken || originalRefreshToken;
+
+  // Refresh the token
+  const response = await fetch(TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      grant_type: 'refresh_token',
+      client_id: CLIENT_ID,
+      refresh_token: currentRefreshToken
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('[refresh] Token refresh failed:', error);
+    throw new Error('Token refresh failed');
+  }
+
+  const data = (await response.json()) as { access_token: string; refresh_token: string; expires_in: number };
+
+  // Cache the new tokens (access + rotated refresh)
+  tokenCache.set(cacheKey, {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    expiresAt: Date.now() + data.expires_in * 1000
+  });
+
+  return data.access_token;
+}
+
+// Get Claude token from header
+function getClaudeToken(c: Context): string | null {
+  return c.req.header('X-Claude-Token') || null;
+}
+
+// Check token type by prefix
+function isOAuthToken(token: string): boolean {
+  return token.startsWith('sk-ant-oat');
+}
+
+function isRefreshToken(token: string): boolean {
+  return token.startsWith('sk-ant-ort');
+}
+
+// Resolve token: if refresh token, get access token; otherwise return as-is
+async function resolveToken(token: string): Promise<string> {
+  if (isRefreshToken(token)) {
+    return refreshAccessToken(token);
+  }
+
+  return token;
+}
+
+// Build headers for Claude API based on token type
+function getClaudeHeaders(token: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'anthropic-version': '2023-06-01'
+  };
+
+  if (isOAuthToken(token)) {
+    headers['Authorization'] = `Bearer ${token}`;
+    headers['anthropic-beta'] = 'oauth-2025-04-20';
+  } else {
+    headers['x-api-key'] = token;
+  }
+
+  return headers;
+}
+
+// Get system prompt based on token type
+function getSystemPrompt(token: string): string {
+  return isOAuthToken(token) ? CLAUDE_SYSTEM_PROMPT_OAUTH : CLAUDE_SYSTEM_PROMPT_API;
+}
+
+// Build context prompt from code and diagnostics
+function buildContextPrompt(code: string, diagnostics: string[]): string {
+  const diagnosticsText = diagnostics?.length > 0 ? `\n\nTypeScript diagnostics:\n${diagnostics.join('\n')}` : '';
+  return contextPromptTemplate.replace('{{CODE}}', code).replace('{{DIAGNOSTICS}}', diagnosticsText);
+}
+
+// Build messages with context injected as first exchange (OAuth workaround)
+function buildClaudeMessages(
+  contextPrompt: string,
+  messages: Array<{ role: string; content: string }>,
+  userMessage: string
+) {
+  return [
+    { role: 'user', content: contextPrompt },
+    { role: 'assistant', content: "I understand. I'll help you with your OpenWorkers code." },
+    ...messages.map((m) => ({ role: m.role, content: m.content })),
+    { role: 'user', content: userMessage }
+  ];
+}
+
+// Tool for applying code changes
+const APPLY_CODE_TOOL = {
+  name: 'apply_code',
+  description:
+    'Apply new code to the editor. Use this when the user asks to modify, fix, update, or change the code. This will replace the entire code in the editor.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      code: {
+        type: 'string',
+        description: 'The complete updated TypeScript/JavaScript code to apply to the editor'
+      },
+      explanation: {
+        type: 'string',
+        description: 'Brief explanation of what was changed'
+      }
+    },
+    required: ['code', 'explanation']
+  }
+};
 
 const ai = new Hono();
 
+// POST /ai/test-token - Test if Claude token is valid
+ai.post('/test-token', async (c) => {
+  const rawToken = getClaudeToken(c);
+
+  if (!rawToken) {
+    return c.json({ valid: false, error: 'No token provided' }, 400);
+  }
+
+  try {
+    // Resolve refresh token to access token if needed
+    const token = await resolveToken(rawToken);
+
+    const response = await fetch(CLAUDE_API_URL, {
+      method: 'POST',
+      headers: getClaudeHeaders(token),
+      body: JSON.stringify({
+        model: CLAUDE_MODELS[DEFAULT_MODEL],
+        max_tokens: 1,
+        system: CLAUDE_SYSTEM_PROMPT_OAUTH,
+        messages: [{ role: 'user', content: 'Hi' }]
+      })
+    });
+
+    if (response.ok) {
+      return c.json({ valid: true });
+    }
+
+    const error = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
+    return c.json(
+      {
+        valid: false,
+        error: error.error?.message || 'Invalid token'
+      },
+      401
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Connection failed';
+    return c.json({ valid: false, error: message }, 500);
+  }
+});
+
 // POST /ai/transcribe - Transcribe audio using Voxtral
 ai.post('/transcribe', async (c) => {
-  console.log('Received transcription request');
-
   if (!mistral.apiKey) {
     return c.json({ error: 'Transcription service not configured' }, 503);
   }
@@ -28,8 +229,6 @@ ai.post('/transcribe', async (c) => {
     const mistralForm = new FormData();
     mistralForm.append('file', audioFile, 'audio.webm');
     mistralForm.append('model', VOXTRAL_MODEL);
-
-    console.log('Sending transcription request to Mistral API');
 
     const response = await fetch(VOXTRAL_API_URL, {
       method: 'POST',
@@ -65,85 +264,57 @@ interface ChatRequest {
   diagnostics: string[];
   messages: ChatMessage[];
   userMessage: string;
+  model?: ClaudeModelName;
 }
 
 // Extended request with optional thinking mode
 interface ExtendedChatRequest extends ChatRequest {
+  model?: ClaudeModelName;
   enableThinking?: boolean;
   thinkingBudget?: number;
 }
 
 // POST /ai/chat/stream - Stream chat with Claude (SSE)
 ai.post('/chat/stream', async (c) => {
-  if (!anthropic.apiKey) {
+  const rawToken = getClaudeToken(c);
+
+  if (!rawToken) {
     return c.json({ error: 'AI chat service not configured' }, 503);
   }
 
   try {
+    // Resolve refresh token to access token if needed
+    const token = await resolveToken(rawToken);
+
     const body = (await c.req.json()) as ExtendedChatRequest;
-    const { code, diagnostics, messages, userMessage, enableThinking = false, thinkingBudget = 10000 } = body;
+    const {
+      code,
+      diagnostics,
+      messages,
+      userMessage,
+      model = DEFAULT_MODEL,
+      enableThinking = false,
+      thinkingBudget = 16384
+    } = body;
+    const claudeModel = CLAUDE_MODELS[model] || CLAUDE_MODELS[DEFAULT_MODEL];
 
     if (!userMessage?.trim()) {
       return c.json({ error: 'No message provided' }, 400);
     }
 
-    // Build system prompt with code context
-    let systemPrompt = `You are a helpful assistant for OpenWorkers, a Cloudflare Workers-compatible runtime.
-The user is editing a worker script. Help them with their code.
-
-Current code:
-\`\`\`typescript
-${code}
-\`\`\``;
-
-    if (diagnostics && diagnostics.length > 0) {
-      systemPrompt += `\n\nTypeScript diagnostics:\n${diagnostics.join('\n')}`;
-    }
-
-    systemPrompt += `\n\nWhen the user asks you to modify, fix, or update the code, use the apply_code tool to directly update the editor. For explanations or questions, just respond with text.`;
-
-    const tools = [
-      {
-        name: 'apply_code',
-        description:
-          'Apply new code to the editor. Use this when the user asks to modify, fix, update, or change the code. This will replace the entire code in the editor.',
-        input_schema: {
-          type: 'object',
-          properties: {
-            code: {
-              type: 'string',
-              description: 'The complete updated TypeScript/JavaScript code to apply to the editor'
-            },
-            explanation: {
-              type: 'string',
-              description: 'Brief explanation of what was changed'
-            }
-          },
-          required: ['code', 'explanation']
-        }
-      }
-    ];
-
-    // Build message history
-    const claudeMessages = [
-      ...messages.map((m) => ({
-        role: m.role,
-        content: m.content
-      })),
-      { role: 'user', content: userMessage }
-    ];
+    const contextPrompt = buildContextPrompt(code, diagnostics);
+    const claudeMessages = buildClaudeMessages(contextPrompt, messages, userMessage);
 
     // Build request body with optional extended thinking
     const requestBody: Record<string, unknown> = {
-      model: CLAUDE_MODEL,
-      max_tokens: enableThinking ? Math.max(16000, thinkingBudget + 4096) : 4096,
+      model: claudeModel,
+      max_tokens: enableThinking ? Math.max(16384, thinkingBudget + 8192) : 8192,
       stream: true,
-      system: systemPrompt,
-      tools,
+      system: getSystemPrompt(token),
+      tools: [APPLY_CODE_TOOL],
       messages: claudeMessages
     };
 
-    // Add extended thinking if enabled
     if (enableThinking) {
       requestBody.thinking = {
         type: 'enabled',
@@ -153,180 +324,169 @@ ${code}
 
     const response = await fetch(CLAUDE_API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropic.apiKey,
-        'anthropic-version': '2023-06-01'
-      },
+      headers: getClaudeHeaders(token),
       body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('Claude API error:', error);
+      console.error('[chat/stream] Claude API error:', error);
       return c.json({ error: 'AI chat failed' }, 500);
     }
 
-    // Stream the response as SSE
-    const encoder = new TextEncoder();
+    // Set header before streaming to disable proxy buffering
+    c.header('X-Accel-Buffering', 'no');
 
-    const stream = new ReadableStream({
-      async start(controller) {
-        const reader = response.body?.getReader();
+    // Stream using Hono's streamSSE helper
+    return streamSSE(c, async (stream) => {
+      const reader = response.body?.getReader();
 
-        if (!reader) {
-          controller.close();
-          return;
+      if (!reader) {
+        await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: 'No response body' }) });
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let currentToolInput = '';
+      let inToolUse = false;
+      let toolName = '';
+      let inThinking = false;
+
+      // Send initial ping
+      await stream.writeSSE({ data: JSON.stringify({ type: 'ping' }) });
+
+      // Helper to read with timeout and send pings
+      const readWithPing = async () => {
+        const PING_INTERVAL = 2000;
+        const readPromise = reader.read(); // Create read promise ONCE
+
+        while (true) {
+          const timeoutPromise = new Promise<'timeout'>((resolve) =>
+            setTimeout(() => resolve('timeout'), PING_INTERVAL)
+          );
+          const result = await Promise.race([readPromise, timeoutPromise]);
+
+          if (result === 'timeout') {
+            await stream.writeSSE({ data: JSON.stringify({ type: 'ping' }) });
+            continue; // Keep waiting for the SAME readPromise
+          }
+
+          return result;
         }
+      };
 
-        const decoder = new TextDecoder();
-        let buffer = '';
-        let currentToolInput = '';
-        let inToolUse = false;
-        let toolName = '';
-        let inThinking = false;
+      try {
+        while (true) {
+          const { done, value } = await readWithPing();
 
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
+          if (done) break;
 
-            if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
 
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6);
 
-            for (const line of lines) {
-              if (!line.startsWith('data: ')) continue;
-              const data = line.slice(6);
+            if (data === '[DONE]') continue;
 
-              if (data === '[DONE]') continue;
+            try {
+              const event = JSON.parse(data);
 
-              try {
-                const event = JSON.parse(data);
-
-                // Handle message_start - send initial metadata
-                if (event.type === 'message_start') {
-                  const msg = event.message;
-                  controller.enqueue(
-                    encoder.encode(
-                      `data: ${JSON.stringify({
-                        type: 'message_start',
-                        id: msg?.id,
-                        model: msg?.model,
-                        usage: msg?.usage
-                      })}\n\n`
-                    )
-                  );
-                }
-                // Handle ping events - forward for keep-alive
-                else if (event.type === 'ping') {
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'ping' })}\n\n`));
-                }
-                // Handle error events in stream
-                else if (event.type === 'error') {
-                  controller.enqueue(
-                    encoder.encode(
-                      `data: ${JSON.stringify({
-                        type: 'error',
-                        message: event.error?.message || 'Unknown error',
-                        errorType: event.error?.type
-                      })}\n\n`
-                    )
-                  );
-                }
-                // Handle content block start
-                else if (event.type === 'content_block_start') {
-                  if (event.content_block?.type === 'tool_use') {
-                    inToolUse = true;
-                    toolName = event.content_block.name;
-                    currentToolInput = '';
-                    // Signal start of code block
-                    controller.enqueue(
-                      encoder.encode(`data: ${JSON.stringify({ type: 'code_start', tool: toolName })}\n\n`)
-                    );
-                  } else if (event.content_block?.type === 'thinking') {
-                    inThinking = true;
-                    // Signal start of thinking
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_start' })}\n\n`));
-                  }
-                }
-                // Handle content block delta
-                else if (event.type === 'content_block_delta') {
-                  if (event.delta?.type === 'text_delta') {
-                    // Stream text
-                    controller.enqueue(
-                      encoder.encode(`data: ${JSON.stringify({ type: 'text', content: event.delta.text })}\n\n`)
-                    );
-                  } else if (event.delta?.type === 'input_json_delta') {
-                    // Accumulate tool input JSON
-                    currentToolInput += event.delta.partial_json;
-                  } else if (event.delta?.type === 'thinking_delta') {
-                    // Stream thinking content
-                    controller.enqueue(
-                      encoder.encode(`data: ${JSON.stringify({ type: 'thinking', content: event.delta.thinking })}\n\n`)
-                    );
-                  } else if (event.delta?.type === 'signature_delta') {
-                    // Thinking signature (integrity verification) - we can skip forwarding this
-                  }
-                }
-                // Handle content block stop
-                else if (event.type === 'content_block_stop') {
-                  if (inToolUse && toolName === 'apply_code') {
-                    try {
-                      const input = JSON.parse(currentToolInput) as { code: string; explanation: string };
-                      // Send complete code
-                      controller.enqueue(
-                        encoder.encode(
-                          `data: ${JSON.stringify({ type: 'code_complete', code: input.code, explanation: input.explanation })}\n\n`
-                        )
-                      );
-                    } catch {
-                      // JSON parsing failed, ignore
-                    }
-
-                    inToolUse = false;
-                    toolName = '';
-                    currentToolInput = '';
-                  } else if (inThinking) {
-                    inThinking = false;
-                    // Signal end of thinking
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'thinking_stop' })}\n\n`));
-                  }
-                }
-                // Handle message_delta - send stop reason and final usage
-                else if (event.type === 'message_delta') {
-                  controller.enqueue(
-                    encoder.encode(
-                      `data: ${JSON.stringify({
-                        type: 'message_delta',
-                        stopReason: event.delta?.stop_reason,
-                        usage: event.usage
-                      })}\n\n`
-                    )
-                  );
-                }
-                // Handle message_stop
-                else if (event.type === 'message_stop') {
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
-                }
-              } catch {
-                // JSON parsing failed, continue
+              // Handle message_start
+              if (event.type === 'message_start') {
+                const msg = event.message;
+                await stream.writeSSE({
+                  data: JSON.stringify({
+                    type: 'message_start',
+                    id: msg?.id,
+                    model: msg?.model,
+                    usage: msg?.usage
+                  })
+                });
               }
+              // Handle ping events
+              else if (event.type === 'ping') {
+                await stream.writeSSE({ data: JSON.stringify({ type: 'ping' }) });
+              }
+              // Handle error events
+              else if (event.type === 'error') {
+                await stream.writeSSE({
+                  data: JSON.stringify({
+                    type: 'error',
+                    message: event.error?.message || 'Unknown error',
+                    errorType: event.error?.type
+                  })
+                });
+              }
+              // Handle content block start
+              else if (event.type === 'content_block_start') {
+                if (event.content_block?.type === 'tool_use') {
+                  inToolUse = true;
+                  toolName = event.content_block.name;
+                  currentToolInput = '';
+                  await stream.writeSSE({ data: JSON.stringify({ type: 'code_start', tool: toolName }) });
+                } else if (event.content_block?.type === 'thinking') {
+                  inThinking = true;
+                  await stream.writeSSE({ data: JSON.stringify({ type: 'thinking_start' }) });
+                }
+              }
+              // Handle content block delta
+              else if (event.type === 'content_block_delta') {
+                if (event.delta?.type === 'text_delta') {
+                  await stream.writeSSE({ data: JSON.stringify({ type: 'text', content: event.delta.text }) });
+                } else if (event.delta?.type === 'input_json_delta') {
+                  currentToolInput += event.delta.partial_json || '';
+                  await stream.writeSSE({
+                    data: JSON.stringify({ type: 'code_progress', bytes: currentToolInput.length })
+                  });
+                } else if (event.delta?.type === 'thinking_delta') {
+                  await stream.writeSSE({ data: JSON.stringify({ type: 'thinking', content: event.delta.thinking }) });
+                }
+              }
+              // Handle content block stop
+              else if (event.type === 'content_block_stop') {
+                if (inToolUse && toolName === 'apply_code') {
+                  try {
+                    const input = JSON.parse(currentToolInput) as { code: string; explanation: string };
+                    await stream.writeSSE({
+                      data: JSON.stringify({ type: 'code_complete', code: input.code, explanation: input.explanation })
+                    });
+                  } catch {
+                    // JSON parsing failed for tool input
+                  }
+
+                  inToolUse = false;
+                  toolName = '';
+                  currentToolInput = '';
+                } else if (inThinking) {
+                  inThinking = false;
+                  await stream.writeSSE({ data: JSON.stringify({ type: 'thinking_stop' }) });
+                }
+              }
+              // Handle message_delta
+              else if (event.type === 'message_delta') {
+                await stream.writeSSE({
+                  data: JSON.stringify({
+                    type: 'message_delta',
+                    stopReason: event.delta?.stop_reason,
+                    usage: event.usage
+                  })
+                });
+              }
+              // Handle message_stop
+              else if (event.type === 'message_stop') {
+                await stream.writeSSE({ data: JSON.stringify({ type: 'done' }) });
+              }
+            } catch {
+              // JSON parsing failed, continue
             }
           }
-        } finally {
-          reader.releaseLock();
-          controller.close();
         }
-      }
-    });
-
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive'
+      } finally {
+        reader.releaseLock();
       }
     });
   } catch (error) {
@@ -337,83 +497,42 @@ ${code}
 
 // POST /ai/chat - Chat with Claude
 ai.post('/chat', async (c) => {
-  if (!anthropic.apiKey) {
+  const rawToken = getClaudeToken(c);
+
+  if (!rawToken) {
     return c.json({ error: 'AI chat service not configured' }, 503);
   }
 
   try {
+    // Resolve refresh token to access token if needed
+    const token = await resolveToken(rawToken);
+
     const body = (await c.req.json()) as ChatRequest;
-    const { code, diagnostics, messages, userMessage } = body;
+    const { code, diagnostics, messages, userMessage, model = DEFAULT_MODEL } = body;
+    const claudeModel = CLAUDE_MODELS[model] || CLAUDE_MODELS[DEFAULT_MODEL];
 
     if (!userMessage?.trim()) {
       return c.json({ error: 'No message provided' }, 400);
     }
 
-    // Build system prompt with code context
-    let systemPrompt = `You are a helpful assistant for OpenWorkers, a Cloudflare Workers-compatible runtime.
-The user is editing a worker script. Help them with their code.
-
-Current code:
-\`\`\`typescript
-${code}
-\`\`\``;
-
-    if (diagnostics && diagnostics.length > 0) {
-      systemPrompt += `\n\nTypeScript diagnostics:\n${diagnostics.join('\n')}`;
-    }
-
-    systemPrompt += `\n\nWhen the user asks you to modify, fix, or update the code, use the apply_code tool to directly update the editor. For explanations or questions, just respond with text.`;
-
-    const tools = [
-      {
-        name: 'apply_code',
-        description:
-          'Apply new code to the editor. Use this when the user asks to modify, fix, update, or change the code. This will replace the entire code in the editor.',
-        input_schema: {
-          type: 'object',
-          properties: {
-            code: {
-              type: 'string',
-              description: 'The complete updated TypeScript/JavaScript code to apply to the editor'
-            },
-            explanation: {
-              type: 'string',
-              description: 'Brief explanation of what was changed'
-            }
-          },
-          required: ['code', 'explanation']
-        }
-      }
-    ];
-
-    // Build message history
-    const claudeMessages = [
-      ...messages.map((m) => ({
-        role: m.role,
-        content: m.content
-      })),
-      { role: 'user', content: userMessage }
-    ];
+    const contextPrompt = buildContextPrompt(code, diagnostics);
+    const claudeMessages = buildClaudeMessages(contextPrompt, messages, userMessage);
 
     const response = await fetch(CLAUDE_API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropic.apiKey,
-        'anthropic-version': '2023-06-01'
-      },
+      headers: getClaudeHeaders(token),
       body: JSON.stringify({
-        model: CLAUDE_MODEL,
+        model: claudeModel,
         max_tokens: 4096,
-        system: systemPrompt,
-        tools,
+        system: getSystemPrompt(token),
+        tools: [APPLY_CODE_TOOL],
         messages: claudeMessages
       })
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('Claude API error:', error);
+      console.error('[chat] Claude API error:', error);
       return c.json({ error: 'AI chat failed' }, 500);
     }
 
