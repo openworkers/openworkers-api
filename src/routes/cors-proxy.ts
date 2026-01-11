@@ -12,7 +12,8 @@ import { Hono } from 'hono';
  * for browser-based requests (WebContainers).
  */
 
-const ALLOWED_HOSTS = ['api.anthropic.com', 'console.anthropic.com'];
+// Allow all Anthropic subdomains
+const ALLOWED_HOST_PATTERN = /^(.+\.)?anthropic\.com$/;
 
 // Allowed origins for CORS (dashboard domains + WebContainers)
 const ALLOWED_ORIGINS = [
@@ -56,8 +57,8 @@ corsProxy.all('/*', async (c) => {
 
   console.log(`[cors-proxy] ${c.req.method} ${targetPath} -> ${targetHost}`);
 
-  // Validate target host
-  if (!ALLOWED_HOSTS.includes(targetHost)) {
+  // Validate target host (must be *.anthropic.com)
+  if (!ALLOWED_HOST_PATTERN.test(targetHost)) {
     return c.json({ error: 'Host not allowed' }, 403);
   }
 
