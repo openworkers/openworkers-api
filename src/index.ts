@@ -13,7 +13,6 @@ import kv from './routes/kv';
 import storage from './routes/storage';
 import ai from './routes/ai';
 import apiKeys from './routes/api-keys';
-import corsProxy from './routes/cors-proxy';
 import pkg from '../package.json';
 import { sql } from './services/db/client';
 
@@ -73,10 +72,6 @@ v1.route('/api-keys', apiKeys);
 v1.route('/', users);
 
 api.route('/v1', v1);
-
-// CORS proxy for Anthropic API (no auth - tokens are in the proxied requests)
-api.route('/cors-proxy', corsProxy);
-
 app.route('/api', api);
 
 import { nodeEnv, port } from './config';
