@@ -49,7 +49,8 @@ const corsProxy = new Hono();
 
 // Proxy all requests to Anthropic
 corsProxy.all('/*', async (c) => {
-  const targetPath = c.req.path.replace('/cors-proxy', '');
+  // Strip /api/cors-proxy from the path (Hono gives us the full path)
+  const targetPath = c.req.path.replace(/^\/api\/cors-proxy/, '');
   const url = new URL(c.req.url);
   const targetHost = url.searchParams.get('host') || 'api.anthropic.com';
 
