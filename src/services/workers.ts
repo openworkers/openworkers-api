@@ -1,6 +1,8 @@
 import * as db from './db';
 import type { IWorker, IWorkerLanguage, IWorkerUpdateInput } from '../types';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export class WorkersService {
   async findAll(userId: string): Promise<IWorker[]> {
     return db.findAllWorkers(userId);
@@ -8,6 +10,16 @@ export class WorkersService {
 
   async findById(userId: string, id: string): Promise<IWorker | null> {
     return db.findWorkerById(userId, id);
+  }
+
+  async findByName(userId: string, name: string): Promise<IWorker | null> {
+    return db.findWorkerByName(userId, name);
+  }
+
+  async findByIdOrName(userId: string, idOrName: string): Promise<IWorker | null> {
+    return UUID_REGEX.test(idOrName)
+      ? db.findWorkerById(userId, idOrName)
+      : db.findWorkerByName(userId, idOrName);
   }
 
   async create(

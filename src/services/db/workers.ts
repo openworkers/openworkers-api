@@ -9,6 +9,7 @@ interface WorkerRow {
   language: IWorkerLanguage;
   userId: string;
   environmentId?: string | null;
+  currentVersion?: number | null;
   createdAt: Date;
   updatedAt: Date;
   environment?: IWorker['environment'];
@@ -23,6 +24,7 @@ export async function findAllWorkers(userId: string): Promise<IWorker[]> {
       w.name,
       w.user_id as "userId",
       w.environment_id as "environmentId",
+      w.current_version as "currentVersion",
       w.created_at as "createdAt",
       w.updated_at as "updatedAt",
       wd.code_type::text as "language",
@@ -46,12 +48,32 @@ export async function checkWorkerNameExists(name: string): Promise<boolean> {
   return workers.length > 0;
 }
 
+export async function findWorkerByName(userId: string, name: string): Promise<IWorker | null> {
+  const workers = await sql<WorkerRow>(
+    `SELECT
+      w.id,
+      w.name,
+      w.user_id as "userId",
+      w.current_version as "currentVersion",
+      w.created_at as "createdAt",
+      w.updated_at as "updatedAt",
+      wd.code_type::text as "language",
+      convert_from(wd.code, 'UTF8') as script
+    FROM workers w
+    LEFT JOIN worker_deployments wd ON wd.worker_id = w.id AND wd.version = w.current_version
+    WHERE w.name = $1 AND w.user_id = $2::uuid`,
+    [name, userId]
+  );
+  return workers[0] ?? null;
+}
+
 export async function findWorkerById(userId: string, workerId: string): Promise<IWorker | null> {
   const workers = await sql<WorkerRow>(
     `SELECT
       w.id,
       w.name,
       w.user_id as "userId",
+      w.current_version as "currentVersion",
       w.created_at as "createdAt",
       w.updated_at as "updatedAt",
       wd.code_type::text as "language",

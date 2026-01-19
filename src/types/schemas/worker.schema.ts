@@ -11,6 +11,7 @@ export const WorkerLanguageSchema = z.enum(['javascript', 'typescript']);
 export const WorkerSchema = ResourceSchema.extend({
   language: WorkerLanguageSchema.nullable(),
   script: z.string().nullable(),
+  currentVersion: z.number().nullable().optional(),
   environment: ResourceSchema.optional().nullable(),
   crons: z.array(CronSchema).optional(),
   domains: z.array(z.object({ name: z.string().min(1) })).optional()

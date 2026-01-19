@@ -38,13 +38,13 @@ workers.get('/', async (c) => {
   }
 });
 
-// GET /workers/:id - Get single worker
+// GET /workers/:id - Get single worker (accepts UUID or name)
 workers.get('/:id', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
 
   try {
-    const worker = await workersService.findById(userId, id);
+    const worker = await workersService.findByIdOrName(userId, idOrName);
 
     if (!worker) {
       return c.json({ error: 'Worker not found' }, 404);
@@ -82,16 +82,22 @@ workers.post('/', async (c) => {
   }
 });
 
-// PATCH /workers/:id - Update worker
+// PATCH /workers/:id - Update worker (accepts UUID or name)
 workers.patch('/:id', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
   const body = await c.req.json();
 
   try {
     const payload = WorkerUpdateInputSchema.parse(body);
 
-    const updatedWorker = await workersService.update(userId, id, payload);
+    const worker = await workersService.findByIdOrName(userId, idOrName);
+
+    if (!worker) {
+      return c.json({ error: 'Worker not found' }, 404);
+    }
+
+    const updatedWorker = await workersService.update(userId, worker.id, payload);
 
     if (!updatedWorker) {
       return c.json({ error: 'Worker not found' }, 404);
@@ -148,13 +154,19 @@ workers.post('/:id/crons', async (c) => {
   }
 });
 
-// DELETE /workers/:id - Delete worker
+// DELETE /workers/:id - Delete worker (accepts UUID or name)
 workers.delete('/:id', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
 
   try {
-    const deleted = await workersService.delete(userId, id);
+    const worker = await workersService.findByIdOrName(userId, idOrName);
+
+    if (!worker) {
+      return c.json({ error: 'Worker not found' }, 404);
+    }
+
+    const deleted = await workersService.delete(userId, worker.id);
 
     if (deleted === 0) {
       return c.json({ error: 'Worker not found' }, 404);
@@ -164,6 +176,70 @@ workers.delete('/:id', async (c) => {
   } catch (error) {
     console.error('Failed to delete worker:', error);
     return c.json({ error: 'Failed to delete worker' }, 500);
+  }
+});
+
+// POST /workers/:id/deploy - Deploy code to worker (CLI-friendly)
+// Accepts either worker ID (UUID) or name
+workers.post('/:id/deploy', async (c) => {
+  const userId = c.get('userId');
+  const idOrName = c.req.param('id');
+  const body = await c.req.json();
+
+  try {
+    // Validate input
+    if (!body.code) {
+      return c.json({ error: 'Missing required field: code' }, 400);
+    }
+
+    if (!body.codeType) {
+      return c.json({ error: 'Missing required field: codeType' }, 400);
+    }
+
+    const worker = await workersService.findByIdOrName(userId, idOrName);
+
+    if (!worker) {
+      return c.json({ error: 'Worker not found' }, 404);
+    }
+
+    const workerId = worker.id;
+
+    // Decode base64 code if it's bytes
+    const script = Array.isArray(body.code)
+      ? Buffer.from(body.code).toString('utf-8')
+      : body.code;
+
+    // Map code_type to language
+    const language = body.codeType === 'javascript' ? 'javascript' : 'typescript';
+
+    // Update worker with new script
+    const updatedWorker = await workersService.update(userId, workerId, {
+      script,
+      language
+    });
+
+    if (!updatedWorker) {
+      return c.json({ error: 'Worker not found' }, 404);
+    }
+
+    // Return deployment info
+    return c.json({
+      workerId: updatedWorker.id,
+      version: updatedWorker.currentVersion,
+      hash: Buffer.from(script).toString('base64').slice(0, 16),
+      codeType: body.codeType,
+      deployedAt: new Date().toISOString(),
+      message: body.message || null
+    });
+  } catch (error) {
+    console.error('Failed to deploy worker:', error);
+    return c.json(
+      {
+        error: 'Failed to deploy worker',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      },
+      500
+    );
   }
 });
 
