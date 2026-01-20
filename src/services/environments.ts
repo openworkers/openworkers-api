@@ -7,6 +7,8 @@ import type {
   IEnvironmentValueUpdateInput
 } from '../types';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export class EnvironmentsService {
   async findAll(userId: string): Promise<IEnvironment[]> {
     return db.findAllEnvironments(userId);
@@ -14,6 +16,16 @@ export class EnvironmentsService {
 
   async findById(userId: string, id: string): Promise<IEnvironment | null> {
     return db.findEnvironmentById(userId, id);
+  }
+
+  async findByName(userId: string, name: string): Promise<IEnvironment | null> {
+    return db.findEnvironmentByName(userId, name);
+  }
+
+  async findByIdOrName(userId: string, idOrName: string): Promise<IEnvironment | null> {
+    return UUID_REGEX.test(idOrName)
+      ? db.findEnvironmentById(userId, idOrName)
+      : db.findEnvironmentByName(userId, idOrName);
   }
 
   async create(userId: string, input: IEnvironmentCreateInput): Promise<IEnvironment> {

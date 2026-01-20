@@ -92,6 +92,42 @@ export async function findEnvironmentById(userId: string, envId: string): Promis
   return envs[0] ?? null;
 }
 
+export async function findEnvironmentByName(userId: string, name: string): Promise<IEnvironment | null> {
+  const envs = await sql<EnvironmentRow>(
+    `SELECT
+      e.id,
+      e.name,
+      e."desc",
+      e.user_id as "userId",
+      e.created_at as "createdAt",
+      e.updated_at as "updatedAt",
+      (
+        SELECT coalesce(json_agg(json_build_object(
+          'id', ev.id,
+          'key', ev.key,
+          'value', CASE WHEN ev.type = 'secret' THEN '********' ELSE ev.value END,
+          'type', ev.type
+        )), '[]'::json)
+        FROM environment_values ev
+        WHERE ev.environment_id = e.id
+      ) as values,
+      (
+        SELECT coalesce(json_agg(json_build_object(
+          'id', w.id,
+          'name', w.name,
+          'createdAt', w.created_at,
+          'updatedAt', w.updated_at
+        )), '[]'::json)
+        FROM workers w
+        WHERE w.environment_id = e.id
+      ) as workers
+    FROM environments e
+    WHERE e.name = $1 AND e.user_id = $2::uuid`,
+    [name, userId]
+  );
+  return envs[0] ?? null;
+}
+
 export async function createEnvironment(userId: string, name: string, desc?: string | null): Promise<IEnvironment> {
   const envs = await sql<EnvironmentRow>(
     `INSERT INTO environments (name, "desc", user_id)

@@ -17,16 +17,18 @@ environments.get('/', async (c) => {
   }
 });
 
-// GET /environments/:id - Get environment by id
+// GET /environments/:id - Get environment by id or name
 environments.get('/:id', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
+
   try {
-    const env = await environmentsService.findById(userId, id);
+    const env = await environmentsService.findByIdOrName(userId, idOrName);
+
     if (!env) {
       return c.json({ error: 'Environment not found' }, 404);
     }
-    // Values are already included in findById now
+
     return jsonResponse(c, EnvironmentSchema, env);
   } catch (error) {
     console.error('Failed to fetch environment:', error);
@@ -49,34 +51,35 @@ environments.post('/', async (c) => {
   }
 });
 
-// PATCH /environments/:id - Update environment
+// PATCH /environments/:id - Update environment (accepts UUID or name)
 environments.patch('/:id', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
   const body = await c.req.json();
 
   try {
-    const payload = EnvironmentUpdateInputSchema.parse({ ...body, id }); // Schema requires ID
+    // Resolve environment
+    const existingEnv = await environmentsService.findByIdOrName(userId, idOrName);
 
-    // Update name/desc if provided
-    let env;
-    if (payload.name) {
-      env = await environmentsService.update(userId, id, payload);
-    } else {
-      env = await environmentsService.findById(userId, id);
+    if (!existingEnv) {
+      return c.json({ error: 'Environment not found' }, 404);
     }
 
-    if (!env) {
-      return c.json({ error: 'Environment not found' }, 404);
+    const envId = existingEnv.id;
+    const payload = EnvironmentUpdateInputSchema.parse({ ...body, id: envId });
+
+    // Update name/desc if provided
+    if (payload.name) {
+      await environmentsService.update(userId, envId, payload);
     }
 
     // Update values if provided
     if (payload.values && Array.isArray(payload.values)) {
-      await environmentsService.updateValues(userId, id, payload.values);
+      await environmentsService.updateValues(userId, envId, payload.values);
     }
 
     // Reload to get fresh state (with values included)
-    const updatedEnv = await environmentsService.findById(userId, id);
+    const updatedEnv = await environmentsService.findById(userId, envId);
 
     return jsonResponse(c, EnvironmentSchema, updatedEnv);
   } catch (error) {
@@ -91,16 +94,24 @@ environments.patch('/:id', async (c) => {
   }
 });
 
-// DELETE /environments/:id - Delete environment
+// DELETE /environments/:id - Delete environment (accepts UUID or name)
 environments.delete('/:id', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
 
   try {
-    const deleted = await environmentsService.delete(userId, id);
+    const env = await environmentsService.findByIdOrName(userId, idOrName);
+
+    if (!env) {
+      return c.json({ error: 'Environment not found' }, 404);
+    }
+
+    const deleted = await environmentsService.delete(userId, env.id);
+
     if (deleted === 0) {
       return c.json({ error: 'Environment not found' }, 404);
     }
+
     return c.json({ deleted });
   } catch (error) {
     console.error('Failed to delete environment:', error);
