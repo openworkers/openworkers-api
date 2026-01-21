@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 // https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
 // https://github.com/angular/angular/blob/caedef0f5b37ac6530885223b26879c39c36c1bd/packages/forms/src/validators.ts#L112
 export const emailRegexp =
@@ -5,4 +7,10 @@ export const emailRegexp =
 
 export function isValidEmail(email: string): boolean {
   return emailRegexp.test(email);
+}
+
+const uuidSchema = z.string().uuid();
+
+export function isUuid(value: string): boolean {
+  return uuidSchema.safeParse(value).success;
 }

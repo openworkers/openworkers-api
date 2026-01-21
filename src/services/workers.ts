@@ -1,7 +1,6 @@
 import * as db from './db';
 import type { IWorker, IWorkerLanguage, IWorkerUpdateInput } from '../types';
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuid } from '../utils/validation';
 
 export class WorkersService {
   async findAll(userId: string): Promise<IWorker[]> {
@@ -17,7 +16,7 @@ export class WorkersService {
   }
 
   async findByIdOrName(userId: string, idOrName: string): Promise<IWorker | null> {
-    return UUID_REGEX.test(idOrName)
+    return isUuid(idOrName)
       ? db.findWorkerById(userId, idOrName)
       : db.findWorkerByName(userId, idOrName);
   }

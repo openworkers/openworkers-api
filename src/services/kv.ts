@@ -2,6 +2,7 @@ import * as db from './db/kv';
 import * as usersDb from './db/users';
 import type { IKvNamespace, IKvNamespaceCreateInput, IKvNamespaceUpdateInput } from '../types';
 import type { KvDataRow, KvDataListResult } from './db/kv';
+import { isUuid } from '../utils/validation';
 
 export class KvService {
   async findAll(userId: string): Promise<IKvNamespace[]> {
@@ -30,6 +31,28 @@ export class KvService {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt
     };
+  }
+
+  async findByName(userId: string, name: string): Promise<IKvNamespace | null> {
+    const row = await db.findKvNamespaceByName(userId, name);
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      id: row.id,
+      name: row.name,
+      desc: row.desc,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt
+    };
+  }
+
+  async findByIdOrName(userId: string, idOrName: string): Promise<IKvNamespace | null> {
+    return isUuid(idOrName)
+      ? this.findById(userId, idOrName)
+      : this.findByName(userId, idOrName);
   }
 
   async create(userId: string, input: IKvNamespaceCreateInput): Promise<IKvNamespace> {

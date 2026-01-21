@@ -1,6 +1,7 @@
 import { sql } from './db/client';
 import * as db from './db/databases';
 import type { IDatabase, IDatabaseCreateInput } from '../types';
+import { isUuid } from '../utils/validation';
 
 /**
  * Generate a unique schema name for platform provider
@@ -92,6 +93,28 @@ export class DatabasesService {
     }
 
     return toApiResponse(row);
+  }
+
+  /**
+   * Get a specific database by name
+   */
+  async findByName(userId: string, name: string): Promise<IDatabase | null> {
+    const row = await db.findDatabaseByName(userId, name);
+
+    if (!row) {
+      return null;
+    }
+
+    return toApiResponse(row);
+  }
+
+  /**
+   * Get a specific database by ID or name
+   */
+  async findByIdOrName(userId: string, idOrName: string): Promise<IDatabase | null> {
+    return isUuid(idOrName)
+      ? this.findById(userId, idOrName)
+      : this.findByName(userId, idOrName);
   }
 
   /**

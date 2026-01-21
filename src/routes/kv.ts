@@ -18,13 +18,13 @@ kv.get('/', async (c) => {
   }
 });
 
-// GET /kv/:id - Get single KV namespace
+// GET /kv/:id - Get single KV namespace (accepts UUID or name)
 kv.get('/:id', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
 
   try {
-    const namespace = await kvService.findById(userId, id);
+    const namespace = await kvService.findByIdOrName(userId, idOrName);
 
     if (!namespace) {
       return c.json({ error: 'KV namespace not found' }, 404);
@@ -59,15 +59,21 @@ kv.post('/', async (c) => {
   }
 });
 
-// PATCH /kv/:id - Update KV namespace
+// PATCH /kv/:id - Update KV namespace (accepts UUID or name)
 kv.patch('/:id', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
   const body = await c.req.json();
 
   try {
+    const existing = await kvService.findByIdOrName(userId, idOrName);
+
+    if (!existing) {
+      return c.json({ error: 'KV namespace not found' }, 404);
+    }
+
     const payload = KvNamespaceUpdateInputSchema.parse(body);
-    const namespace = await kvService.update(userId, id, payload);
+    const namespace = await kvService.update(userId, existing.id, payload);
 
     if (!namespace) {
       return c.json({ error: 'KV namespace not found' }, 404);
@@ -86,13 +92,19 @@ kv.patch('/:id', async (c) => {
   }
 });
 
-// DELETE /kv/:id - Delete KV namespace
+// DELETE /kv/:id - Delete KV namespace (accepts UUID or name)
 kv.delete('/:id', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
 
   try {
-    const deleted = await kvService.delete(userId, id);
+    const existing = await kvService.findByIdOrName(userId, idOrName);
+
+    if (!existing) {
+      return c.json({ error: 'KV namespace not found' }, 404);
+    }
+
+    const deleted = await kvService.delete(userId, existing.id);
 
     if (!deleted) {
       return c.json({ error: 'KV namespace not found' }, 404);
@@ -107,23 +119,23 @@ kv.delete('/:id', async (c) => {
 
 // ============ KV Data Routes ============
 
-// GET /kv/:id/data - List keys with pagination and search
+// GET /kv/:id/data - List keys with pagination and search (accepts UUID or name)
 kv.get('/:id/data', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
   const prefix = c.req.query('prefix');
   const cursor = c.req.query('cursor');
   const limit = c.req.query('limit');
 
   try {
     // Verify ownership
-    const namespace = await kvService.findById(userId, id);
+    const namespace = await kvService.findByIdOrName(userId, idOrName);
 
     if (!namespace) {
       return c.json({ error: 'KV namespace not found' }, 404);
     }
 
-    const result = await kvService.listData(id, {
+    const result = await kvService.listData(namespace.id, {
       prefix,
       cursor,
       limit: limit ? parseInt(limit, 10) : undefined
@@ -136,16 +148,16 @@ kv.get('/:id/data', async (c) => {
   }
 });
 
-// PUT /kv/:id/data/:key - Create or update a key
+// PUT /kv/:id/data/:key - Create or update a key (accepts UUID or name)
 kv.put('/:id/data/:key', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
   const key = c.req.param('key');
   const body = await c.req.json();
 
   try {
     // Verify ownership
-    const namespace = await kvService.findById(userId, id);
+    const namespace = await kvService.findByIdOrName(userId, idOrName);
 
     if (!namespace) {
       return c.json({ error: 'KV namespace not found' }, 404);
@@ -165,7 +177,7 @@ kv.put('/:id/data/:key', async (c) => {
       return c.json({ error: `Value too large: ${valueSize} bytes (max ${MAX_VALUE_SIZE} bytes)` }, 400);
     }
 
-    const result = await kvService.putData(id, key, value, expiresIn);
+    const result = await kvService.putData(namespace.id, key, value, expiresIn);
     return c.json(result);
   } catch (error) {
     console.error('Failed to put KV data:', error);
@@ -173,21 +185,21 @@ kv.put('/:id/data/:key', async (c) => {
   }
 });
 
-// DELETE /kv/:id/data/:key - Delete a key
+// DELETE /kv/:id/data/:key - Delete a key (accepts UUID or name)
 kv.delete('/:id/data/:key', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
   const key = c.req.param('key');
 
   try {
     // Verify ownership
-    const namespace = await kvService.findById(userId, id);
+    const namespace = await kvService.findByIdOrName(userId, idOrName);
 
     if (!namespace) {
       return c.json({ error: 'KV namespace not found' }, 404);
     }
 
-    const deleted = await kvService.deleteData(id, key);
+    const deleted = await kvService.deleteData(namespace.id, key);
 
     if (!deleted) {
       return c.json({ error: 'Key not found' }, 404);

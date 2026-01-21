@@ -41,13 +41,13 @@ storage.get('/', async (c) => {
   }
 });
 
-// GET /storage/:id - Get single storage config
+// GET /storage/:id - Get single storage config (accepts UUID or name)
 storage.get('/:id', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
 
   try {
-    const config = await storageService.findById(userId, id);
+    const config = await storageService.findByIdOrName(userId, idOrName);
 
     if (!config) {
       return c.json({ error: 'Storage config not found' }, 404);
@@ -82,15 +82,21 @@ storage.post('/', async (c) => {
   }
 });
 
-// PATCH /storage/:id - Update storage config
+// PATCH /storage/:id - Update storage config (accepts UUID or name)
 storage.patch('/:id', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
   const body = await c.req.json();
 
   try {
+    const existing = await storageService.findByIdOrName(userId, idOrName);
+
+    if (!existing) {
+      return c.json({ error: 'Storage config not found' }, 404);
+    }
+
     const payload = StorageConfigUpdateInputSchema.parse(body);
-    const config = await storageService.update(userId, id, payload);
+    const config = await storageService.update(userId, existing.id, payload);
 
     if (!config) {
       return c.json({ error: 'Storage config not found' }, 404);
@@ -109,10 +115,10 @@ storage.patch('/:id', async (c) => {
   }
 });
 
-// POST /storage/:id/presign - Get presigned URL for upload
+// POST /storage/:id/presign - Get presigned URL for upload (accepts UUID or name)
 storage.post('/:id/presign', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
   const body = await c.req.json();
 
   const { filename, filesize, filetype, checksum } = body as {
@@ -131,7 +137,7 @@ storage.post('/:id/presign', async (c) => {
   }
 
   try {
-    const config = await storageService.getConfigWithCredentials(userId, id);
+    const config = await storageService.getConfigWithCredentialsByIdOrName(userId, idOrName);
 
     if (!config) {
       return c.json({ error: 'Storage config not found' }, 404);
@@ -163,15 +169,15 @@ storage.post('/:id/presign', async (c) => {
   }
 });
 
-// GET /storage/:id/files - List files in storage
+// GET /storage/:id/files - List files in storage (accepts UUID or name)
 storage.get('/:id/files', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
   const prefix = c.req.query('prefix');
   const cursor = c.req.query('cursor');
 
   try {
-    const config = await storageService.getConfigWithCredentials(userId, id);
+    const config = await storageService.getConfigWithCredentialsByIdOrName(userId, idOrName);
 
     if (!config) {
       return c.json({ error: 'Storage config not found' }, 404);
@@ -193,10 +199,10 @@ storage.get('/:id/files', async (c) => {
   }
 });
 
-// GET /storage/:id/files/:key/presign - Get presigned URL to download a file
+// GET /storage/:id/files/:key/presign - Get presigned URL to download a file (accepts UUID or name)
 storage.get('/:id/files/*/presign', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
   const key = c.req.path.split('/files/')[1]!.replace('/presign', '');
 
   if (!key) {
@@ -204,7 +210,7 @@ storage.get('/:id/files/*/presign', async (c) => {
   }
 
   try {
-    const config = await storageService.getConfigWithCredentials(userId, id);
+    const config = await storageService.getConfigWithCredentialsByIdOrName(userId, idOrName);
 
     if (!config) {
       return c.json({ error: 'Storage config not found' }, 404);
@@ -226,10 +232,10 @@ storage.get('/:id/files/*/presign', async (c) => {
   }
 });
 
-// DELETE /storage/:id/files/:key - Delete a file
+// DELETE /storage/:id/files/:key - Delete a file (accepts UUID or name)
 storage.delete('/:id/files/*', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
   const key = c.req.path.split('/files/')[1];
 
   if (!key) {
@@ -237,7 +243,7 @@ storage.delete('/:id/files/*', async (c) => {
   }
 
   try {
-    const config = await storageService.getConfigWithCredentials(userId, id);
+    const config = await storageService.getConfigWithCredentialsByIdOrName(userId, idOrName);
 
     if (!config) {
       return c.json({ error: 'Storage config not found' }, 404);
@@ -263,13 +269,19 @@ storage.delete('/:id/files/*', async (c) => {
   }
 });
 
-// DELETE /storage/:id - Delete storage config
+// DELETE /storage/:id - Delete storage config (accepts UUID or name)
 storage.delete('/:id', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
 
   try {
-    const deleted = await storageService.delete(userId, id);
+    const existing = await storageService.findByIdOrName(userId, idOrName);
+
+    if (!existing) {
+      return c.json({ error: 'Storage config not found' }, 404);
+    }
+
+    const deleted = await storageService.delete(userId, existing.id);
 
     if (!deleted) {
       return c.json({ error: 'Storage config not found' }, 404);

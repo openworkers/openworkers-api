@@ -3,6 +3,7 @@ import * as usersDb from './db/users';
 import { sharedStorage } from '../config';
 import { MASKED_SECRET } from '../types';
 import type { IStorageConfig, IStorageConfigCreateInput, IStorageConfigUpdateInput } from '../types';
+import { isUuid } from '../utils/validation';
 
 // Determine provider from storage config row
 function getProvider(row: db.StorageConfigRow): 'platform' | 's3' {
@@ -47,6 +48,22 @@ export class StorageService {
     }
 
     return rowToStorageConfig(row);
+  }
+
+  async findByName(userId: string, name: string): Promise<IStorageConfig | null> {
+    const row = await db.findStorageConfigByName(userId, name);
+
+    if (!row) {
+      return null;
+    }
+
+    return rowToStorageConfig(row);
+  }
+
+  async findByIdOrName(userId: string, idOrName: string): Promise<IStorageConfig | null> {
+    return isUuid(idOrName)
+      ? this.findById(userId, idOrName)
+      : this.findByName(userId, idOrName);
   }
 
   async create(userId: string, input: IStorageConfigCreateInput): Promise<IStorageConfig> {
@@ -142,6 +159,27 @@ export class StorageService {
    */
   async getConfigWithCredentials(userId: string, id: string): Promise<db.StorageConfigRow | null> {
     return db.findStorageConfigById(userId, id);
+  }
+
+  /**
+   * Get storage config with credentials by ID or name
+   */
+  async getConfigWithCredentialsByIdOrName(
+    userId: string,
+    idOrName: string
+  ): Promise<db.StorageConfigRow | null> {
+    if (isUuid(idOrName)) {
+      return db.findStorageConfigById(userId, idOrName);
+    }
+
+    // First find by name to get the ID
+    const config = await db.findStorageConfigByName(userId, idOrName);
+
+    if (!config) {
+      return null;
+    }
+
+    return db.findStorageConfigById(userId, config.id);
   }
 }
 

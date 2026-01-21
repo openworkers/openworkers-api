@@ -23,13 +23,13 @@ databases.get('/', async (c) => {
   }
 });
 
-// GET /databases/:id - Get single database
+// GET /databases/:id - Get single database (accepts UUID or name)
 databases.get('/:id', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
 
   try {
-    const db = await databasesService.findById(userId, id);
+    const db = await databasesService.findByIdOrName(userId, idOrName);
 
     if (!db) {
       return c.json({ error: 'Database not found' }, 404);
@@ -73,10 +73,10 @@ databases.post('/', async (c) => {
   }
 });
 
-// PATCH /databases/:id - Update database
+// PATCH /databases/:id - Update database (accepts UUID or name)
 databases.patch('/:id', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
   const body = await c.req.json();
 
   const UpdateSchema = z.object({
@@ -87,8 +87,14 @@ databases.patch('/:id', async (c) => {
   });
 
   try {
+    const existing = await databasesService.findByIdOrName(userId, idOrName);
+
+    if (!existing) {
+      return c.json({ error: 'Database not found' }, 404);
+    }
+
     const payload = UpdateSchema.parse(body);
-    const db = await databasesService.update(userId, id, payload);
+    const db = await databasesService.update(userId, existing.id, payload);
 
     if (!db) {
       return c.json({ error: 'Database not found' }, 404);
@@ -111,13 +117,19 @@ databases.patch('/:id', async (c) => {
   }
 });
 
-// DELETE /databases/:id - Delete database
+// DELETE /databases/:id - Delete database (accepts UUID or name)
 databases.delete('/:id', async (c) => {
   const userId = c.get('userId');
-  const id = c.req.param('id');
+  const idOrName = c.req.param('id');
 
   try {
-    const deleted = await databasesService.delete(userId, id);
+    const existing = await databasesService.findByIdOrName(userId, idOrName);
+
+    if (!existing) {
+      return c.json({ error: 'Database not found' }, 404);
+    }
+
+    const deleted = await databasesService.delete(userId, existing.id);
 
     if (!deleted) {
       return c.json({ error: 'Database not found' }, 404);
