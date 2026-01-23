@@ -300,7 +300,7 @@ workers.post('/:id/upload', async (c) => {
       const normalizedPath = relativePath.replace(/^[^/]+\//, '');
       const filename = normalizedPath || relativePath;
 
-      if (filename === '_worker.js' || filename === '_worker.ts') {
+      if (filename === 'worker.js' || filename === 'worker.ts' || filename === '_worker.js' || filename === '_worker.ts') {
         workerScript = await zipEntry.async('string');
         language = filename.endsWith('.ts') ? 'typescript' : 'javascript';
       } else if (normalizedPath.startsWith('assets/') || relativePath.startsWith('assets/')) {
@@ -316,7 +316,7 @@ workers.post('/:id/upload', async (c) => {
     }
 
     if (!workerScript) {
-      return c.json({ error: 'No _worker.js or _worker.ts found in zip archive' }, 400);
+      return c.json({ error: 'No worker.js or worker.ts found in zip archive' }, 400);
     }
 
     // 6. Update worker script
