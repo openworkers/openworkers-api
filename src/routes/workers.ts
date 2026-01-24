@@ -46,10 +46,7 @@ workers.get('/:id', async (c) => {
   const includeScript = c.req.query('script') === 'true';
 
   try {
-    const worker = await workersService.findByIdOrName(userId, idOrName, {
-      detailed: true,
-      includeScript
-    });
+    const worker = await workersService.findByIdOrName(userId, idOrName, { includeScript });
 
     if (!worker) {
       return c.json({ error: 'Worker not found' }, 404);
@@ -121,10 +118,10 @@ workers.patch('/:id', async (c) => {
   }
 });
 
-// POST /workers/:id/crons - Create cron for worker
+// POST /workers/:id/crons - Create cron for worker (accepts UUID or name)
 workers.post('/:id/crons', async (c) => {
   const userId = c.get('userId');
-  const workerId = c.req.param('id');
+  const idOrName = c.req.param('id');
   const body = await c.req.json();
 
   if (!body.expression) {
@@ -133,19 +130,19 @@ workers.post('/:id/crons', async (c) => {
 
   try {
     // Verify worker exists and belongs to user
-    const worker = await workersService.findById(userId, workerId);
+    const worker = await workersService.findByIdOrName(userId, idOrName);
 
     if (!worker) {
       return c.json({ error: 'Worker not found' }, 404);
     }
 
     await cronsService.create(userId, {
-      workerId,
+      workerId: worker.id,
       value: body.expression // Map expression -> value
     });
 
     // Return updated worker with crons
-    const updatedWorker = await workersService.findById(userId, workerId, { detailed: true });
+    const updatedWorker = await workersService.findById(userId, worker.id, {});
     return jsonResponse(c, WorkerSchema, updatedWorker, 201);
   } catch (error) {
     console.error('Failed to create cron:', error);
@@ -252,18 +249,18 @@ workers.post('/:id/deploy', async (c) => {
 // NOTE: Runner needs to implement routes support first
 workers.post('/:id/upload', async (c) => {
   const userId = c.get('userId');
-  const workerId = c.req.param('id');
+  const idOrName = c.req.param('id');
 
   try {
-    // 1. Check worker exists
-    const worker = await workersService.findById(userId, workerId);
+    // 1. Check worker exists (accepts UUID or name)
+    const worker = await workersService.findByIdOrName(userId, idOrName);
 
     if (!worker) {
       return c.json({ error: 'Worker not found' }, 404);
     }
 
     // 2. Check worker has ASSETS binding
-    const assetsBinding = await findWorkerAssetsBinding(userId, workerId);
+    const assetsBinding = await findWorkerAssetsBinding(userId, worker.id);
 
     if (!assetsBinding) {
       return c.json(
@@ -331,7 +328,7 @@ workers.post('/:id/upload', async (c) => {
     }
 
     // 6. Update worker script
-    await workersService.update(userId, workerId, { script: workerScript });
+    await workersService.update(userId, worker.id, { script: workerScript });
 
     // 7. Upload assets to S3
     const endpoint = assetsBinding.endpoint ?? sharedStorage.endpoint;
@@ -369,7 +366,7 @@ workers.post('/:id/upload', async (c) => {
     const uploadedCount = results.filter(Boolean).length;
 
     // 8. Get updated worker
-    const updatedWorker = await workersService.findById(userId, workerId);
+    const updatedWorker = await workersService.findById(userId, worker.id, {});
 
     // 9. Return success with worker URL
     const workerDomain = updatedWorker?.domains?.[0]?.name;

@@ -66,13 +66,14 @@ export async function updateCron(userId: string, cronId: string, value: string, 
 }
 
 export async function deleteCron(userId: string, cronId: string): Promise<number> {
-  const result = await sql(
+  const result = await sql<{ id: string }>(
     `DELETE FROM crons c
     USING workers w
     WHERE c.worker_id = w.id
       AND c.id = $1::uuid
-      AND w.user_id = $2::uuid`,
+      AND w.user_id = $2::uuid
+    RETURNING c.id`,
     [cronId, userId]
   );
-  return result.count ?? 0;
+  return result.length;
 }

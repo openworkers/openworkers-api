@@ -2,7 +2,6 @@ import * as db from './db';
 import type { IWorker, IWorkerLanguage, IWorkerUpdateInput } from '../types';
 
 interface FindWorkerOptions {
-  detailed?: boolean;
   includeScript?: boolean;
 }
 

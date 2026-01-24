@@ -50,29 +50,36 @@ export async function checkWorkerNameExists(name: string): Promise<boolean> {
 }
 
 interface FindWorkerOptions {
-  detailed?: boolean;
   includeScript?: boolean;
 }
 
 /**
  * Find a worker by id or name.
- * - detailed: include environment, crons, and domains (for GET endpoint only)
- * - includeScript: include the script code (expensive, avoid when not needed)
+ * Always includes environment, crons, and domains.
+ * Use includeScript: true to include the script code (expensive, avoid when not needed).
  */
 export async function findWorker(
   userId: string,
   idOrName: string,
   options: FindWorkerOptions = {}
-): Promise<IWorker | null> {
-  const { detailed = false, includeScript = false } = options;
+): Promise<WorkerRow | null> {
+  const { includeScript = false } = options;
 
   const byId = isUuid(idOrName);
   const whereClause = byId ? 'w.id = $1::uuid AND w.user_id = $2::uuid' : 'w.name = $1 AND w.user_id = $2::uuid';
 
   const scriptField = includeScript ? `,\n      convert_from(wd.code, 'UTF8') as script` : '';
 
-  const detailedFields = detailed
-    ? `,
+  const workers = await sql<WorkerRow>(
+    `SELECT
+      w.id,
+      w.name,
+      w.user_id as "userId",
+      w.environment_id as "environmentId",
+      w.current_version as "currentVersion",
+      w.created_at as "createdAt",
+      w.updated_at as "updatedAt",
+      wd.code_type::text as "language"${scriptField},
       (
         SELECT json_build_object(
           'id', e.id,
@@ -107,19 +114,7 @@ export async function findWorker(
         )), '[]'::json)
         FROM domains d
         WHERE d.worker_id = w.id
-      ) as domains`
-    : '';
-
-  const workers = await sql<WorkerRow>(
-    `SELECT
-      w.id,
-      w.name,
-      w.user_id as "userId",
-      w.environment_id as "environmentId",
-      w.current_version as "currentVersion",
-      w.created_at as "createdAt",
-      w.updated_at as "updatedAt",
-      wd.code_type::text as "language"${scriptField}${detailedFields}
+      ) as domains
     FROM workers w
     LEFT JOIN worker_deployments wd ON wd.worker_id = w.id AND wd.version = w.current_version
     WHERE ${whereClause}`,
@@ -129,8 +124,8 @@ export async function findWorker(
   return workers[0] ?? null;
 }
 
-// Convenience wrappers for internal use (includeScript = true for updates that need to compare script)
-export async function findWorkerById(userId: string, workerId: string): Promise<IWorker | null> {
+// Convenience wrapper for internal use
+export async function findWorkerById(userId: string, workerId: string): Promise<WorkerRow | null> {
   return findWorker(userId, workerId, { includeScript: true });
 }
 
@@ -182,7 +177,7 @@ export async function updateWorker(
     environmentId?: string | null;
     domains?: string[];
   }
-): Promise<IWorker | null> {
+): Promise<WorkerRow | null> {
   const current = await findWorkerById(userId, workerId);
 
   if (!current) {
