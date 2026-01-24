@@ -1,6 +1,6 @@
 {
   "name": "openworkers-api",
-  "version": "1.3.9",
+  "version": "1.4.0",
   "license": "MIT",
   "module": "src/index.ts",
   "type": "module",
@@ -16,6 +16,7 @@
     "test": "bun test",
     "check": "tsc --noEmit",
     "lint": "prettier --write .",
+    "format": "prettier --write .",
     "generate-types": "bun scripts/generate-types.ts"
   },
   "dependencies": {

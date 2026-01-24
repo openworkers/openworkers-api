@@ -39,12 +39,17 @@ workers.get('/', async (c) => {
 });
 
 // GET /workers/:id - Get single worker (accepts UUID or name)
+// Use ?script=true to include the script in the response
 workers.get('/:id', async (c) => {
   const userId = c.get('userId');
   const idOrName = c.req.param('id');
+  const includeScript = c.req.query('script') === 'true';
 
   try {
-    const worker = await workersService.findByIdOrName(userId, idOrName);
+    const worker = await workersService.findByIdOrName(userId, idOrName, {
+      detailed: true,
+      includeScript
+    });
 
     if (!worker) {
       return c.json({ error: 'Worker not found' }, 404);
@@ -139,8 +144,8 @@ workers.post('/:id/crons', async (c) => {
       value: body.expression // Map expression -> value
     });
 
-    // Return updated worker
-    const updatedWorker = await workersService.findById(userId, workerId);
+    // Return updated worker with crons
+    const updatedWorker = await workersService.findById(userId, workerId, { detailed: true });
     return jsonResponse(c, WorkerSchema, updatedWorker, 201);
   } catch (error) {
     console.error('Failed to create cron:', error);
@@ -205,9 +210,7 @@ workers.post('/:id/deploy', async (c) => {
     const workerId = worker.id;
 
     // Decode base64 code if it's bytes
-    const script = Array.isArray(body.code)
-      ? Buffer.from(body.code).toString('utf-8')
-      : body.code;
+    const script = Array.isArray(body.code) ? Buffer.from(body.code).toString('utf-8') : body.code;
 
     // Map code_type to language
     const language = body.codeType === 'javascript' ? 'javascript' : 'typescript';
@@ -244,6 +247,9 @@ workers.post('/:id/deploy', async (c) => {
 });
 
 // POST /workers/:id/upload - Upload zip with _worker.js and assets
+// TODO: Support /functions folder (filesystem routing like Cloudflare Pages Functions)
+// TODO: Support routes.json for custom routing rules
+// NOTE: Runner needs to implement routes support first
 workers.post('/:id/upload', async (c) => {
   const userId = c.get('userId');
   const workerId = c.req.param('id');
@@ -300,7 +306,12 @@ workers.post('/:id/upload', async (c) => {
       const normalizedPath = relativePath.replace(/^[^/]+\//, '');
       const filename = normalizedPath || relativePath;
 
-      if (filename === 'worker.js' || filename === 'worker.ts' || filename === '_worker.js' || filename === '_worker.ts') {
+      if (
+        filename === 'worker.js' ||
+        filename === 'worker.ts' ||
+        filename === '_worker.js' ||
+        filename === '_worker.ts'
+      ) {
         workerScript = await zipEntry.async('string');
         language = filename.endsWith('.ts') ? 'typescript' : 'javascript';
       } else if (normalizedPath.startsWith('assets/') || relativePath.startsWith('assets/')) {

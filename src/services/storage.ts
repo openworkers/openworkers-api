@@ -61,9 +61,7 @@ export class StorageService {
   }
 
   async findByIdOrName(userId: string, idOrName: string): Promise<IStorageConfig | null> {
-    return isUuid(idOrName)
-      ? this.findById(userId, idOrName)
-      : this.findByName(userId, idOrName);
+    return isUuid(idOrName) ? this.findById(userId, idOrName) : this.findByName(userId, idOrName);
   }
 
   async create(userId: string, input: IStorageConfigCreateInput): Promise<IStorageConfig> {
@@ -164,10 +162,7 @@ export class StorageService {
   /**
    * Get storage config with credentials by ID or name
    */
-  async getConfigWithCredentialsByIdOrName(
-    userId: string,
-    idOrName: string
-  ): Promise<db.StorageConfigRow | null> {
+  async getConfigWithCredentialsByIdOrName(userId: string, idOrName: string): Promise<db.StorageConfigRow | null> {
     if (isUuid(idOrName)) {
       return db.findStorageConfigById(userId, idOrName);
     }

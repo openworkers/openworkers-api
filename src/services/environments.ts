@@ -22,9 +22,7 @@ export class EnvironmentsService {
   }
 
   async findByIdOrName(userId: string, idOrName: string): Promise<IEnvironment | null> {
-    return isUuid(idOrName)
-      ? db.findEnvironmentById(userId, idOrName)
-      : db.findEnvironmentByName(userId, idOrName);
+    return isUuid(idOrName) ? db.findEnvironmentById(userId, idOrName) : db.findEnvironmentByName(userId, idOrName);
   }
 
   async create(userId: string, input: IEnvironmentCreateInput): Promise<IEnvironment> {

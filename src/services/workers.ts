@@ -1,24 +1,22 @@
 import * as db from './db';
 import type { IWorker, IWorkerLanguage, IWorkerUpdateInput } from '../types';
-import { isUuid } from '../utils/validation';
+
+interface FindWorkerOptions {
+  detailed?: boolean;
+  includeScript?: boolean;
+}
 
 export class WorkersService {
   async findAll(userId: string): Promise<IWorker[]> {
     return db.findAllWorkers(userId);
   }
 
-  async findById(userId: string, id: string): Promise<IWorker | null> {
-    return db.findWorkerById(userId, id);
+  async findById(userId: string, id: string, options: FindWorkerOptions = {}): Promise<IWorker | null> {
+    return db.findWorker(userId, id, options);
   }
 
-  async findByName(userId: string, name: string): Promise<IWorker | null> {
-    return db.findWorkerByName(userId, name);
-  }
-
-  async findByIdOrName(userId: string, idOrName: string): Promise<IWorker | null> {
-    return isUuid(idOrName)
-      ? db.findWorkerById(userId, idOrName)
-      : db.findWorkerByName(userId, idOrName);
+  async findByIdOrName(userId: string, idOrName: string, options: FindWorkerOptions = {}): Promise<IWorker | null> {
+    return db.findWorker(userId, idOrName, options);
   }
 
   async create(

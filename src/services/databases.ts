@@ -112,9 +112,7 @@ export class DatabasesService {
    * Get a specific database by ID or name
    */
   async findByIdOrName(userId: string, idOrName: string): Promise<IDatabase | null> {
-    return isUuid(idOrName)
-      ? this.findById(userId, idOrName)
-      : this.findByName(userId, idOrName);
+    return isUuid(idOrName) ? this.findById(userId, idOrName) : this.findByName(userId, idOrName);
   }
 
   /**

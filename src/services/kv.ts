@@ -50,9 +50,7 @@ export class KvService {
   }
 
   async findByIdOrName(userId: string, idOrName: string): Promise<IKvNamespace | null> {
-    return isUuid(idOrName)
-      ? this.findById(userId, idOrName)
-      : this.findByName(userId, idOrName);
+    return isUuid(idOrName) ? this.findById(userId, idOrName) : this.findByName(userId, idOrName);
   }
 
   async create(userId: string, input: IKvNamespaceCreateInput): Promise<IKvNamespace> {

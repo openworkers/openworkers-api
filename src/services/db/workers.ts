@@ -1,6 +1,7 @@
 import { sql } from './client';
 import type { IWorker, IWorkerLanguage } from '../../types';
 import { createHash } from 'crypto';
+import { isUuid } from '../../utils/validation';
 
 interface WorkerRow {
   id: string;
@@ -48,36 +49,30 @@ export async function checkWorkerNameExists(name: string): Promise<boolean> {
   return workers.length > 0;
 }
 
-export async function findWorkerByName(userId: string, name: string): Promise<IWorker | null> {
-  const workers = await sql<WorkerRow>(
-    `SELECT
-      w.id,
-      w.name,
-      w.user_id as "userId",
-      w.current_version as "currentVersion",
-      w.created_at as "createdAt",
-      w.updated_at as "updatedAt",
-      wd.code_type::text as "language",
-      convert_from(wd.code, 'UTF8') as script
-    FROM workers w
-    LEFT JOIN worker_deployments wd ON wd.worker_id = w.id AND wd.version = w.current_version
-    WHERE w.name = $1 AND w.user_id = $2::uuid`,
-    [name, userId]
-  );
-  return workers[0] ?? null;
+interface FindWorkerOptions {
+  detailed?: boolean;
+  includeScript?: boolean;
 }
 
-export async function findWorkerById(userId: string, workerId: string): Promise<IWorker | null> {
-  const workers = await sql<WorkerRow>(
-    `SELECT
-      w.id,
-      w.name,
-      w.user_id as "userId",
-      w.current_version as "currentVersion",
-      w.created_at as "createdAt",
-      w.updated_at as "updatedAt",
-      wd.code_type::text as "language",
-      convert_from(wd.code, 'UTF8') as script,
+/**
+ * Find a worker by id or name.
+ * - detailed: include environment, crons, and domains (for GET endpoint only)
+ * - includeScript: include the script code (expensive, avoid when not needed)
+ */
+export async function findWorker(
+  userId: string,
+  idOrName: string,
+  options: FindWorkerOptions = {}
+): Promise<IWorker | null> {
+  const { detailed = false, includeScript = false } = options;
+
+  const byId = isUuid(idOrName);
+  const whereClause = byId ? 'w.id = $1::uuid AND w.user_id = $2::uuid' : 'w.name = $1 AND w.user_id = $2::uuid';
+
+  const scriptField = includeScript ? `,\n      convert_from(wd.code, 'UTF8') as script` : '';
+
+  const detailedFields = detailed
+    ? `,
       (
         SELECT json_build_object(
           'id', e.id,
@@ -112,13 +107,31 @@ export async function findWorkerById(userId: string, workerId: string): Promise<
         )), '[]'::json)
         FROM domains d
         WHERE d.worker_id = w.id
-      ) as domains
+      ) as domains`
+    : '';
+
+  const workers = await sql<WorkerRow>(
+    `SELECT
+      w.id,
+      w.name,
+      w.user_id as "userId",
+      w.environment_id as "environmentId",
+      w.current_version as "currentVersion",
+      w.created_at as "createdAt",
+      w.updated_at as "updatedAt",
+      wd.code_type::text as "language"${scriptField}${detailedFields}
     FROM workers w
     LEFT JOIN worker_deployments wd ON wd.worker_id = w.id AND wd.version = w.current_version
-    WHERE w.id = $1::uuid AND w.user_id = $2::uuid`,
-    [workerId, userId]
+    WHERE ${whereClause}`,
+    [idOrName, userId]
   );
+
   return workers[0] ?? null;
+}
+
+// Convenience wrappers for internal use (includeScript = true for updates that need to compare script)
+export async function findWorkerById(userId: string, workerId: string): Promise<IWorker | null> {
+  return findWorker(userId, workerId, { includeScript: true });
 }
 
 export async function createWorker(
