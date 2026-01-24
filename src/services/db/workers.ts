@@ -198,7 +198,7 @@ export async function updateWorker(
     WHERE id = $3::uuid AND user_id = $4::uuid`,
     [
       updates.name ?? current.name,
-      updates.environmentId === undefined ? (current.environment?.id ?? null) : updates.environmentId,
+      updates.environmentId === undefined ? (current.environmentId ?? null) : updates.environmentId,
       workerId,
       userId
     ]
