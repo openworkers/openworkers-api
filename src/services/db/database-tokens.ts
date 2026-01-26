@@ -1,5 +1,9 @@
 import { sql } from './client';
+import { postgate } from '../../config';
 import type { DatabaseOperation } from '../../types/schemas/database-token.schema';
+
+const SYSTEM_TOKEN_NAME = '__system__';
+const ALL_OPERATIONS: DatabaseOperation[] = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP'];
 
 export interface DatabaseToken {
   id: string;
@@ -109,4 +113,58 @@ export async function deleteDatabaseToken(databaseId: string, tokenId: string): 
 // Update last used timestamp (fire-and-forget)
 export async function updateTokenLastUsed(tokenId: string): Promise<void> {
   await sql(`UPDATE database_tokens SET last_used_at = NOW() WHERE id = $1::uuid`, [tokenId]);
+}
+
+// Generate a deterministic system token using HMAC
+async function generateSystemToken(databaseId: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(postgate.systemTokenSecret);
+  const message = encoder.encode(`system_token:${databaseId}`);
+
+  const key = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+
+  const signature = await crypto.subtle.sign('HMAC', key, message);
+  const hex = Array.from(new Uint8Array(signature))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  return `pg_${hex}`;
+}
+
+// Check if system token exists for a database
+async function systemTokenExists(databaseId: string): Promise<boolean> {
+  const rows = await sql<{ count: string }>(
+    `SELECT COUNT(*) as count FROM database_tokens WHERE database_id = $1::uuid AND name = $2`,
+    [databaseId, SYSTEM_TOKEN_NAME]
+  );
+
+  return parseInt(rows[0]?.count ?? '0', 10) > 0;
+}
+
+// Create the system token for a database (internal use)
+async function createSystemToken(databaseId: string): Promise<string> {
+  const fullToken = await generateSystemToken(databaseId);
+  const tokenPrefix = fullToken.substring(0, 8);
+  const tokenHash = await hashToken(fullToken);
+
+  await sql(
+    `INSERT INTO database_tokens (database_id, name, token_hash, token_prefix, allowed_operations)
+     VALUES ($1::uuid, $2, $3, $4, $5::text[])
+     ON CONFLICT (database_id, name) DO NOTHING`,
+    [databaseId, SYSTEM_TOKEN_NAME, tokenHash, tokenPrefix, toPostgresArray(ALL_OPERATIONS)]
+  );
+
+  return fullToken;
+}
+
+// Get the system token for a database, creating it if necessary
+export async function getSystemToken(databaseId: string): Promise<string> {
+  const exists = await systemTokenExists(databaseId);
+
+  if (!exists) {
+    return createSystemToken(databaseId);
+  }
+
+  // Token exists, regenerate it (it's deterministic)
+  return generateSystemToken(databaseId);
 }

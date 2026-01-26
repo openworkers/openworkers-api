@@ -27,14 +27,14 @@ async function findDatabase(userId: string, idOrName: string) {
   return findDatabaseByName(userId, idOrName);
 }
 
-// GET /databases/:databaseId/tokens - List tokens for a database
-databaseTokens.get('/:databaseId/tokens', async (c) => {
+// GET /databases/:id/tokens - List tokens for a database
+databaseTokens.get('/:id/tokens', async (c) => {
   try {
     const userId = c.get('userId');
-    const databaseId = c.req.param('databaseId');
+    const idOrName = c.req.param('id');
 
     // Verify database ownership
-    const database = await findDatabase(userId, databaseId);
+    const database = await findDatabase(userId, idOrName);
 
     if (!database) {
       return c.json({ error: 'Database not found' }, 404);
@@ -59,16 +59,16 @@ databaseTokens.get('/:databaseId/tokens', async (c) => {
   }
 });
 
-// POST /databases/:databaseId/tokens - Create a new token
-databaseTokens.post('/:databaseId/tokens', async (c) => {
+// POST /databases/:id/tokens - Create a new token
+databaseTokens.post('/:id/tokens', async (c) => {
   try {
     const userId = c.get('userId');
-    const databaseId = c.req.param('databaseId');
+    const idOrName = c.req.param('id');
     const body = await c.req.json();
     const input = CreateTokenSchema.parse(body);
 
     // Verify database ownership
-    const database = await findDatabase(userId, databaseId);
+    const database = await findDatabase(userId, idOrName);
 
     if (!database) {
       return c.json({ error: 'Database not found' }, 404);
@@ -104,15 +104,15 @@ databaseTokens.post('/:databaseId/tokens', async (c) => {
   }
 });
 
-// DELETE /databases/:databaseId/tokens/:tokenId - Delete a token
-databaseTokens.delete('/:databaseId/tokens/:tokenId', async (c) => {
+// DELETE /databases/:id/tokens/:tokenId - Delete a token
+databaseTokens.delete('/:id/tokens/:tokenId', async (c) => {
   try {
     const userId = c.get('userId');
-    const databaseId = c.req.param('databaseId');
+    const idOrName = c.req.param('id');
     const tokenId = c.req.param('tokenId');
 
     // Verify database ownership
-    const database = await findDatabase(userId, databaseId);
+    const database = await findDatabase(userId, idOrName);
 
     if (!database) {
       return c.json({ error: 'Database not found' }, 404);

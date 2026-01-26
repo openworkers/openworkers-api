@@ -38,7 +38,9 @@ const ConfigSchema = z.object({
   postgate: z.object({
     url: z.url().default('http://localhost:6080'),
     // Token (pg_xxx format) - for accessing OpenWorkers database
-    token: z.string().regex(/^pg_[a-f0-9]{64}$/, 'POSTGATE_TOKEN must be a valid pg_xxx token')
+    token: z.string().regex(/^pg_[a-f0-9]{64}$/, 'POSTGATE_TOKEN must be a valid pg_xxx token'),
+    // Secret for generating deterministic system tokens
+    systemTokenSecret: z.string().min(32, 'POSTGATE_SYSTEM_TOKEN_SECRET must be at least 32 characters')
   }),
 
   // Shared S3/R2 for assets and storage bindings
@@ -98,7 +100,8 @@ function loadConfig(): Config {
     },
     postgate: {
       url: process.env.POSTGATE_URL,
-      token: process.env.POSTGATE_TOKEN
+      token: process.env.POSTGATE_TOKEN,
+      systemTokenSecret: process.env.POSTGATE_SYSTEM_TOKEN_SECRET
     },
     sharedStorage: {
       bucket: process.env.SHARED_STORAGE_BUCKET,

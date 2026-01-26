@@ -1,8 +1,11 @@
 import { Hono } from 'hono';
+import { z, ZodError } from 'zod';
 import { databasesService } from '../services/databases';
+import { getSystemToken } from '../services/db/database-tokens';
+import { PostgateClient } from '../services/postgate';
+import { postgate as postgateConfig } from '../config';
 import { DatabaseSchema, DatabaseCreateInputSchema } from '../types';
 import { jsonResponse, jsonArrayResponse } from '../utils/validate';
-import { z } from 'zod';
 import tables from './tables';
 
 const databases = new Hono();
@@ -139,6 +142,51 @@ databases.delete('/:id', async (c) => {
   } catch (error) {
     console.error('Failed to delete database:', error);
     return c.json({ error: 'Failed to delete database' }, 500);
+  }
+});
+
+// Schema for SQL execution
+const ExecSchema = z.object({
+  sql: z.string().min(1),
+  params: z.array(z.unknown()).optional()
+});
+
+// POST /databases/:id/exec - Execute SQL on a database
+databases.post('/:id/exec', async (c) => {
+  try {
+    const userId = c.get('userId');
+    const idOrName = c.req.param('id');
+
+    // Verify database ownership
+    const database = await databasesService.findByIdOrName(userId, idOrName);
+
+    if (!database) {
+      return c.json({ error: 'Database not found' }, 404);
+    }
+
+    // Parse request body
+    const body = await c.req.json();
+    const { sql, params } = ExecSchema.parse(body);
+
+    // Get or create system token for this database
+    const systemToken = await getSystemToken(database.id);
+
+    // Execute via PostGate using the system token
+    const client = new PostgateClient(postgateConfig.url, systemToken);
+    const result = await client.query(sql, params);
+
+    return c.json({
+      rows: result.rows,
+      rowCount: result.row_count
+    });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return c.json({ error: 'Invalid input', details: error.issues }, 400);
+    }
+
+    console.error('SQL execution failed:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return c.json({ error: message }, 500);
   }
 });
 
