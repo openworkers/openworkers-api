@@ -47,6 +47,13 @@ import {
 } from '../src/types/schemas/database.schema';
 
 import {
+  DatabaseTokenSchema,
+  DatabaseTokenCreateInputSchema,
+  DatabaseTokenCreateResponseSchema,
+  DatabaseOperations
+} from '../src/types/schemas/database-token.schema';
+
+import {
   KvNamespaceSchema,
   KvNamespaceCreateInputSchema,
   KvNamespaceUpdateInputSchema
@@ -106,6 +113,11 @@ const schemas = [
   { schema: TableInfoSchema, name: 'TableInfo' },
   { schema: TableDetailsSchema, name: 'TableDetails' },
   { schema: CreateTableInputSchema, name: 'CreateTableInput' },
+
+  // Database Tokens
+  { schema: DatabaseTokenSchema, name: 'DatabaseToken' },
+  { schema: DatabaseTokenCreateInputSchema, name: 'DatabaseTokenCreateInput' },
+  { schema: DatabaseTokenCreateResponseSchema, name: 'DatabaseTokenCreateResponse' },
 
   // KV
   { schema: KvNamespaceSchema, name: 'KvNamespace' },
