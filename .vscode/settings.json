@@ -1,3 +1,13 @@
 {
-  "cSpell.words": ["buildx", "croner", "healthcheck", "openworkers", "postgate", "scaleway", "timestamptz", "voxtral"]
+  "cSpell.words": [
+    "buildx",
+    "croner",
+    "healthcheck",
+    "openworkers",
+    "postgate",
+    "prerendered",
+    "scaleway",
+    "timestamptz",
+    "voxtral"
+  ]
 }

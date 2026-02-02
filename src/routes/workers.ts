@@ -244,9 +244,8 @@ workers.post('/:id/deploy', async (c) => {
 });
 
 // POST /workers/:id/upload - Upload zip with _worker.js and assets
+// Supports _routes.json for custom routing rules (storage vs worker backends)
 // TODO: Support /functions folder (filesystem routing like Cloudflare Pages Functions)
-// TODO: Support routes.json for custom routing rules
-// NOTE: Runner needs to implement routes support first
 workers.post('/:id/upload', async (c) => {
   const userId = c.get('userId');
   const idOrName = c.req.param('id');
@@ -294,6 +293,7 @@ workers.post('/:id/upload', async (c) => {
     // 5. Find _worker.js or _worker.ts (at root or in first directory)
     let workerScript: string | null = null;
     let language: 'javascript' | 'typescript' = 'javascript';
+    let routesJson: string | null = null;
     const assets: { path: string; content: Uint8Array }[] = [];
 
     for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
@@ -311,6 +311,8 @@ workers.post('/:id/upload', async (c) => {
       ) {
         workerScript = await zipEntry.async('string');
         language = filename.endsWith('.ts') ? 'typescript' : 'javascript';
+      } else if (filename === '_routes.json') {
+        routesJson = await zipEntry.async('string');
       } else if (normalizedPath.startsWith('assets/') || relativePath.startsWith('assets/')) {
         const assetPath = normalizedPath.startsWith('assets/')
           ? normalizedPath.slice('assets/'.length)
@@ -365,12 +367,57 @@ workers.post('/:id/upload', async (c) => {
 
     const uploadedCount = results.filter(Boolean).length;
 
-    // 8. Get updated worker
+    // 8. Ensure worker is in a project with routes
+    const { sql } = await import('../services/db/client');
+
+    // Check if worker already has a project
+    const projectCheck = await sql<{ project_id: string | null }>('SELECT project_id FROM workers WHERE id = $1::uuid', [
+      worker.id
+    ]);
+    const existingProjectId = projectCheck[0]?.project_id;
+
+    let projectId: string;
+
+    if (!existingProjectId) {
+      // Upgrade worker to project
+      await sql('SELECT upgrade_worker_to_project($1::uuid)', [worker.id]);
+      projectId = worker.id;
+    } else {
+      projectId = existingProjectId;
+    }
+
+    // 9. Parse routes.json if present and create routes
+    if (routesJson) {
+      try {
+        const routes = JSON.parse(routesJson);
+
+        // Delete existing routes (except catch-all at priority 0)
+        await sql('DELETE FROM project_routes WHERE project_id = $1::uuid AND priority > 0', [projectId]);
+
+        // Create storage routes with different priorities
+        if (routes.immutable && Array.isArray(routes.immutable)) {
+          await createStorageRoutes(sql, projectId, routes.immutable, 3);
+        }
+        if (routes.static && Array.isArray(routes.static)) {
+          await createStorageRoutes(sql, projectId, routes.static, 2);
+        }
+        if (routes.prerendered && Array.isArray(routes.prerendered)) {
+          await createStorageRoutes(sql, projectId, routes.prerendered, 1);
+        }
+
+        // SSR routes are handled by the catch-all route at priority 0
+      } catch (error) {
+        console.error('Failed to parse or process routes.json:', error);
+        // Continue anyway - routes.json is optional
+      }
+    }
+
+    // 10. Get updated worker
     const updatedWorker = await workersService.findById(userId, worker.id, {});
 
-    // 9. Return success with worker URL
+    // 11. Return success with worker URL (custom domain if available, otherwise just name)
     const workerDomain = updatedWorker?.domains?.[0]?.name;
-    const workerUrl = workerDomain ? `https://${workerDomain}` : `https://${worker.name}.workers.rocks`;
+    const workerUrl = workerDomain ? `https://${workerDomain}` : worker.name;
 
     return c.json({
       success: true,
@@ -395,6 +442,26 @@ workers.post('/:id/upload', async (c) => {
     );
   }
 });
+
+/**
+ * Helper to create storage routes for a project
+ */
+async function createStorageRoutes(
+  sql: (query: string, params?: unknown[]) => Promise<unknown>,
+  projectId: string,
+  patterns: string[],
+  priority: number
+): Promise<void> {
+  for (const pattern of patterns) {
+    await sql(
+      `INSERT INTO project_routes (project_id, pattern, priority, backend_type)
+       VALUES ($1::uuid, $2, $3, 'storage'::enum_backend_type)
+       ON CONFLICT (project_id, pattern) DO UPDATE
+       SET priority = $3, backend_type = 'storage'::enum_backend_type`,
+      [projectId, pattern, priority]
+    );
+  }
+}
 
 /**
  * Get MIME type from file extension
