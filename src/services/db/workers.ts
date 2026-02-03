@@ -18,6 +18,13 @@ interface WorkerRow {
   domains?: IWorker['domains'];
 }
 
+// Union type: named worker OR anonymous worker with required projectId
+export type CreateWorkerInput = {
+  script: string;
+  language: IWorkerLanguage;
+  environmentId?: string;
+} & ({ name: string; projectId?: string } | { name: null; projectId: string });
+
 export async function findAllWorkers(userId: string): Promise<IWorker[]> {
   return sql<WorkerRow>(
     `SELECT
@@ -33,6 +40,7 @@ export async function findAllWorkers(userId: string): Promise<IWorker[]> {
     FROM workers w
     LEFT JOIN worker_deployments wd ON wd.worker_id = w.id AND wd.version = w.current_version
     WHERE w.user_id = $1::uuid
+      AND w.name IS NOT NULL
     ORDER BY w.created_at DESC`,
     [userId]
   );
@@ -129,17 +137,11 @@ export async function findWorkerById(userId: string, workerId: string): Promise<
   return findWorker(userId, workerId, { includeScript: true });
 }
 
-export async function createWorker(
-  userId: string,
-  name: string,
-  script: string,
-  language: IWorkerLanguage,
-  environmentId?: string
-): Promise<IWorker> {
+export async function createWorker(userId: string, input: CreateWorkerInput): Promise<IWorker> {
   // Create worker first
   const workers = await sql<WorkerRow>(
-    `INSERT INTO workers (name, user_id, environment_id, current_version)
-    VALUES ($1, $2::uuid, $3::uuid, 1)
+    `INSERT INTO workers (name, user_id, environment_id, project_id, current_version)
+    VALUES ($1, $2::uuid, $3::uuid, $4::uuid, 1)
     RETURNING
       id,
       name,
@@ -147,20 +149,20 @@ export async function createWorker(
       environment_id as "environmentId",
       created_at as "createdAt",
       updated_at as "updatedAt"`,
-    [name, userId, environmentId ?? null]
+    [input.name ?? null, userId, input.environmentId ?? null, input.projectId ?? null]
   );
 
   const worker = workers[0]!;
 
   // Create initial deployment
-  const hash = createHash('sha256').update(script).digest('hex');
-  const codeBytes = Buffer.from(script, 'utf-8');
+  const hash = createHash('sha256').update(input.script).digest('hex');
+  const codeBytes = Buffer.from(input.script, 'utf-8');
   const codeBase64 = codeBytes.toString('base64');
 
   await sql(
     `INSERT INTO worker_deployments (worker_id, version, hash, code_type, code, deployed_by, message)
     VALUES ($1::uuid, 1, $2, $3::enum_code_type, decode($4, 'base64'), $5::uuid, $6)`,
-    [worker.id, hash, language, codeBase64, userId, 'Initial deployment']
+    [worker.id, hash, input.language, codeBase64, userId, 'Initial deployment']
   );
 
   // Return full worker

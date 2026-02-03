@@ -1,8 +1,11 @@
 import { Hono } from 'hono';
 import pLimit from 'p-limit';
+import type JSZip from 'jszip';
 import { workersService } from '../services/workers';
 import { cronsService } from '../services/crons';
 import { checkWorkerNameExists, findWorkerAssetsBinding } from '../services/db/workers';
+import { sql } from '../services/db/client';
+import { createStorageRoutes, createFunctionRoutes } from '../services/projects';
 import { WorkerCreateInputSchema, WorkerUpdateInputSchema, WorkerSchema } from '../types';
 import { jsonResponse, jsonArrayResponse } from '../utils/validate';
 import { S3Client } from '../utils/s3';
@@ -69,7 +72,11 @@ workers.post('/', async (c) => {
     const defaultScript = payload.language === 'typescript' ? defaultWorkerTs : defaultWorkerJs;
     const script = payload.script ?? defaultScript;
 
-    const worker = await workersService.create(userId, payload.name, script, payload.language, undefined);
+    const worker = await workersService.create(userId, {
+      name: payload.name,
+      script,
+      language: payload.language
+    });
 
     return jsonResponse(c, WorkerSchema, worker, 201);
   } catch (error) {
@@ -168,7 +175,29 @@ workers.delete('/:id', async (c) => {
       return c.json({ error: 'Worker not found' }, 404);
     }
 
-    const deleted = await workersService.delete(userId, worker.id);
+    // TEMPORARY WORKAROUND: Check if this is a main worker (project)
+    // Since the UI doesn't distinguish between projects and standalone workers yet,
+    // we detect if this worker is a main worker and delete the project instead.
+    // This avoids the "Cannot delete main worker" constraint error.
+    // TODO: Remove this when UI properly distinguishes projects from workers.
+    const projectCheck = await sql(
+      'SELECT id FROM projects WHERE id = $1::uuid AND user_id = $2::uuid',
+      [worker.id, userId]
+    );
+
+    let deleted: number;
+
+    if (projectCheck.length > 0) {
+      // This is a main worker - delete the project instead (cascades to all workers)
+      const deleteResult = await sql(
+        'DELETE FROM projects WHERE id = $1::uuid AND user_id = $2::uuid RETURNING id',
+        [worker.id, userId]
+      );
+      deleted = deleteResult.length;
+    } else {
+      // Regular worker - delete normally
+      deleted = await workersService.delete(userId, worker.id);
+    }
 
     if (deleted === 0) {
       return c.json({ error: 'Worker not found' }, 404);
@@ -371,9 +400,10 @@ workers.post('/:id/upload', async (c) => {
     const { sql } = await import('../services/db/client');
 
     // Check if worker already has a project
-    const projectCheck = await sql<{ project_id: string | null }>('SELECT project_id FROM workers WHERE id = $1::uuid', [
-      worker.id
-    ]);
+    const projectCheck = await sql<{ project_id: string | null }>(
+      'SELECT project_id FROM workers WHERE id = $1::uuid',
+      [worker.id]
+    );
     const existingProjectId = projectCheck[0]?.project_id;
 
     let projectId: string;
@@ -394,15 +424,23 @@ workers.post('/:id/upload', async (c) => {
         // Delete existing routes (except catch-all at priority 0)
         await sql('DELETE FROM project_routes WHERE project_id = $1::uuid AND priority > 0', [projectId]);
 
+        // Delete function workers from previous deployment (all workers except main worker)
+        await sql('DELETE FROM workers WHERE project_id = $1::uuid AND id != $1::uuid', [projectId]);
+
         // Create storage routes with different priorities
         if (routes.immutable && Array.isArray(routes.immutable)) {
-          await createStorageRoutes(sql, projectId, routes.immutable, 3);
+          await createStorageRoutes(projectId, routes.immutable, 3);
         }
         if (routes.static && Array.isArray(routes.static)) {
-          await createStorageRoutes(sql, projectId, routes.static, 2);
+          await createStorageRoutes(projectId, routes.static, 2);
         }
         if (routes.prerendered && Array.isArray(routes.prerendered)) {
-          await createStorageRoutes(sql, projectId, routes.prerendered, 1);
+          await createStorageRoutes(projectId, routes.prerendered, 1);
+        }
+
+        // Create function routes (isolated workers with wildcard patterns)
+        if (routes.functions && Array.isArray(routes.functions)) {
+          await createFunctionRoutes(userId, projectId, routes.functions, zip);
         }
 
         // SSR routes are handled by the catch-all route at priority 0
@@ -442,26 +480,6 @@ workers.post('/:id/upload', async (c) => {
     );
   }
 });
-
-/**
- * Helper to create storage routes for a project
- */
-async function createStorageRoutes(
-  sql: (query: string, params?: unknown[]) => Promise<unknown>,
-  projectId: string,
-  patterns: string[],
-  priority: number
-): Promise<void> {
-  for (const pattern of patterns) {
-    await sql(
-      `INSERT INTO project_routes (project_id, pattern, priority, backend_type)
-       VALUES ($1::uuid, $2, $3, 'storage'::enum_backend_type)
-       ON CONFLICT (project_id, pattern) DO UPDATE
-       SET priority = $3, backend_type = 'storage'::enum_backend_type`,
-      [projectId, pattern, priority]
-    );
-  }
-}
 
 /**
  * Get MIME type from file extension

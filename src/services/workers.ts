@@ -18,14 +18,8 @@ export class WorkersService {
     return db.findWorker(userId, idOrName, options);
   }
 
-  async create(
-    userId: string,
-    name: string,
-    script: string,
-    language: IWorkerLanguage,
-    environmentId?: string
-  ): Promise<IWorker> {
-    return db.createWorker(userId, name, script, language, environmentId);
+  async create(userId: string, input: db.CreateWorkerInput): Promise<IWorker> {
+    return db.createWorker(userId, input);
   }
 
   async update(userId: string, id: string, input: IWorkerUpdateInput): Promise<IWorker | null> {

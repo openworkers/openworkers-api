@@ -48,6 +48,7 @@ export async function findAllEnvironments(userId: string): Promise<IEnvironment[
         )), '[]'::json)
         FROM workers w
         WHERE w.environment_id = e.id
+          AND w.name IS NOT NULL
       ) as workers
     FROM environments e
     WHERE e.user_id = $1::uuid
@@ -84,6 +85,7 @@ export async function findEnvironmentById(userId: string, envId: string): Promis
         )), '[]'::json)
         FROM workers w
         WHERE w.environment_id = e.id
+          AND w.name IS NOT NULL
       ) as workers
     FROM environments e
     WHERE e.id = $1::uuid AND e.user_id = $2::uuid`,
@@ -120,6 +122,7 @@ export async function findEnvironmentByName(userId: string, name: string): Promi
         )), '[]'::json)
         FROM workers w
         WHERE w.environment_id = e.id
+          AND w.name IS NOT NULL
       ) as workers
     FROM environments e
     WHERE e.name = $1 AND e.user_id = $2::uuid`,
