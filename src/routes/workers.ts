@@ -343,9 +343,9 @@ workers.post('/:id/upload', async (c) => {
       } else if (filename === '_routes.json') {
         routesJson = await zipEntry.async('string');
       } else if (normalizedPath.startsWith('assets/') || relativePath.startsWith('assets/')) {
-        const assetPath = normalizedPath.startsWith('assets/')
-          ? normalizedPath.slice('assets/'.length)
-          : relativePath.slice('assets/'.length);
+        const assetPath = relativePath.startsWith('assets/')
+          ? relativePath.slice('assets/'.length)
+          : normalizedPath.slice('assets/'.length);
 
         if (assetPath) {
           const content = await zipEntry.async('uint8array');
