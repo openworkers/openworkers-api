@@ -82,6 +82,18 @@ auth.get('/callback/github', async (c) => {
       }
     });
 
+    // Check content type to avoid parsing errors
+    const contentType = userResponse.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      return c.json(
+        {
+          error: 'Unexpected response from GitHub user API',
+          details: await userResponse.text()
+        },
+        500
+      );
+    }
+
     const githubUser = (await userResponse.json()) as {
       id: number;
       login: string;

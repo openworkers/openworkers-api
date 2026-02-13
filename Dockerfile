@@ -29,6 +29,7 @@ RUN bun compile
 # Final image
 FROM alpine:3.22
 
+# Bun runtime dependencies
 RUN apk add --no-cache libstdc++ libgcc
 
 WORKDIR /build
