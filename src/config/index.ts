@@ -1,5 +1,24 @@
 import { z } from 'zod';
 
+/**
+ * Read an environment variable from worker runtime (globalThis.env) or Bun/Node (process.env).
+ */
+function getEnv(key: string): string | undefined {
+  if (typeof globalThis !== 'undefined' && (globalThis as any).env) {
+    const val = (globalThis as any).env[key];
+
+    if (val !== undefined) {
+      return String(val);
+    }
+  }
+
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[key];
+  }
+
+  return undefined;
+}
+
 // UUID-like pattern (less strict than RFC 4122)
 const uuidLike = z
   .string()
@@ -82,48 +101,48 @@ export type Environment = z.infer<typeof EnvironmentSchema>;
 // Parse and validate environment variables
 function loadConfig(): Config {
   const rawConfig = {
-    nodeEnv: process.env.NODE_ENV,
-    port: process.env.PORT,
+    nodeEnv: getEnv('NODE_ENV'),
+    port: getEnv('PORT'),
     jwt: {
       access: {
-        secret: process.env.JWT_ACCESS_SECRET,
-        expiresIn: process.env.JWT_ACCESS_EXP
+        secret: getEnv('JWT_ACCESS_SECRET'),
+        expiresIn: getEnv('JWT_ACCESS_EXP')
       },
       refresh: {
-        secret: process.env.JWT_REFRESH_SECRET,
-        expiresIn: process.env.JWT_REFRESH_EXP
+        secret: getEnv('JWT_REFRESH_SECRET'),
+        expiresIn: getEnv('JWT_REFRESH_EXP')
       }
     },
     github: {
-      clientId: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET
+      clientId: getEnv('GITHUB_CLIENT_ID'),
+      clientSecret: getEnv('GITHUB_CLIENT_SECRET')
     },
     postgate: {
-      url: process.env.POSTGATE_URL,
-      token: process.env.POSTGATE_TOKEN,
-      systemTokenSecret: process.env.POSTGATE_SYSTEM_TOKEN_SECRET
+      url: getEnv('POSTGATE_URL'),
+      token: getEnv('POSTGATE_TOKEN'),
+      systemTokenSecret: getEnv('POSTGATE_SYSTEM_TOKEN_SECRET')
     },
     sharedStorage: {
-      bucket: process.env.SHARED_STORAGE_BUCKET,
-      endpoint: process.env.SHARED_STORAGE_ENDPOINT,
-      accessKeyId: process.env.SHARED_STORAGE_ACCESS_KEY_ID,
-      secretAccessKey: process.env.SHARED_STORAGE_SECRET_ACCESS_KEY,
-      publicUrl: process.env.SHARED_STORAGE_PUBLIC_URL
+      bucket: getEnv('SHARED_STORAGE_BUCKET'),
+      endpoint: getEnv('SHARED_STORAGE_ENDPOINT'),
+      accessKeyId: getEnv('SHARED_STORAGE_ACCESS_KEY_ID'),
+      secretAccessKey: getEnv('SHARED_STORAGE_SECRET_ACCESS_KEY'),
+      publicUrl: getEnv('SHARED_STORAGE_PUBLIC_URL')
     },
     mistral: {
-      apiKey: process.env.MISTRAL_API_KEY
+      apiKey: getEnv('MISTRAL_API_KEY')
     },
     anthropic: {
-      apiKey: process.env.ANTHROPIC_API_KEY
+      apiKey: getEnv('ANTHROPIC_API_KEY')
     },
     email: {
-      provider: process.env.EMAIL_PROVIDER,
-      from: process.env.EMAIL_FROM,
-      secretKey: process.env.SCW_SECRET_KEY,
-      projectId: process.env.SCW_PROJECT_ID,
-      region: process.env.SCW_REGION
+      provider: getEnv('EMAIL_PROVIDER'),
+      from: getEnv('EMAIL_FROM'),
+      secretKey: getEnv('SCW_SECRET_KEY'),
+      projectId: getEnv('SCW_PROJECT_ID'),
+      region: getEnv('SCW_REGION')
     },
-    appUrl: process.env.APP_URL
+    appUrl: getEnv('APP_URL')
   };
 
   try {

@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import pLimit from 'p-limit';
-import type JSZip from 'jszip';
 import { workersService } from '../services/workers';
 import { cronsService } from '../services/crons';
 import { checkWorkerNameExists, findWorkerAssetsBinding } from '../services/db/workers';
@@ -9,6 +8,7 @@ import { createStorageRoutes, createFunctionRoutes } from '../services/projects'
 import { WorkerCreateInputSchema, WorkerUpdateInputSchema, WorkerSchema } from '../types';
 import { jsonResponse, jsonArrayResponse } from '../utils/validate';
 import { S3Client } from '../utils/s3';
+import { stringToBase64, bytesToString } from '../utils/base64';
 import { sharedStorage } from '../config';
 import defaultWorkerJs from '../../examples/default-worker-js.txt';
 import defaultWorkerTs from '../../examples/default-worker-ts.txt';
@@ -180,19 +180,19 @@ workers.delete('/:id', async (c) => {
     // we detect if this worker is a main worker and delete the project instead.
     // This avoids the "Cannot delete main worker" constraint error.
     // TODO: Remove this when UI properly distinguishes projects from workers.
-    const projectCheck = await sql(
-      'SELECT id FROM projects WHERE id = $1::uuid AND user_id = $2::uuid',
-      [worker.id, userId]
-    );
+    const projectCheck = await sql('SELECT id FROM projects WHERE id = $1::uuid AND user_id = $2::uuid', [
+      worker.id,
+      userId
+    ]);
 
     let deleted: number;
 
     if (projectCheck.length > 0) {
       // This is a main worker - delete the project instead (cascades to all workers)
-      const deleteResult = await sql(
-        'DELETE FROM projects WHERE id = $1::uuid AND user_id = $2::uuid RETURNING id',
-        [worker.id, userId]
-      );
+      const deleteResult = await sql('DELETE FROM projects WHERE id = $1::uuid AND user_id = $2::uuid RETURNING id', [
+        worker.id,
+        userId
+      ]);
       deleted = deleteResult.length;
     } else {
       // Regular worker - delete normally
@@ -236,7 +236,7 @@ workers.post('/:id/deploy', async (c) => {
     const workerId = worker.id;
 
     // Decode base64 code if it's bytes
-    const script = Array.isArray(body.code) ? Buffer.from(body.code).toString('utf-8') : body.code;
+    const script = Array.isArray(body.code) ? bytesToString(body.code) : body.code;
 
     // Map code_type to language
     const language = body.codeType === 'javascript' ? 'javascript' : 'typescript';
@@ -255,7 +255,7 @@ workers.post('/:id/deploy', async (c) => {
     return c.json({
       workerId: updatedWorker.id,
       version: updatedWorker.currentVersion,
-      hash: Buffer.from(script).toString('base64').slice(0, 16),
+      hash: stringToBase64(script).slice(0, 16),
       codeType: body.codeType,
       deployedAt: new Date().toISOString(),
       message: body.message || null

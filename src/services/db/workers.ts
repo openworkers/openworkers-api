@@ -1,6 +1,7 @@
 import { sql } from './client';
 import type { IWorker, IWorkerLanguage } from '../../types';
-import { createHash } from 'crypto';
+import { sha256Hex } from '../../utils/crypto';
+import { stringToBase64 } from '../../utils/base64';
 import { isUuid } from '../../utils/validation';
 
 interface WorkerRow {
@@ -155,9 +156,8 @@ export async function createWorker(userId: string, input: CreateWorkerInput): Pr
   const worker = workers[0]!;
 
   // Create initial deployment
-  const hash = createHash('sha256').update(input.script).digest('hex');
-  const codeBytes = Buffer.from(input.script, 'utf-8');
-  const codeBase64 = codeBytes.toString('base64');
+  const hash = await sha256Hex(input.script);
+  const codeBase64 = stringToBase64(input.script);
 
   await sql(
     `INSERT INTO worker_deployments (worker_id, version, hash, code_type, code, deployed_by, message)
@@ -203,9 +203,8 @@ export async function updateWorker(
 
   // Update script if provided
   if (updates.script !== undefined && updates.script !== current.script) {
-    const hash = createHash('sha256').update(updates.script).digest('hex');
-    const codeBytes = Buffer.from(updates.script, 'utf-8');
-    const codeBase64 = codeBytes.toString('base64');
+    const hash = await sha256Hex(updates.script);
+    const codeBase64 = stringToBase64(updates.script);
 
     // Get next version
     const versionResult = await sql<{ nextVersion: number }>(

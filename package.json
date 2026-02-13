@@ -13,11 +13,14 @@
     "dev": "bun --hot src/index.ts",
     "start": "bun src/index.ts",
     "compile": "bun build --compile --minify --sourcemap server.ts --outfile dist/openworkers-api",
+    "build:worker": "bun build --minify --target=browser worker.ts --outfile dist/worker.js",
     "test": "bun test",
     "check": "tsc --noEmit",
     "lint": "prettier --write .",
     "format": "prettier --write .",
-    "generate-types": "bun scripts/generate-types.ts"
+    "generate-types": "bun scripts/generate-types.ts",
+    "clean": "rimraf dist node_modules",
+    "deploy:dev": "bun build:worker && ow dev worker deploy openworkers-api ./dist/worker.js"
   },
   "dependencies": {
     "@openworkers/croner-wasm": "^0.3.1",
@@ -30,6 +33,7 @@
   "devDependencies": {
     "@types/bun": "latest",
     "prettier": "^3.7.4",
+    "rimraf": "^6.1.2",
     "zod-to-ts": "^2.0.0"
   },
   "peerDependencies": {

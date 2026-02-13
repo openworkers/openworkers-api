@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+import { nodeEnv, port } from './config';
 import { createAuthMiddleware, extractUser, errorHandler } from './middlewares/auth';
 import authRoutes from './routes/auth';
 import users from './routes/users';
@@ -75,8 +76,6 @@ v1.route('/', users);
 
 api.route('/v1', v1);
 app.route('/api', api);
-
-import { nodeEnv, port } from './config';
 
 // Start server
 console.log(`OpenWorkers API starting on port ${port}...`);
