@@ -73,3 +73,33 @@ export const enumArray = <T extends readonly string[]>(value: T, enumType: strin
   const pgArray = `{${value.join(',')}}`;
   return sql`${pgArray}::${sql.raw(enumType)}[]` as RawBuilder<T>;
 };
+
+/**
+ * Decode base64 string to bytea
+ * @example
+ * .values({ code: base64Decode(codeBase64) })
+ * // Generates: decode($1, 'base64')
+ */
+export const base64Decode = (value: string): RawBuilder<Uint8Array> => {
+  return sql`decode(${value}, 'base64')`;
+};
+
+/**
+ * Convert bytea column to UTF8 text
+ * @example
+ * .select(byteaToText('code').as('script'))
+ * // Generates: convert_from(code, 'UTF8') as script
+ */
+export const byteaToText = (column: string): RawBuilder<string> => {
+  return sql<string>`convert_from(${sql.ref(column)}, 'UTF8')`;
+};
+
+/**
+ * Cast enum column to text
+ * @example
+ * .select(enumToText('wd.code_type').as('language'))
+ * // Generates: wd.code_type::text as language
+ */
+export const enumToText = <T = string>(column: string): RawBuilder<T> => {
+  return sql<T>`${sql.ref(column)}::text`;
+};

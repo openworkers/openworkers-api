@@ -1,4 +1,6 @@
-import { sql } from './client';
+import { kysely } from './kysely-client';
+import { uuid, enumCast, base64Decode, byteaToText, enumToText } from './kysely-helpers';
+import { sql } from 'kysely';
 import type { IWorker, IWorkerLanguage } from '../../types';
 import { sha256Hex } from '../../utils/crypto';
 import { stringToBase64 } from '../../utils/base64';
@@ -6,7 +8,7 @@ import { isUuid } from '../../utils/validation';
 
 interface WorkerRow {
   id: string;
-  name: string;
+  name: string | null;
   script: string;
   language: IWorkerLanguage;
   userId: string;
@@ -27,35 +29,38 @@ export type CreateWorkerInput = {
 } & ({ name: string; projectId?: string } | { name: null; projectId: string });
 
 export async function findAllWorkers(userId: string): Promise<IWorker[]> {
-  return sql<WorkerRow>(
-    `SELECT
-      w.id,
-      w.name,
-      w.user_id as "userId",
-      w.environment_id as "environmentId",
-      w.current_version as "currentVersion",
-      w.created_at as "createdAt",
-      w.updated_at as "updatedAt",
-      wd.code_type::text as "language",
-      convert_from(wd.code, 'UTF8') as script
-    FROM workers w
-    LEFT JOIN worker_deployments wd ON wd.worker_id = w.id AND wd.version = w.current_version
-    WHERE w.user_id = $1::uuid
-      AND w.name IS NOT NULL
-    ORDER BY w.created_at DESC`,
-    [userId]
-  );
+  return kysely
+    .selectFrom('workers as w')
+    .leftJoin('workerDeployments as wd', (join) =>
+      join
+        .onRef('wd.workerId', '=', 'w.id')
+        .onRef('wd.version', '=', 'w.currentVersion')
+    )
+    .select([
+      'w.id',
+      'w.name',
+      'w.userId',
+      'w.environmentId',
+      'w.currentVersion',
+      'w.createdAt',
+      'w.updatedAt',
+      enumToText<IWorkerLanguage>('wd.codeType').as('language'),
+      byteaToText('wd.code').as('script'),
+    ])
+    .where('w.userId', '=', uuid(userId))
+    .where('w.name', 'is not', null)
+    .orderBy('w.createdAt', 'desc')
+    .execute() as Promise<IWorker[]>;
 }
 
 export async function checkWorkerNameExists(name: string): Promise<boolean> {
-  const workers = await sql<{ id: string }>(
-    `SELECT id
-    FROM workers
-    WHERE name = $1
-    LIMIT 1`,
-    [name]
-  );
-  return workers.length > 0;
+  const worker = await kysely
+    .selectFrom('workers')
+    .select('id')
+    .where('name', '=', name)
+    .executeTakeFirst();
+
+  return worker !== undefined;
 }
 
 interface FindWorkerOptions {
@@ -75,21 +80,25 @@ export async function findWorker(
   const { includeScript = false } = options;
 
   const byId = isUuid(idOrName);
-  const whereClause = byId ? 'w.id = $1::uuid AND w.user_id = $2::uuid' : 'w.name = $1 AND w.user_id = $2::uuid';
 
-  const scriptField = includeScript ? `,\n      convert_from(wd.code, 'UTF8') as script` : '';
-
-  const workers = await sql<WorkerRow>(
-    `SELECT
-      w.id,
-      w.name,
-      w.user_id as "userId",
-      w.environment_id as "environmentId",
-      w.current_version as "currentVersion",
-      w.created_at as "createdAt",
-      w.updated_at as "updatedAt",
-      wd.code_type::text as "language"${scriptField},
-      (
+  let query = kysely
+    .selectFrom('workers as w')
+    .leftJoin('workerDeployments as wd', (join) =>
+      join
+        .onRef('wd.workerId', '=', 'w.id')
+        .onRef('wd.version', '=', 'w.currentVersion')
+    )
+    .select([
+      'w.id',
+      'w.name',
+      'w.userId',
+      'w.environmentId',
+      'w.currentVersion',
+      'w.createdAt',
+      'w.updatedAt',
+      enumToText<IWorkerLanguage>('wd.codeType').as('language'),
+      ...(includeScript ? [byteaToText('wd.code').as('script')] : []),
+      sql<IWorker['environment']>`(
         SELECT json_build_object(
           'id', e.id,
           'name', e.name,
@@ -99,8 +108,8 @@ export async function findWorker(
         )
         FROM environments e
         WHERE e.id = w.environment_id
-      ) as environment,
-      (
+      )`.as('environment'),
+      sql<IWorker['crons']>`(
         SELECT coalesce(json_agg(json_build_object(
           'id', c.id,
           'value', c.value,
@@ -112,8 +121,8 @@ export async function findWorker(
         )), '[]'::json)
         FROM crons c
         WHERE c.worker_id = w.id
-      ) as crons,
-      (
+      )`.as('crons'),
+      sql<IWorker['domains']>`(
         SELECT coalesce(json_agg(json_build_object(
           'name', d.name,
           'workerId', d.worker_id,
@@ -123,14 +132,20 @@ export async function findWorker(
         )), '[]'::json)
         FROM domains d
         WHERE d.worker_id = w.id
-      ) as domains
-    FROM workers w
-    LEFT JOIN worker_deployments wd ON wd.worker_id = w.id AND wd.version = w.current_version
-    WHERE ${whereClause}`,
-    [idOrName, userId]
-  );
+      )`.as('domains'),
+    ]);
 
-  return workers[0] ?? null;
+  if (byId) {
+    query = query.where('w.id', '=', uuid(idOrName));
+  } else {
+    query = query.where('w.name', '=', idOrName);
+  }
+
+  const worker = await query
+    .where('w.userId', '=', uuid(userId))
+    .executeTakeFirst();
+
+  return worker ?? null;
 }
 
 // Convenience wrapper for internal use
@@ -140,33 +155,45 @@ export async function findWorkerById(userId: string, workerId: string): Promise<
 
 export async function createWorker(userId: string, input: CreateWorkerInput): Promise<IWorker> {
   // Create worker first
-  const workers = await sql<WorkerRow>(
-    `INSERT INTO workers (name, user_id, environment_id, project_id, current_version)
-    VALUES ($1, $2::uuid, $3::uuid, $4::uuid, 1)
-    RETURNING
-      id,
-      name,
-      user_id as "userId",
-      environment_id as "environmentId",
-      created_at as "createdAt",
-      updated_at as "updatedAt"`,
-    [input.name ?? null, userId, input.environmentId ?? null, input.projectId ?? null]
-  );
-
-  const worker = workers[0]!;
+  const worker = await kysely
+    .insertInto('workers')
+    .values({
+      name: input.name ?? null,
+      userId: uuid(userId),
+      environmentId: input.environmentId ? uuid(input.environmentId) : null,
+      projectId: input.projectId ? uuid(input.projectId) : null,
+      currentVersion: 1,
+    })
+    .returning(['id', 'name', 'userId', 'environmentId', 'createdAt', 'updatedAt'])
+    .executeTakeFirstOrThrow();
 
   // Create initial deployment
   const hash = await sha256Hex(input.script);
   const codeBase64 = stringToBase64(input.script);
 
-  await sql(
-    `INSERT INTO worker_deployments (worker_id, version, hash, code_type, code, deployed_by, message)
-    VALUES ($1::uuid, 1, $2, $3::enum_code_type, decode($4, 'base64'), $5::uuid, $6)`,
-    [worker.id, hash, input.language, codeBase64, userId, 'Initial deployment']
-  );
+  await kysely
+    .insertInto('workerDeployments')
+    .values({
+      workerId: uuid(worker.id),
+      version: 1,
+      hash,
+      codeType: enumCast(input.language, 'enum_code_type'),
+      code: base64Decode(codeBase64),
+      deployedBy: uuid(userId),
+      message: 'Initial deployment',
+    })
+    .execute();
 
-  // Return full worker
-  return (await findWorkerById(userId, worker.id))!;
+  // Return worker with script and empty relations
+  return {
+    ...worker,
+    name: worker.name!,
+    currentVersion: 1,
+    script: input.script,
+    language: input.language,
+    crons: [],
+    domains: [],
+  } as IWorker;
 }
 
 export async function updateWorker(
@@ -186,20 +213,20 @@ export async function updateWorker(
     return null;
   }
 
+  const envId = updates.environmentId === undefined
+    ? (current.environmentId ?? null)
+    : updates.environmentId;
+
   // Update worker name/environment if provided
-  await sql(
-    `UPDATE workers
-    SET
-      name = $1,
-      environment_id = $2::uuid
-    WHERE id = $3::uuid AND user_id = $4::uuid`,
-    [
-      updates.name ?? current.name,
-      updates.environmentId === undefined ? (current.environmentId ?? null) : updates.environmentId,
-      workerId,
-      userId
-    ]
-  );
+  await kysely
+    .updateTable('workers')
+    .set({
+      name: updates.name ?? current.name,
+      environmentId: envId ? uuid(envId) : null,
+    })
+    .where('id', '=', uuid(workerId))
+    .where('userId', '=', uuid(userId))
+    .execute();
 
   // Update script if provided
   if (updates.script !== undefined) {
@@ -207,23 +234,34 @@ export async function updateWorker(
     const codeBase64 = stringToBase64(updates.script);
 
     // Get next version
-    const versionResult = await sql<{ nextVersion: number }>(
-      `SELECT coalesce(max(version), 0) + 1 as "nextVersion"
-      FROM worker_deployments
-      WHERE worker_id = $1::uuid`,
-      [workerId]
-    );
-    const nextVersion = versionResult[0]?.nextVersion ?? 1;
+    const result = await kysely
+      .selectFrom('workerDeployments')
+      .select(sql<number>`coalesce(max(version), 0) + 1`.as('nextVersion'))
+      .where('workerId', '=', uuid(workerId))
+      .executeTakeFirst();
+
+    const nextVersion = result?.nextVersion ?? 1;
 
     const language = updates.language ?? current.language ?? 'javascript';
 
-    await sql(
-      `INSERT INTO worker_deployments (worker_id, version, hash, code_type, code, deployed_by, message)
-      VALUES ($1::uuid, $2, $3, $4::enum_code_type, decode($5, 'base64'), $6::uuid, 'Update')`,
-      [workerId, nextVersion, hash, language, codeBase64, userId]
-    );
+    await kysely
+      .insertInto('workerDeployments')
+      .values({
+        workerId: uuid(workerId),
+        version: nextVersion,
+        hash,
+        codeType: enumCast(language, 'enum_code_type'),
+        code: base64Decode(codeBase64),
+        deployedBy: uuid(userId),
+        message: 'Update',
+      })
+      .execute();
 
-    await sql(`UPDATE workers SET current_version = $1 WHERE id = $2::uuid`, [nextVersion, workerId]);
+    await kysely
+      .updateTable('workers')
+      .set({ currentVersion: nextVersion })
+      .where('id', '=', uuid(workerId))
+      .execute();
   }
 
   // Update domains if provided
@@ -236,12 +274,13 @@ export async function updateWorker(
 }
 
 export async function deleteWorker(userId: string, workerId: string): Promise<number> {
-  const result = await sql<{ id: string }>(
-    `DELETE FROM workers
-    WHERE id = $1::uuid AND user_id = $2::uuid
-    RETURNING id`,
-    [workerId, userId]
-  );
+  const result = await kysely
+    .deleteFrom('workers')
+    .where('id', '=', uuid(workerId))
+    .where('userId', '=', uuid(userId))
+    .returning('id')
+    .execute();
+
   return result.length;
 }
 
@@ -262,24 +301,23 @@ export interface WorkerAssetsBinding {
  * Returns null if worker has no ASSETS binding.
  */
 export async function findWorkerAssetsBinding(userId: string, workerId: string): Promise<WorkerAssetsBinding | null> {
-  const rows = await sql<WorkerAssetsBinding>(
-    `SELECT
-      sc.id as "storageConfigId",
-      sc.bucket,
-      sc.prefix,
-      sc.access_key_id as "accessKeyId",
-      sc.secret_access_key as "secretAccessKey",
-      sc.endpoint,
-      sc.region
-    FROM workers w
-    JOIN environment_values ev ON ev.environment_id = w.environment_id
-    JOIN storage_configs sc ON sc.id = ev.value::uuid
-    WHERE w.id = $1::uuid
-      AND w.user_id = $2::uuid
-      AND ev.type = 'assets'
-    LIMIT 1`,
-    [workerId, userId]
-  );
+  const binding = await kysely
+    .selectFrom('workers as w')
+    .innerJoin('environmentValues as ev', 'ev.environmentId', 'w.environmentId')
+    .innerJoin('storageConfigs as sc', (join) => join.on(sql`sc.id = ev.value::uuid`))
+    .select([
+      'sc.id as storageConfigId',
+      'sc.bucket',
+      'sc.prefix',
+      'sc.accessKeyId',
+      'sc.secretAccessKey',
+      'sc.endpoint',
+      'sc.region',
+    ])
+    .where('w.id', '=', uuid(workerId))
+    .where('w.userId', '=', uuid(userId))
+    .where(sql<boolean>`ev.type = 'assets'`)
+    .executeTakeFirst();
 
-  return rows[0] ?? null;
+  return binding ?? null;
 }

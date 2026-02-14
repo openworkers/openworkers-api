@@ -102,6 +102,7 @@ export interface Database {
     name: string | null;
     userId: string;
     environmentId: string | null;
+    projectId: string | null;
     currentVersion: number | null;
     createdAt: Generated<Date>;
     updatedAt: Generated<Date>;
@@ -146,6 +147,16 @@ export interface Database {
     timeoutSeconds: number;
     createdAt: Generated<Date>;
     updatedAt: Generated<Date>;
+  };
+  workerDeployments: {
+    workerId: string;
+    version: number;
+    hash: string;
+    codeType: 'javascript' | 'typescript' | 'python' | 'rust';
+    code: Uint8Array;
+    deployedBy: string;
+    message: string | null;
+    createdAt: Generated<Date>;
   };
   // Add more tables here as needed...
 }
