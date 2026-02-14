@@ -1,96 +1,90 @@
-import { sql } from './client';
-import type { ISelf, IResourceLimits } from '../../types';
+import { kysely } from './kysely-client';
+import { sql } from 'kysely';
+import { uuid } from './kysely-helpers';
+import type { ISelf } from '../../types';
 
-// Helper to build limits object from flat columns
-interface UserRow {
-  id: string;
-  username: string;
-  avatarUrl: string | null;
-  limitWorkers: number;
-  limitEnvironments: number;
-  limitDatabases: number;
-  limitKv: number;
-  limitStorage: number;
-  secondPrecision: boolean;
-}
+export async function findUserById(userId: string): Promise<ISelf | null> {
+  const user = await kysely
+    .selectFrom('users')
+    .selectAll()
+    .where('id', '=', uuid(userId))
+    .executeTakeFirst();
 
-function rowToUser(row: UserRow): ISelf {
+  if (!user) return null;
+
   return {
-    id: row.id,
-    username: row.username,
-    avatarUrl: row.avatarUrl,
+    id: user.id,
+    username: user.username,
+    avatarUrl: user.avatarUrl,
     limits: {
-      workers: row.limitWorkers,
-      environments: row.limitEnvironments,
-      databases: row.limitDatabases,
-      kv: row.limitKv,
-      storage: row.limitStorage,
-      secondPrecision: row.secondPrecision
-    }
+      workers: user.limitWorkers,
+      environments: user.limitEnvironments,
+      databases: user.limitDatabases,
+      kv: user.limitKv,
+      storage: user.limitStorage,
+      secondPrecision: user.secondPrecision,
+    },
   };
 }
 
-const USER_SELECT = `
-  id,
-  username,
-  avatar_url as "avatarUrl",
-  limit_workers as "limitWorkers",
-  limit_environments as "limitEnvironments",
-  limit_databases as "limitDatabases",
-  limit_kv as "limitKv",
-  limit_storage as "limitStorage",
-  second_precision as "secondPrecision"
-`;
-
-export async function findUserById(userId: string): Promise<ISelf | null> {
-  const users = await sql<UserRow>(
-    `SELECT ${USER_SELECT}
-    FROM users
-    WHERE id = $1::uuid`,
-    [userId]
-  );
-
-  return users[0] ? rowToUser(users[0]) : null;
-}
-
 export async function findUserByGitHub(externalId: string): Promise<ISelf | null> {
-  const users = await sql<UserRow>(
-    `SELECT
-      u.id,
-      u.username,
-      u.avatar_url as "avatarUrl",
-      u.limit_workers as "limitWorkers",
-      u.limit_environments as "limitEnvironments",
-      u.limit_databases as "limitDatabases",
-      u.limit_kv as "limitKv",
-      u.limit_storage as "limitStorage",
-      u.second_precision as "secondPrecision"
-    FROM users u
-    INNER JOIN external_users eu ON u.id = eu.user_id
-    WHERE eu.external_id = $1 AND eu.provider = 'github'`,
-    [externalId]
-  );
+  const user = await kysely
+    .selectFrom('users as u')
+    .innerJoin('externalUsers as eu', 'u.id', 'eu.userId')
+    .select(['u.id', 'u.username', 'u.avatarUrl', 'u.limitWorkers', 'u.limitEnvironments', 'u.limitDatabases', 'u.limitKv', 'u.limitStorage', 'u.secondPrecision'])
+    .where('eu.externalId', '=', externalId)
+    .where('eu.provider', '=', 'github')
+    .executeTakeFirst();
 
-  return users[0] ? rowToUser(users[0]) : null;
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    username: user.username,
+    avatarUrl: user.avatarUrl,
+    limits: {
+      workers: user.limitWorkers,
+      environments: user.limitEnvironments,
+      databases: user.limitDatabases,
+      kv: user.limitKv,
+      storage: user.limitStorage,
+      secondPrecision: user.secondPrecision,
+    },
+  };
 }
 
 export async function createUserWithGitHub(externalId: string, username: string, avatarUrl: string): Promise<ISelf> {
-  // Create user (DB auto-generates id, created_at, updated_at)
-  const users = await sql<UserRow>(
-    `INSERT INTO users (username, avatar_url)
-    VALUES ($1, $2)
-    RETURNING ${USER_SELECT}`,
-    [username, avatarUrl]
-  );
+  const newUser = await kysely
+    .insertInto('users')
+    .values({
+      username,
+      avatarUrl,
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
 
-  const user = rowToUser(users[0]!);
+  const user: ISelf = {
+    id: newUser.id,
+    username: newUser.username,
+    avatarUrl: newUser.avatarUrl,
+    limits: {
+      workers: newUser.limitWorkers,
+      environments: newUser.limitEnvironments,
+      databases: newUser.limitDatabases,
+      kv: newUser.limitKv,
+      storage: newUser.limitStorage,
+      secondPrecision: newUser.secondPrecision,
+    },
+  };
 
-  // Link GitHub account (DB auto-generates created_at, updated_at)
-  await sql(
-    `INSERT INTO external_users (external_id, provider, user_id)
-    VALUES ($1, 'github', $2::uuid)`,
-    [externalId, user.id]
-  );
+  await kysely
+    .insertInto('externalUsers')
+    .values({
+      externalId,
+      provider: 'github',
+      userId: uuid(user.id),
+    })
+    .execute();
 
   return user;
 }
@@ -100,46 +94,74 @@ export async function createUserWithGitHub(externalId: string, username: string,
 // ============================================================================
 
 export async function findUserByEmail(email: string): Promise<ISelf | null> {
-  const users = await sql<UserRow>(
-    `SELECT ${USER_SELECT}
-     FROM users
-     WHERE username = $1`,
-    [email]
-  );
+  const user = await kysely
+    .selectFrom('users')
+    .selectAll()
+    .where('username', '=', email)
+    .executeTakeFirst();
 
-  return users[0] ? rowToUser(users[0]) : null;
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    username: user.username,
+    avatarUrl: user.avatarUrl,
+    limits: {
+      workers: user.limitWorkers,
+      environments: user.limitEnvironments,
+      databases: user.limitDatabases,
+      kv: user.limitKv,
+      storage: user.limitStorage,
+      secondPrecision: user.secondPrecision,
+    },
+  };
 }
 
 export async function emailExists(email: string): Promise<boolean> {
-  const result = await sql<{ exists: boolean }>(`SELECT EXISTS(SELECT 1 FROM users WHERE username = $1) as exists`, [
-    email
-  ]);
+  const result = await kysely
+    .selectFrom('users')
+    .select(sql<boolean>`EXISTS(SELECT 1 FROM users WHERE username = ${email})`.as('exists'))
+    .executeTakeFirst();
 
-  return result[0]?.exists ?? false;
+  return result?.exists ?? false;
 }
 
 export async function getPasswordHash(email: string): Promise<string | null> {
-  const result = await sql<{ passwordHash: string | null }>(
-    `SELECT password_hash as "passwordHash"
-     FROM users
-     WHERE username = $1`,
-    [email]
-  );
+  const result = await kysely
+    .selectFrom('users')
+    .select('passwordHash')
+    .where('username', '=', email)
+    .executeTakeFirst();
 
-  return result[0]?.passwordHash ?? null;
+  return result?.passwordHash ?? null;
 }
 
 export async function createUserWithEmail(email: string): Promise<ISelf> {
-  const users = await sql<UserRow>(
-    `INSERT INTO users (username)
-     VALUES ($1)
-     RETURNING ${USER_SELECT}`,
-    [email]
-  );
+  const user = await kysely
+    .insertInto('users')
+    .values({ username: email })
+    .returningAll()
+    .executeTakeFirstOrThrow();
 
-  return rowToUser(users[0]!);
+  return {
+    id: user.id,
+    username: user.username,
+    avatarUrl: user.avatarUrl,
+    limits: {
+      workers: user.limitWorkers,
+      environments: user.limitEnvironments,
+      databases: user.limitDatabases,
+      kv: user.limitKv,
+      storage: user.limitStorage,
+      secondPrecision: user.secondPrecision,
+    },
+  };
 }
 
 export async function updatePassword(userId: string, passwordHash: string): Promise<void> {
-  await sql(`UPDATE users SET password_hash = $1 WHERE id = $2::uuid`, [passwordHash, userId]);
+  await kysely
+    .updateTable('users')
+    .set({ passwordHash })
+    .where('id', '=', uuid(userId))
+    .execute();
 }

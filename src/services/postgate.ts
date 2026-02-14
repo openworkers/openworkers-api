@@ -1,5 +1,3 @@
-import { postgate as postgateConfig } from '../config';
-
 export interface PostgateQueryRequest {
   sql: string;
   params?: unknown[];
@@ -129,6 +127,3 @@ export class PostgateAdminClient extends PostgateClient {
     return result.rows[0]?.delete_tenant_token ?? false;
   }
 }
-
-// Admin client singleton - uses token from config
-export const postgateAdminClient = new PostgateAdminClient(postgateConfig.url, postgateConfig.token);
