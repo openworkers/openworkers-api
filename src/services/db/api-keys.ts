@@ -1,6 +1,5 @@
 import { kysely } from './kysely-client';
-import { uuid, timestamptz, now } from './kysely-helpers';
-import { sql } from 'kysely';
+import { uuid, timestamptzOrNull, now } from './kysely-helpers';
 
 export interface ApiKey {
   id: string;
@@ -45,14 +44,14 @@ export async function createApiKey(
       name,
       tokenPrefix,
       tokenHash,
-      expiresAt: expiresAt ? timestamptz(expiresAt) : null,
+      expiresAt: timestamptzOrNull(expiresAt)
     })
     .returning(['id', 'userId', 'name', 'tokenPrefix', 'lastUsedAt', 'expiresAt', 'createdAt'])
     .executeTakeFirstOrThrow();
 
   return {
     apiKey,
-    token,
+    token
   };
 }
 
@@ -90,9 +89,5 @@ export async function deleteApiKey(userId: string, keyId: string): Promise<boole
 }
 
 export async function updateApiKeyLastUsed(keyId: string): Promise<void> {
-  await kysely
-    .updateTable('apiKeys')
-    .set({ lastUsedAt: now() })
-    .where('id', '=', uuid(keyId))
-    .execute();
+  await kysely.updateTable('apiKeys').set({ lastUsedAt: now() }).where('id', '=', uuid(keyId)).execute();
 }
