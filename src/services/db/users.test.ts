@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'bun:test';
 import { kysely } from './kysely-client';
 import { sql } from 'kysely';
+import { enumCast } from './kysely-helpers';
 
 describe('Users service - Kysely SQL generation', () => {
   test('findUserById - generates correct SQL with ::uuid cast', () => {
@@ -25,7 +26,7 @@ describe('Users service - Kysely SQL generation', () => {
       .innerJoin('externalUsers as eu', 'u.id', 'eu.userId')
       .select(['u.id', 'u.username'])
       .where('eu.externalId', '=', externalId)
-      .where('eu.provider', '=', 'github')
+      .where('eu.provider', '=', enumCast('github', 'enum_external_users_provider'))
       .compile();
 
     expect(query.sql).toContain('inner join');
@@ -75,7 +76,7 @@ describe('Users service - Kysely SQL generation', () => {
       .insertInto('externalUsers')
       .values({
         externalId,
-        provider: 'github',
+        provider: enumCast('github', 'enum_external_users_provider'),
         userId: sql<string>`${userId}::uuid`,
       })
       .compile();

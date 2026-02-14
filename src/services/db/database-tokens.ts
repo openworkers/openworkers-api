@@ -123,7 +123,7 @@ async function createSystemToken(databaseId: string): Promise<string> {
       name: SYSTEM_TOKEN_NAME,
       tokenHash,
       tokenPrefix,
-      allowedOperations: enumArray(ALL_OPERATIONS, 'database_operation'),
+      allowedOperations: textArray(ALL_OPERATIONS),
     })
     .onConflict((oc) => oc.columns(['databaseId', 'name']).doNothing())
     .execute();

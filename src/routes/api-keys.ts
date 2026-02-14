@@ -7,7 +7,7 @@ const apiKeys = new Hono();
 // Schema for creating an API key
 const CreateApiKeySchema = z.object({
   name: z.string().min(1).max(100),
-  expiresAt: z.string().datetime().optional()
+  expiresAt: z.iso.datetime().optional()
 });
 
 // POST /api-keys - Create a new API key
