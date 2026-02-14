@@ -1,4 +1,5 @@
-import { sql } from './client';
+import { kysely } from './kysely-client';
+import { uuid, timestamptz, now, enumCast } from './kysely-helpers';
 
 export type TokenType = 'set_password' | 'password_reset';
 
@@ -9,15 +10,6 @@ interface AuthToken {
   type: TokenType;
   expiresAt: Date;
   createdAt: Date;
-}
-
-interface AuthTokenRow {
-  id: string;
-  user_id: string;
-  token: string;
-  type: TokenType;
-  expires_at: string;
-  created_at: string;
 }
 
 function generateToken(): string {
@@ -32,58 +24,51 @@ export async function createAuthToken(userId: string, type: TokenType, expiresIn
   const token = generateToken();
   const expiresAt = new Date(Date.now() + expiresInMs);
 
-  await sql(
-    `INSERT INTO auth_tokens (user_id, token, type, expires_at)
-     VALUES ($1::uuid, $2, $3::auth_token_type, $4::timestamptz)`,
-    [userId, token, type, expiresAt.toISOString()]
-  );
+  await kysely
+    .insertInto('authTokens')
+    .values({
+      userId: uuid(userId),
+      token,
+      type: enumCast(type, 'auth_token_type'),
+      expiresAt: timestamptz(expiresAt)
+    })
+    .execute();
 
   return token;
 }
 
 export async function findAuthToken(token: string, type: TokenType): Promise<AuthToken | null> {
-  const rows = await sql<AuthTokenRow>(
-    `SELECT id, user_id, token, type, expires_at, created_at
-     FROM auth_tokens
-     WHERE token = $1 AND type = $2::auth_token_type AND expires_at > NOW()`,
-    [token, type]
-  );
+  const authToken = await kysely
+    .selectFrom('authTokens')
+    .selectAll()
+    .where('token', '=', token)
+    .where('type', '=', enumCast(type, 'auth_token_type'))
+    .where('expiresAt', '>', now())
+    .executeTakeFirst();
 
-  if (!rows[0]) {
-    return null;
-  }
-
-  return {
-    id: rows[0].id,
-    userId: rows[0].user_id,
-    token: rows[0].token,
-    type: rows[0].type,
-    expiresAt: new Date(rows[0].expires_at),
-    createdAt: new Date(rows[0].created_at)
-  };
+  return authToken ?? null;
 }
 
 export async function deleteAuthToken(token: string): Promise<void> {
-  await sql(`DELETE FROM auth_tokens WHERE token = $1`, [token]);
+  await kysely.deleteFrom('authTokens').where('token', '=', token).execute();
 }
 
 export async function deleteUserTokens(userId: string, type: TokenType): Promise<void> {
-  await sql(`DELETE FROM auth_tokens WHERE user_id = $1::uuid AND type = $2::auth_token_type`, [userId, type]);
+  await kysely
+    .deleteFrom('authTokens')
+    .where('userId', '=', uuid(userId))
+    .where('type', '=', enumCast(type, 'auth_token_type'))
+    .execute();
 }
 
 export async function deleteExpiredTokens(): Promise<number> {
-  const result = await sql<{ count: string }>(
-    `WITH deleted AS (
-       DELETE FROM auth_tokens WHERE expires_at < NOW() RETURNING *
-     )
-     SELECT COUNT(*) as count FROM deleted`
-  );
+  const result = await kysely.deleteFrom('authTokens').where('expiresAt', '<', now()).returning('id').execute();
 
-  return parseInt(result[0]?.count ?? '0', 10);
+  return result.length;
 }
 
 // Token expiration times
 export const TOKEN_EXPIRY = {
   SET_PASSWORD: 24 * 60 * 60 * 1000, // 24 hours
   PASSWORD_RESET: 60 * 60 * 1000 // 1 hour
-} as const;
+};

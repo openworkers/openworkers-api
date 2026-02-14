@@ -3,6 +3,7 @@ import type { Generated } from 'kysely';
 import { SqlClientDialect } from './kysely-dialect';
 import { sql, createSqlClient } from './sql-client';
 import type { PostgateSqlClient } from './sql-client';
+import type { DatabaseOperation } from '../../types/schemas/database-token.schema';
 
 /**
  * Database schema interface (using camelCase thanks to CamelCasePlugin)
@@ -78,6 +79,73 @@ export interface Database {
     lastUsedAt: Date | null;
     expiresAt: Date | null;
     createdAt: Generated<Date>;
+  };
+  authTokens: {
+    id: Generated<string>;
+    userId: string;
+    token: string;
+    type: 'set_password' | 'password_reset';
+    expiresAt: Date;
+    createdAt: Generated<Date>;
+  };
+  crons: {
+    id: Generated<string>;
+    value: string;
+    workerId: string;
+    nextRun: Date;
+    lastRun: Date | null;
+    createdAt: Generated<Date>;
+    updatedAt: Generated<Date>;
+  };
+  workers: {
+    id: Generated<string>;
+    name: string | null;
+    userId: string;
+    environmentId: string | null;
+    currentVersion: number | null;
+    createdAt: Generated<Date>;
+    updatedAt: Generated<Date>;
+  };
+  environments: {
+    id: Generated<string>;
+    name: string;
+    desc: string | null;
+    userId: string;
+    createdAt: Generated<Date>;
+    updatedAt: Generated<Date>;
+  };
+  environmentValues: {
+    id: Generated<string>;
+    key: string;
+    value: string;
+    type: 'var' | 'secret';
+    environmentId: string;
+    userId: string;
+    createdAt: Generated<Date>;
+    updatedAt: Generated<Date>;
+  };
+  databaseTokens: {
+    id: Generated<string>;
+    databaseId: string;
+    name: string;
+    tokenHash: string;
+    tokenPrefix: string;
+    allowedOperations: DatabaseOperation[];
+    lastUsedAt: Date | null;
+    createdAt: Generated<Date>;
+  };
+  databaseConfigs: {
+    id: Generated<string>;
+    userId: string;
+    name: string;
+    desc: string | null;
+    provider: 'platform' | 'postgres';
+    connectionString: string | null;
+    schemaName: string | null;
+    maxRows: number;
+    timeoutSeconds: number;
+    createdAt: Generated<Date>;
+    updatedAt: Generated<Date>;
   };
   // Add more tables here as needed...
 }

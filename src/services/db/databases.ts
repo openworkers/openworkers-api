@@ -1,4 +1,5 @@
-import { sql } from './client';
+import { kysely } from './kysely-client';
+import { uuid, now, enumCast } from './kysely-helpers';
 import type { DatabaseProvider } from '../../types';
 
 interface DatabaseConfigRow {
@@ -15,48 +16,35 @@ interface DatabaseConfigRow {
   updatedAt: Date;
 }
 
-const SELECT_FIELDS = `
-  id,
-  name,
-  "desc",
-  user_id as "userId",
-  provider::text,
-  connection_string as "connectionString",
-  schema_name as "schemaName",
-  max_rows as "maxRows",
-  timeout_seconds as "timeoutSeconds",
-  created_at as "createdAt",
-  updated_at as "updatedAt"
-`;
-
 export async function findAllDatabases(userId: string): Promise<DatabaseConfigRow[]> {
-  return sql<DatabaseConfigRow>(
-    `SELECT ${SELECT_FIELDS}
-    FROM database_configs
-    WHERE user_id = $1::uuid
-    ORDER BY created_at DESC`,
-    [userId]
-  );
+  return kysely
+    .selectFrom('databaseConfigs')
+    .selectAll()
+    .where('userId', '=', uuid(userId))
+    .orderBy('createdAt', 'desc')
+    .execute();
 }
 
 export async function findDatabaseById(userId: string, id: string): Promise<DatabaseConfigRow | null> {
-  const rows = await sql<DatabaseConfigRow>(
-    `SELECT ${SELECT_FIELDS}
-    FROM database_configs
-    WHERE id = $1::uuid AND user_id = $2::uuid`,
-    [id, userId]
-  );
-  return rows[0] ?? null;
+  const row = await kysely
+    .selectFrom('databaseConfigs')
+    .selectAll()
+    .where('id', '=', uuid(id))
+    .where('userId', '=', uuid(userId))
+    .executeTakeFirst();
+
+  return row ?? null;
 }
 
 export async function findDatabaseByName(userId: string, name: string): Promise<DatabaseConfigRow | null> {
-  const rows = await sql<DatabaseConfigRow>(
-    `SELECT ${SELECT_FIELDS}
-    FROM database_configs
-    WHERE name = $1 AND user_id = $2::uuid`,
-    [name, userId]
-  );
-  return rows[0] ?? null;
+  const row = await kysely
+    .selectFrom('databaseConfigs')
+    .selectAll()
+    .where('name', '=', name)
+    .where('userId', '=', uuid(userId))
+    .executeTakeFirst();
+
+  return row ?? null;
 }
 
 interface CreatePlatformInput {
@@ -68,21 +56,19 @@ interface CreatePlatformInput {
 }
 
 export async function createPlatformDatabase(userId: string, input: CreatePlatformInput): Promise<DatabaseConfigRow> {
-  const rows = await sql<DatabaseConfigRow>(
-    `INSERT INTO database_configs (
-      user_id,
-      name,
-      "desc",
-      provider,
-      schema_name,
-      max_rows,
-      timeout_seconds
-    )
-    VALUES ($1::uuid, $2, $3, 'platform', $4, $5, $6)
-    RETURNING ${SELECT_FIELDS}`,
-    [userId, input.name, input.desc ?? null, input.schemaName, input.maxRows, input.timeoutSeconds]
-  );
-  return rows[0]!;
+  return kysely
+    .insertInto('databaseConfigs')
+    .values({
+      userId: uuid(userId),
+      name: input.name,
+      desc: input.desc ?? null,
+      provider: enumCast('platform' as DatabaseProvider, 'database_provider'),
+      schemaName: input.schemaName,
+      maxRows: input.maxRows,
+      timeoutSeconds: input.timeoutSeconds,
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
 }
 
 interface CreatePostgresInput {
@@ -94,30 +80,29 @@ interface CreatePostgresInput {
 }
 
 export async function createPostgresDatabase(userId: string, input: CreatePostgresInput): Promise<DatabaseConfigRow> {
-  const rows = await sql<DatabaseConfigRow>(
-    `INSERT INTO database_configs (
-      user_id,
-      name,
-      "desc",
-      provider,
-      connection_string,
-      max_rows,
-      timeout_seconds
-    )
-    VALUES ($1::uuid, $2, $3, 'postgres', $4, $5, $6)
-    RETURNING ${SELECT_FIELDS}`,
-    [userId, input.name, input.desc ?? null, input.connectionString, input.maxRows, input.timeoutSeconds]
-  );
-  return rows[0]!;
+  return kysely
+    .insertInto('databaseConfigs')
+    .values({
+      userId: uuid(userId),
+      name: input.name,
+      desc: input.desc ?? null,
+      provider: enumCast('postgres' as DatabaseProvider, 'database_provider'),
+      connectionString: input.connectionString,
+      maxRows: input.maxRows,
+      timeoutSeconds: input.timeoutSeconds,
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
 }
 
 export async function deleteDatabase(userId: string, id: string): Promise<number> {
-  const result = await sql<{ id: string }>(
-    `DELETE FROM database_configs
-    WHERE id = $1::uuid AND user_id = $2::uuid
-    RETURNING id`,
-    [id, userId]
-  );
+  const result = await kysely
+    .deleteFrom('databaseConfigs')
+    .where('id', '=', uuid(id))
+    .where('userId', '=', uuid(userId))
+    .returning('id')
+    .execute();
+
   return result.length;
 }
 
@@ -133,46 +118,26 @@ export async function updateDatabase(
   id: string,
   input: UpdateDatabaseInput
 ): Promise<DatabaseConfigRow | null> {
-  // Build SET clause dynamically
-  const updates: string[] = [];
-  const params: (string | number | null)[] = [id, userId];
-  let paramIndex = 3;
+  const updates: Partial<UpdateDatabaseInput & { updatedAt: any }> = {};
 
-  if (input.name !== undefined) {
-    updates.push(`name = $${paramIndex}`);
-    params.push(input.name);
-    paramIndex++;
-  }
+  if (input.name !== undefined) updates.name = input.name;
+  if (input.desc !== undefined) updates.desc = input.desc;
+  if (input.maxRows !== undefined) updates.maxRows = input.maxRows;
+  if (input.timeoutSeconds !== undefined) updates.timeoutSeconds = input.timeoutSeconds;
 
-  if (input.desc !== undefined) {
-    updates.push(`"desc" = $${paramIndex}`);
-    params.push(input.desc);
-    paramIndex++;
-  }
-
-  if (input.maxRows !== undefined) {
-    updates.push(`max_rows = $${paramIndex}`);
-    params.push(input.maxRows);
-    paramIndex++;
-  }
-
-  if (input.timeoutSeconds !== undefined) {
-    updates.push(`timeout_seconds = $${paramIndex}`);
-    params.push(input.timeoutSeconds);
-    paramIndex++;
-  }
-
-  if (updates.length === 0) {
+  if (Object.keys(updates).length === 0) {
     return findDatabaseById(userId, id);
   }
 
-  const rows = await sql<DatabaseConfigRow>(
-    `UPDATE database_configs
-    SET ${updates.join(', ')}, updated_at = NOW()
-    WHERE id = $1::uuid AND user_id = $2::uuid
-    RETURNING ${SELECT_FIELDS}`,
-    params
-  );
+  updates.updatedAt = now();
 
-  return rows[0] ?? null;
+  const row = await kysely
+    .updateTable('databaseConfigs')
+    .set(updates)
+    .where('id', '=', uuid(id))
+    .where('userId', '=', uuid(userId))
+    .returningAll()
+    .executeTakeFirst();
+
+  return row ?? null;
 }

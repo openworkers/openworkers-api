@@ -1,23 +1,19 @@
-import { sql } from './client';
+import { kysely } from './kysely-client';
+import { uuid, timestamptz } from './kysely-helpers';
+import { sql } from 'kysely';
 import type { ICron } from '../../types';
 import { findWorkerById } from './workers';
 
 export async function findCronById(userId: string, cronId: string): Promise<ICron | null> {
-  const crons = await sql<ICron>(
-    `SELECT
-      c.id,
-      c.value,
-      c.worker_id as "workerId",
-      c.next_run as "nextRun",
-      c.last_run as "lastRun",
-      c.created_at as "createdAt",
-      c.updated_at as "updatedAt"
-    FROM crons c
-    JOIN workers w ON c.worker_id = w.id
-    WHERE c.id = $1::uuid AND w.user_id = $2::uuid`,
-    [cronId, userId]
-  );
-  return crons[0] ?? null;
+  const cron = await kysely
+    .selectFrom('crons')
+    .innerJoin('workers', 'crons.workerId', 'workers.id')
+    .select(['crons.id', 'crons.value', 'crons.workerId', 'crons.nextRun', 'crons.lastRun', 'crons.createdAt', 'crons.updatedAt'])
+    .where('crons.id', '=', uuid(cronId))
+    .where('workers.userId', '=', uuid(userId))
+    .executeTakeFirst();
+
+  return cron ?? null;
 }
 
 export async function createCron(userId: string, workerId: string, value: string, nextRun: Date): Promise<ICron> {
@@ -27,31 +23,26 @@ export async function createCron(userId: string, workerId: string, value: string
     throw new Error('Worker not found or unauthorized');
   }
 
-  const crons = await sql<ICron>(
-    `INSERT INTO crons (value, worker_id, next_run)
-    VALUES ($1, $2::uuid, $3::timestamptz)
-    RETURNING
-      id,
+  return kysely
+    .insertInto('crons')
+    .values({
       value,
-      worker_id as "workerId",
-      next_run as "nextRun",
-      last_run as "lastRun",
-      created_at as "createdAt",
-      updated_at as "updatedAt"`,
-    [value, workerId, nextRun]
-  );
-  return crons[0]!;
+      workerId: uuid(workerId),
+      nextRun: timestamptz(nextRun),
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
 }
 
 export async function updateCron(userId: string, cronId: string, value: string, nextRun: Date): Promise<ICron | null> {
   // Verify ownership via join (updated_at auto-updated by trigger)
-  const crons = await sql<ICron>(
-    `UPDATE crons c
-    SET value = $1, next_run = $2::timestamptz
+  const result = await sql<ICron>`
+    UPDATE crons c
+    SET value = ${value}, next_run = ${timestamptz(nextRun)}
     FROM workers w
     WHERE c.worker_id = w.id
-      AND c.id = $3::uuid
-      AND w.user_id = $4::uuid
+      AND c.id = ${uuid(cronId)}
+      AND w.user_id = ${uuid(userId)}
     RETURNING
       c.id,
       c.value,
@@ -59,21 +50,21 @@ export async function updateCron(userId: string, cronId: string, value: string, 
       c.next_run as "nextRun",
       c.last_run as "lastRun",
       c.created_at as "createdAt",
-      c.updated_at as "updatedAt"`,
-    [value, nextRun, cronId, userId]
-  );
-  return crons[0] ?? null;
+      c.updated_at as "updatedAt"
+  `.execute(kysely);
+
+  return result.rows[0] ?? null;
 }
 
 export async function deleteCron(userId: string, cronId: string): Promise<number> {
-  const result = await sql<{ id: string }>(
-    `DELETE FROM crons c
+  const result = await sql<{ id: string }>`
+    DELETE FROM crons c
     USING workers w
     WHERE c.worker_id = w.id
-      AND c.id = $1::uuid
-      AND w.user_id = $2::uuid
-    RETURNING c.id`,
-    [cronId, userId]
-  );
-  return result.length;
+      AND c.id = ${uuid(cronId)}
+      AND w.user_id = ${uuid(userId)}
+    RETURNING c.id
+  `.execute(kysely);
+
+  return result.rows.length;
 }

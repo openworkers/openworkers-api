@@ -36,10 +36,11 @@ export const timestamptz = (value: Date | string): RawBuilder<Date> => {
  * Cast value to TEXT[] type for Postgate
  * @example
  * .where('tags', '@>', textArray(['admin', 'user']))
- * // Generates: WHERE tags @> $1::text[]
+ * // Generates: WHERE tags @> $1::text[] (where $1 = '{admin,user}')
  */
-export const textArray = (value: string[]): RawBuilder<string[]> => {
-  return sql`${JSON.stringify(value)}::text[]`;
+export const textArray = <T extends readonly string[]>(value: T): RawBuilder<T> => {
+  const pgArray = `{${value.join(',')}}`;
+  return sql`${pgArray}::text[]` as RawBuilder<T>;
 };
 
 /**
@@ -50,4 +51,25 @@ export const textArray = (value: string[]): RawBuilder<string[]> => {
  */
 export const now = (): RawBuilder<Date> => {
   return sql<Date>`now()`;
+};
+
+/**
+ * Cast value to enum type for Postgate
+ * @example
+ * .where('type', '=', enumCast('set_password', 'auth_token_type'))
+ * // Generates: WHERE type = $1::auth_token_type
+ */
+export const enumCast = <T>(value: T, enumType: string): RawBuilder<T> => {
+  return sql`${value}::${sql.raw(enumType)}`;
+};
+
+/**
+ * Cast array value to enum array type for Postgate
+ * @example
+ * .values({ allowedOperations: enumArray(['query', 'insert'], 'database_operation') })
+ * // Generates: VALUES ($1::database_operation[]) (where $1 = '{query,insert}')
+ */
+export const enumArray = <T extends readonly string[]>(value: T, enumType: string): RawBuilder<T> => {
+  const pgArray = `{${value.join(',')}}`;
+  return sql`${pgArray}::${sql.raw(enumType)}[]` as RawBuilder<T>;
 };

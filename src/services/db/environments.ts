@@ -1,4 +1,6 @@
-import { sql } from './client';
+import { kysely } from './kysely-client';
+import { uuid, enumCast } from './kysely-helpers';
+import { sql } from 'kysely';
 import type { IEnvironment, IEnvironmentValue } from '../../types';
 
 interface EnvironmentRow {
@@ -21,8 +23,8 @@ interface EnvironmentValueRow {
 
 // Environments
 export async function findAllEnvironments(userId: string): Promise<IEnvironment[]> {
-  return sql<EnvironmentRow>(
-    `SELECT
+  const result = await sql<EnvironmentRow>`
+    SELECT
       e.id,
       e.name,
       e."desc",
@@ -51,15 +53,16 @@ export async function findAllEnvironments(userId: string): Promise<IEnvironment[
           AND w.name IS NOT NULL
       ) as workers
     FROM environments e
-    WHERE e.user_id = $1::uuid
-    ORDER BY e.created_at DESC`,
-    [userId]
-  );
+    WHERE e.user_id = ${uuid(userId)}
+    ORDER BY e.created_at DESC
+  `.execute(kysely);
+
+  return result.rows;
 }
 
 export async function findEnvironmentById(userId: string, envId: string): Promise<IEnvironment | null> {
-  const envs = await sql<EnvironmentRow>(
-    `SELECT
+  const result = await sql<EnvironmentRow>`
+    SELECT
       e.id,
       e.name,
       e."desc",
@@ -88,15 +91,15 @@ export async function findEnvironmentById(userId: string, envId: string): Promis
           AND w.name IS NOT NULL
       ) as workers
     FROM environments e
-    WHERE e.id = $1::uuid AND e.user_id = $2::uuid`,
-    [envId, userId]
-  );
-  return envs[0] ?? null;
+    WHERE e.id = ${uuid(envId)} AND e.user_id = ${uuid(userId)}
+  `.execute(kysely);
+
+  return result.rows[0] ?? null;
 }
 
 export async function findEnvironmentByName(userId: string, name: string): Promise<IEnvironment | null> {
-  const envs = await sql<EnvironmentRow>(
-    `SELECT
+  const result = await sql<EnvironmentRow>`
+    SELECT
       e.id,
       e.name,
       e."desc",
@@ -125,31 +128,28 @@ export async function findEnvironmentByName(userId: string, name: string): Promi
           AND w.name IS NOT NULL
       ) as workers
     FROM environments e
-    WHERE e.name = $1 AND e.user_id = $2::uuid`,
-    [name, userId]
-  );
-  return envs[0] ?? null;
+    WHERE e.name = ${name} AND e.user_id = ${uuid(userId)}
+  `.execute(kysely);
+
+  return result.rows[0] ?? null;
 }
 
 export async function createEnvironment(userId: string, name: string, desc?: string | null): Promise<IEnvironment> {
-  const envs = await sql<EnvironmentRow>(
-    `INSERT INTO environments (name, "desc", user_id)
-    VALUES ($1, $2, $3::uuid)
-    RETURNING
-      id,
+  const env = await kysely
+    .insertInto('environments')
+    .values({
       name,
-      "desc",
-      user_id as "userId",
-      created_at as "createdAt",
-      updated_at as "updatedAt"`,
-    [name, desc ?? null, userId]
-  );
+      desc: desc ?? null,
+      userId: uuid(userId),
+    })
+    .returning(['id', 'name', 'desc', 'userId', 'createdAt', 'updatedAt'])
+    .executeTakeFirstOrThrow();
 
   // Return with empty values and workers arrays
   return {
-    ...envs[0]!,
+    ...env,
     values: [],
-    workers: []
+    workers: [],
   };
 }
 
@@ -162,39 +162,40 @@ export async function updateEnvironment(
   const current = await findEnvironmentById(userId, envId);
   if (!current) return null;
 
-  const envs = await sql<EnvironmentRow>(
-    `UPDATE environments
-    SET
-      name = $1,
-      "desc" = $2
-    WHERE id = $3::uuid AND user_id = $4::uuid
-    RETURNING
-      id,
-      name,
-      "desc",
-      user_id as "userId",
-      created_at as "createdAt",
-      updated_at as "updatedAt"`,
-    [updates.name ?? current.name, updates.desc === undefined ? current.desc : updates.desc, envId, userId]
-  );
+  const updateData: Partial<{ name: string; desc: string | null }> = {};
+  if (updates.name !== undefined) updateData.name = updates.name;
+  if (updates.desc !== undefined) updateData.desc = updates.desc;
 
-  if (!envs[0]) return null;
+  if (Object.keys(updateData).length === 0) {
+    return current;
+  }
+
+  const env = await kysely
+    .updateTable('environments')
+    .set(updateData)
+    .where('id', '=', uuid(envId))
+    .where('userId', '=', uuid(userId))
+    .returning(['id', 'name', 'desc', 'userId', 'createdAt', 'updatedAt'])
+    .executeTakeFirst();
+
+  if (!env) return null;
 
   // Return updated environment with current values and workers
   return {
-    ...envs[0],
+    ...env,
     values: current.values,
-    workers: current.workers
+    workers: current.workers,
   };
 }
 
 export async function deleteEnvironment(userId: string, envId: string): Promise<number> {
-  const result = await sql<{ id: string }>(
-    `DELETE FROM environments
-    WHERE id = $1::uuid AND user_id = $2::uuid
-    RETURNING id`,
-    [envId, userId]
-  );
+  const result = await kysely
+    .deleteFrom('environments')
+    .where('id', '=', uuid(envId))
+    .where('userId', '=', uuid(userId))
+    .returning('id')
+    .execute();
+
   return result.length;
 }
 
@@ -206,21 +207,17 @@ export async function createEnvironmentValue(
   value: string,
   type: string = 'var'
 ): Promise<IEnvironmentValue> {
-  const vals = await sql<IEnvironmentValue>(
-    `INSERT INTO environment_values (key, value, type, environment_id, user_id)
-    VALUES ($1, $2, $3::enum_binding_type, $4::uuid, $5::uuid)
-    RETURNING
-      id,
+  return kysely
+    .insertInto('environmentValues')
+    .values({
       key,
       value,
-      type,
-      environment_id as "environmentId",
-      user_id as "userId",
-      created_at as "createdAt",
-      updated_at as "updatedAt"`,
-    [key, value, type, envId, userId]
-  );
-  return vals[0]!;
+      type: enumCast(type as 'var' | 'secret', 'enum_binding_type'),
+      environmentId: uuid(envId),
+      userId: uuid(userId),
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
 }
 
 export async function updateEnvironmentValue(
@@ -228,55 +225,58 @@ export async function updateEnvironmentValue(
   valId: string,
   updates: { key?: string; value?: string; type?: string }
 ): Promise<IEnvironmentValue | null> {
-  const current = await sql<EnvironmentValueRow>(
-    `SELECT
-      id,
-      key,
-      value,
-      type
-    FROM environment_values
-    WHERE id = $1::uuid AND user_id = $2::uuid`,
-    [valId, userId]
-  );
-  if (!current[0]) return null;
+  const current = await kysely
+    .selectFrom('environmentValues')
+    .select(['id', 'key', 'value', 'type'])
+    .where('id', '=', uuid(valId))
+    .where('userId', '=', uuid(userId))
+    .executeTakeFirst();
 
-  const vals = await sql<IEnvironmentValue>(
-    `UPDATE environment_values
-    SET
-      key = $1,
-      value = $2,
-      type = $3::enum_binding_type
-    WHERE id = $4::uuid AND user_id = $5::uuid
-    RETURNING
-      id,
-      key,
-      value,
-      type,
-      environment_id as "environmentId",
-      user_id as "userId",
-      created_at as "createdAt",
-      updated_at as "updatedAt"`,
-    [updates.key ?? current[0].key, updates.value ?? current[0].value, updates.type ?? current[0].type, valId, userId]
-  );
-  return vals[0] ?? null;
+  if (!current) return null;
+
+  const updateData: Partial<{ key: string; value: string; type: any }> = {};
+  if (updates.key !== undefined) updateData.key = updates.key;
+  if (updates.value !== undefined) updateData.value = updates.value;
+  if (updates.type !== undefined) updateData.type = enumCast(updates.type as 'var' | 'secret', 'enum_binding_type');
+
+  if (Object.keys(updateData).length === 0) {
+    const full = await kysely
+      .selectFrom('environmentValues')
+      .selectAll()
+      .where('id', '=', uuid(valId))
+      .executeTakeFirst();
+    return full ?? null;
+  }
+
+  const val = await kysely
+    .updateTable('environmentValues')
+    .set(updateData)
+    .where('id', '=', uuid(valId))
+    .where('userId', '=', uuid(userId))
+    .returningAll()
+    .executeTakeFirst();
+
+  return val ?? null;
 }
 
 export async function deleteEnvironmentValue(userId: string, valId: string): Promise<number> {
-  const result = await sql<{ id: string }>(
-    `DELETE FROM environment_values
-    WHERE id = $1::uuid AND user_id = $2::uuid
-    RETURNING id`,
-    [valId, userId]
-  );
+  const result = await kysely
+    .deleteFrom('environmentValues')
+    .where('id', '=', uuid(valId))
+    .where('userId', '=', uuid(userId))
+    .returning('id')
+    .execute();
+
   return result.length;
 }
 
 export async function deleteEnvironmentValuesByEnvId(userId: string, envId: string): Promise<number> {
-  const result = await sql<{ id: string }>(
-    `DELETE FROM environment_values
-    WHERE environment_id = $1::uuid AND user_id = $2::uuid
-    RETURNING id`,
-    [envId, userId]
-  );
+  const result = await kysely
+    .deleteFrom('environmentValues')
+    .where('environmentId', '=', uuid(envId))
+    .where('userId', '=', uuid(userId))
+    .returning('id')
+    .execute();
+
   return result.length;
 }
