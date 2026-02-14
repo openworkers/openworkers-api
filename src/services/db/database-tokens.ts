@@ -50,7 +50,7 @@ export async function createDatabaseToken(
       name,
       tokenHash,
       tokenPrefix,
-      allowedOperations: enumArray(allowedOperations, 'database_operation'),
+      allowedOperations: enumArray(allowedOperations, 'enum_database_operation'),
     })
     .returning(['id', 'databaseId', 'name', 'tokenPrefix', 'allowedOperations', 'lastUsedAt', 'createdAt'])
     .executeTakeFirstOrThrow();
