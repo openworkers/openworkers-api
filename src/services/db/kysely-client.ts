@@ -54,6 +54,21 @@ export interface Database {
     createdAt: Generated<Date>;
     updatedAt: Generated<Date>;
   };
+  storageConfigs: {
+    id: Generated<string>;
+    userId: string;
+    name: string;
+    desc: string | null;
+    bucket: string;
+    prefix: string | null;
+    accessKeyId: string;
+    secretAccessKey: string;
+    endpoint: string | null;
+    region: string | null;
+    publicUrl: string | null;
+    createdAt: Generated<Date>;
+    updatedAt: Generated<Date>;
+  };
   // Add more tables here as needed...
 }
 

@@ -3,6 +3,7 @@
     "buildx",
     "croner",
     "healthcheck",
+    "kysely",
     "openworkers",
     "postgate",
     "prerendered",
