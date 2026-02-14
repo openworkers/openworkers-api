@@ -69,6 +69,16 @@ export interface Database {
     createdAt: Generated<Date>;
     updatedAt: Generated<Date>;
   };
+  apiKeys: {
+    id: Generated<string>;
+    userId: string;
+    name: string;
+    tokenPrefix: string;
+    tokenHash: string;
+    lastUsedAt: Date | null;
+    expiresAt: Date | null;
+    createdAt: Generated<Date>;
+  };
   // Add more tables here as needed...
 }
 

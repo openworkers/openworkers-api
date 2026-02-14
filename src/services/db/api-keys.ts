@@ -1,4 +1,6 @@
-import { sql } from './client';
+import { kysely } from './kysely-client';
+import { uuid, timestamptz, now } from './kysely-helpers';
+import { sql } from 'kysely';
 
 export interface ApiKey {
   id: string;
@@ -10,29 +12,6 @@ export interface ApiKey {
   createdAt: Date;
 }
 
-interface ApiKeyRow {
-  id: string;
-  user_id: string;
-  name: string;
-  token_prefix: string;
-  last_used_at: string | null;
-  expires_at: string | null;
-  created_at: string;
-}
-
-function rowToApiKey(row: ApiKeyRow): ApiKey {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    name: row.name,
-    tokenPrefix: row.token_prefix,
-    lastUsedAt: row.last_used_at ? new Date(row.last_used_at) : null,
-    expiresAt: row.expires_at ? new Date(row.expires_at) : null,
-    createdAt: new Date(row.created_at)
-  };
-}
-
-// Generate a random API key token
 function generateToken(): string {
   const bytes = new Uint8Array(24);
   crypto.getRandomValues(bytes);
@@ -42,7 +21,6 @@ function generateToken(): string {
   return `ow_${random}`;
 }
 
-// Hash token using SHA-256
 async function hashToken(token: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(token);
@@ -51,7 +29,6 @@ async function hashToken(token: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Create a new API key - returns the full token (only time it's available)
 export async function createApiKey(
   userId: string,
   name: string,
@@ -61,60 +38,61 @@ export async function createApiKey(
   const tokenPrefix = token.substring(0, 12);
   const tokenHash = await hashToken(token);
 
-  const rows = await sql<ApiKeyRow>(
-    `INSERT INTO api_keys (user_id, name, token_prefix, token_hash, expires_at)
-     VALUES ($1::uuid, $2, $3, $4, $5::timestamptz)
-     RETURNING id, user_id, name, token_prefix, last_used_at, expires_at, created_at`,
-    [userId, name, tokenPrefix, tokenHash, expiresAt?.toISOString() ?? null]
-  );
+  const apiKey = await kysely
+    .insertInto('apiKeys')
+    .values({
+      userId: uuid(userId),
+      name,
+      tokenPrefix,
+      tokenHash,
+      expiresAt: expiresAt ? timestamptz(expiresAt) : null,
+    })
+    .returning(['id', 'userId', 'name', 'tokenPrefix', 'lastUsedAt', 'expiresAt', 'createdAt'])
+    .executeTakeFirstOrThrow();
 
   return {
-    apiKey: rowToApiKey(rows[0]!),
-    token
+    apiKey,
+    token,
   };
 }
 
-// Find API key by token (for authentication)
 export async function findApiKeyByToken(token: string): Promise<ApiKey | null> {
   const tokenHash = await hashToken(token);
 
-  const rows = await sql<ApiKeyRow>(
-    `SELECT id, user_id, name, token_prefix, last_used_at, expires_at, created_at
-     FROM api_keys
-     WHERE token_hash = $1 AND (expires_at IS NULL OR expires_at > NOW())`,
-    [tokenHash]
-  );
+  const apiKey = await kysely
+    .selectFrom('apiKeys')
+    .select(['id', 'userId', 'name', 'tokenPrefix', 'lastUsedAt', 'expiresAt', 'createdAt'])
+    .where('tokenHash', '=', tokenHash)
+    .where((eb) => eb.or([eb('expiresAt', 'is', null), eb('expiresAt', '>', now())]))
+    .executeTakeFirst();
 
-  return rows[0] ? rowToApiKey(rows[0]) : null;
+  return apiKey ?? null;
 }
 
-// List user's API keys
 export async function listApiKeys(userId: string): Promise<ApiKey[]> {
-  const rows = await sql<ApiKeyRow>(
-    `SELECT id, user_id, name, token_prefix, last_used_at, expires_at, created_at
-     FROM api_keys
-     WHERE user_id = $1::uuid
-     ORDER BY created_at DESC`,
-    [userId]
-  );
-
-  return rows.map(rowToApiKey);
+  return kysely
+    .selectFrom('apiKeys')
+    .select(['id', 'userId', 'name', 'tokenPrefix', 'lastUsedAt', 'expiresAt', 'createdAt'])
+    .where('userId', '=', uuid(userId))
+    .orderBy('createdAt', 'desc')
+    .execute();
 }
 
-// Delete an API key
 export async function deleteApiKey(userId: string, keyId: string): Promise<boolean> {
-  const result = await sql<{ count: string }>(
-    `WITH deleted AS (
-       DELETE FROM api_keys WHERE id = $1::uuid AND user_id = $2::uuid RETURNING *
-     )
-     SELECT COUNT(*) as count FROM deleted`,
-    [keyId, userId]
-  );
+  const result = await kysely
+    .deleteFrom('apiKeys')
+    .where('id', '=', uuid(keyId))
+    .where('userId', '=', uuid(userId))
+    .returning('id')
+    .execute();
 
-  return parseInt(result[0]?.count ?? '0', 10) > 0;
+  return result.length > 0;
 }
 
-// Update last used timestamp
 export async function updateApiKeyLastUsed(keyId: string): Promise<void> {
-  await sql(`UPDATE api_keys SET last_used_at = NOW() WHERE id = $1::uuid`, [keyId]);
+  await kysely
+    .updateTable('apiKeys')
+    .set({ lastUsedAt: now() })
+    .where('id', '=', uuid(keyId))
+    .execute();
 }
