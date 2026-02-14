@@ -1,14 +1,14 @@
 import { Hono } from 'hono';
-import pLimit from 'p-limit';
 import { workersService } from '../services/workers';
 import { cronsService } from '../services/crons';
 import { checkWorkerNameExists, findWorkerAssetsBinding } from '../services/db/workers';
 import { sql } from '../services/db/client';
-import { createStorageRoutes, createFunctionRoutes } from '../services/projects';
 import { WorkerCreateInputSchema, WorkerUpdateInputSchema, WorkerSchema } from '../types';
 import { jsonResponse, jsonArrayResponse } from '../utils/validate';
 import { S3Client } from '../utils/s3';
-import { stringToBase64, bytesToString } from '../utils/base64';
+import { stringToBase64, bytesToString, base64Encode } from '../utils/base64';
+import { hexDecode } from '../utils/hex';
+import { sha256HexUint8 } from '../utils/crypto';
 import { sharedStorage } from '../config';
 import defaultWorkerJs from '../../examples/default-worker-js.txt';
 import defaultWorkerTs from '../../examples/default-worker-ts.txt';
@@ -279,6 +279,8 @@ workers.post('/:id/upload', async (c) => {
   const userId = c.get('userId');
   const idOrName = c.req.param('id');
 
+  console.log('Received upload request for worker:', idOrName);
+
   try {
     // 1. Check worker exists (accepts UUID or name)
     const worker = await workersService.findByIdOrName(userId, idOrName);
@@ -297,6 +299,8 @@ workers.post('/:id/upload', async (c) => {
       );
     }
 
+    console.log('Found ASSETS binding for worker:', assetsBinding);
+
     // 3. Parse multipart form data
     const formData = await c.req.formData();
     const file = formData.get('file');
@@ -314,21 +318,32 @@ workers.post('/:id/upload', async (c) => {
       return c.json({ error: 'File too large. Maximum size is 50MB.' }, 413);
     }
 
-    // 4. Extract zip
+    // 3b. Parse asset manifest from form data (sent separately from zip)
+    const assetsManifest = formData.get('assets');
+    const assetEntries: Array<{ path: string; size: number; contentType: string; hash: string }> =
+      assetsManifest ? JSON.parse(assetsManifest as string) : [];
+
+    // 4. Extract zip (code-only: worker script, routes, functions)
     const zipBuffer = await file.arrayBuffer();
     const JSZip = (await import('jszip')).default;
     const zip = await JSZip.loadAsync(zipBuffer);
 
-    // 5. Find _worker.js or _worker.ts (at root or in first directory)
-    let workerScript: string | null = null;
+    // 5. Classify zip entries (sync), then extract all sequentially
+    let workerScript: Uint8Array | null = null;
     let language: 'javascript' | 'typescript' = 'javascript';
     let routesJson: string | null = null;
-    const assets: { path: string; content: Uint8Array }[] = [];
+    const functionScripts = new Map<string, string>();
+
+    type ZipJob =
+      | { type: 'worker'; filename: string }
+      | { type: 'routes' }
+      | { type: 'function'; funcPath: string };
+
+    const jobs: Array<{ entry: any; job: ZipJob }> = [];
 
     for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
-      if (zipEntry.dir) continue;
+      if ((zipEntry as any).dir) continue;
 
-      // Normalize path (remove leading directory if present)
       const normalizedPath = relativePath.replace(/^[^/]+\//, '');
       const filename = normalizedPath || relativePath;
 
@@ -338,117 +353,134 @@ workers.post('/:id/upload', async (c) => {
         filename === '_worker.js' ||
         filename === '_worker.ts'
       ) {
-        workerScript = await zipEntry.async('string');
         language = filename.endsWith('.ts') ? 'typescript' : 'javascript';
+        jobs.push({ entry: zipEntry, job: { type: 'worker', filename } });
       } else if (filename === '_routes.json') {
-        routesJson = await zipEntry.async('string');
-      } else if (normalizedPath.startsWith('assets/') || relativePath.startsWith('assets/')) {
-        const assetPath = relativePath.startsWith('assets/')
-          ? relativePath.slice('assets/'.length)
-          : normalizedPath.slice('assets/'.length);
-
-        if (assetPath) {
-          const content = await zipEntry.async('uint8array');
-          assets.push({ path: assetPath, content });
-        }
+        jobs.push({ entry: zipEntry, job: { type: 'routes' } });
+      } else if (relativePath.includes('functions/')) {
+        const funcIdx = relativePath.indexOf('functions/');
+        jobs.push({ entry: zipEntry, job: { type: 'function', funcPath: relativePath.slice(funcIdx) } });
       }
     }
+
+    console.log(`Extracting ${jobs.length} files from zip...`);
+
+    for (const { entry, job } of jobs) {
+      const data = await entry.async(job.type === 'worker' ? 'uint8array' : 'string');
+
+      switch (job.type) {
+        case 'worker':
+          workerScript = data as Uint8Array;
+          break;
+        case 'routes':
+          routesJson = data as string;
+          break;
+        case 'function':
+          functionScripts.set(job.funcPath, data as string);
+          break;
+      }
+    }
+
+    console.log(
+      `Extracted: worker=${!!workerScript}, routes=${!!routesJson}, functions=${functionScripts.size}, assets=${assetEntries.length} (manifest)`
+    );
 
     if (!workerScript) {
       return c.json({ error: 'No worker.js or worker.ts found in zip archive' }, 400);
     }
 
-    // 6. Update worker script
-    await workersService.update(userId, worker.id, { script: workerScript });
+    // 6. Compute script hash
+    const hash = await sha256HexUint8(workerScript);
+    const scriptBase64 = base64Encode(workerScript);
 
-    // 7. Upload assets to S3
-    const endpoint = assetsBinding.endpoint ?? sharedStorage.endpoint;
+    // 7. Generate presigned URLs for asset uploads (if manifest provided)
+    let presignedAssets: Array<{ path: string; headUrl: string; putUrl: string }> = [];
 
-    if (!endpoint) {
-      return c.json({ error: 'Storage endpoint not configured' }, 500);
-    }
+    if (assetEntries.length > 0) {
+      const endpoint = assetsBinding.endpoint ?? sharedStorage.endpoint;
 
-    const s3Client = new S3Client({
-      bucket: assetsBinding.bucket,
-      endpoint,
-      accessKeyId: assetsBinding.accessKeyId,
-      secretAccessKey: assetsBinding.secretAccessKey,
-      region: assetsBinding.region,
-      prefix: assetsBinding.prefix
-    });
+      if (!endpoint) {
+        return c.json({ error: 'Storage endpoint not configured' }, 500);
+      }
 
-    // Upload assets in parallel (10 concurrent)
-    const limit = pLimit(10);
+      const s3Client = new S3Client({
+        bucket: assetsBinding.bucket,
+        endpoint,
+        accessKeyId: assetsBinding.accessKeyId,
+        secretAccessKey: assetsBinding.secretAccessKey,
+        region: assetsBinding.region,
+        prefix: assetsBinding.prefix
+      });
 
-    const results = await Promise.all(
-      assets.map((asset) =>
-        limit(async () => {
-          const success = await s3Client.put(asset.path, asset.content, getMimeType(asset.path));
+      presignedAssets = await Promise.all(
+        assetEntries.map(async (asset) => {
+          // Convert hex hash to base64 for S3
+          const checksumBase64 = base64Encode(hexDecode(asset.hash));
 
-          if (!success) {
-            console.error(`Failed to upload ${asset.path}`);
-          }
-
-          return success;
+          return {
+            path: asset.path,
+            headUrl: await s3Client.presignHead(asset.path),
+            putUrl: await s3Client.presignPut(asset.path, {
+              contentType: asset.contentType,
+              contentLength: asset.size,
+              checksumBase64
+            })
+          };
         })
-      )
-    );
-
-    const uploadedCount = results.filter(Boolean).length;
-
-    // 8. Ensure worker is in a project with routes
-    const { sql } = await import('../services/db/client');
-
-    // Check if worker already has a project
-    const projectCheck = await sql<{ project_id: string | null }>(
-      'SELECT project_id FROM workers WHERE id = $1::uuid',
-      [worker.id]
-    );
-    const existingProjectId = projectCheck[0]?.project_id;
-
-    let projectId: string;
-
-    if (!existingProjectId) {
-      // Upgrade worker to project
-      await sql('SELECT upgrade_worker_to_project($1::uuid)', [worker.id]);
-      projectId = worker.id;
-    } else {
-      projectId = existingProjectId;
+      );
     }
 
-    // 9. Parse routes.json if present and create routes
+    // 8. Build route parameters from _routes.json
+    const storageRoutes: Array<{ pattern: string; priority: number }> = [];
+    const functionWorkers: Array<{ pattern: string; script: string }> = [];
+
     if (routesJson) {
       try {
         const routes = JSON.parse(routesJson);
 
-        // Delete existing routes (except catch-all at priority 0)
-        await sql('DELETE FROM project_routes WHERE project_id = $1::uuid AND priority > 0', [projectId]);
-
-        // Delete function workers from previous deployment (all workers except main worker)
-        await sql('DELETE FROM workers WHERE project_id = $1::uuid AND id != $1::uuid', [projectId]);
-
-        // Create storage routes with different priorities
         if (routes.immutable && Array.isArray(routes.immutable)) {
-          await createStorageRoutes(projectId, routes.immutable, 3);
+          for (const p of routes.immutable) storageRoutes.push({ pattern: p, priority: 3 });
         }
+
         if (routes.static && Array.isArray(routes.static)) {
-          await createStorageRoutes(projectId, routes.static, 2);
+          for (const p of routes.static) storageRoutes.push({ pattern: p, priority: 2 });
         }
+
         if (routes.prerendered && Array.isArray(routes.prerendered)) {
-          await createStorageRoutes(projectId, routes.prerendered, 1);
+          for (const p of routes.prerendered) storageRoutes.push({ pattern: p, priority: 1 });
         }
 
-        // Create function routes (isolated workers with wildcard patterns)
         if (routes.functions && Array.isArray(routes.functions)) {
-          await createFunctionRoutes(userId, projectId, routes.functions, zip);
-        }
+          for (const func of routes.functions) {
+            const script = functionScripts.get(func.worker);
 
-        // SSR routes are handled by the catch-all route at priority 0
+            if (!script) {
+              console.error(`Function script not found in zip: ${func.worker}`);
+              continue;
+            }
+
+            functionWorkers.push({ pattern: func.pattern, script });
+          }
+        }
       } catch (error) {
-        console.error('Failed to parse or process routes.json:', error);
-        // Continue anyway - routes.json is optional
+        console.error('Failed to parse routes.json:', error);
       }
     }
+
+    // 9. Deploy in one DB call (script + project + routes + function workers)
+    const deployResult = await sql<{
+      out_project_id: string;
+      out_next_version: number;
+      functions_created: number;
+    }>(
+      `SELECT * FROM deploy_project(
+        $1::uuid, $2::uuid, decode($3, 'base64'), $4, $5::enum_code_type,
+        $6::jsonb, $7::jsonb
+      )`,
+      [worker.id, userId, scriptBase64, hash, language, JSON.stringify(storageRoutes), JSON.stringify(functionWorkers)]
+    );
+
+    console.log('Deployed:', deployResult[0]);
 
     // 10. Get updated worker
     const updatedWorker = await workersService.findById(userId, worker.id, {});
@@ -464,10 +496,13 @@ workers.post('/:id/upload', async (c) => {
         name: worker.name,
         url: workerUrl
       },
-      uploaded: {
-        script: true,
-        assets: uploadedCount
-      }
+      deployed: deployResult[0]
+        ? {
+            version: deployResult[0].out_next_version,
+            functions: deployResult[0].functions_created
+          }
+        : undefined,
+      assets: presignedAssets.length > 0 ? presignedAssets : undefined
     });
   } catch (error) {
     console.error('Failed to upload worker:', error);
@@ -480,45 +515,5 @@ workers.post('/:id/upload', async (c) => {
     );
   }
 });
-
-/**
- * Get MIME type from file extension
- */
-function getMimeType(path: string): string {
-  const ext = path.split('.').pop()?.toLowerCase();
-
-  const mimeTypes: Record<string, string> = {
-    html: 'text/html',
-    htm: 'text/html',
-    css: 'text/css',
-    js: 'application/javascript',
-    mjs: 'application/javascript',
-    json: 'application/json',
-    xml: 'application/xml',
-    txt: 'text/plain',
-    md: 'text/markdown',
-    png: 'image/png',
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    gif: 'image/gif',
-    svg: 'image/svg+xml',
-    ico: 'image/x-icon',
-    webp: 'image/webp',
-    avif: 'image/avif',
-    woff: 'font/woff',
-    woff2: 'font/woff2',
-    ttf: 'font/ttf',
-    otf: 'font/otf',
-    eot: 'application/vnd.ms-fontobject',
-    pdf: 'application/pdf',
-    zip: 'application/zip',
-    mp3: 'audio/mpeg',
-    mp4: 'video/mp4',
-    webm: 'video/webm',
-    wasm: 'application/wasm'
-  };
-
-  return mimeTypes[ext ?? ''] ?? 'application/octet-stream';
-}
 
 export default workers;

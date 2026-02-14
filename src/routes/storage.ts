@@ -153,7 +153,7 @@ storage.post('/:id/presign', async (c) => {
     const url = await client.presignPut(filename, {
       contentType: filetype,
       contentLength: filesize,
-      checksum
+      checksumBase64: checksum
     });
 
     return c.json({ url, key: filename });

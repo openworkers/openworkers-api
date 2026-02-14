@@ -149,7 +149,7 @@ export class S3Client {
    */
   async presignPut(
     key: string,
-    options: { contentType: string; contentLength: number; checksum?: string; expiresIn?: number }
+    options: { contentType: string; contentLength: number; checksumBase64?: string; expiresIn?: number }
   ): Promise<string> {
     const url = this.url(key);
     url.searchParams.append('X-Amz-Expires', String(options.expiresIn ?? 300));
@@ -159,12 +159,25 @@ export class S3Client {
       'Content-Length': String(options.contentLength)
     };
 
-    if (options.checksum) {
-      headers['x-amz-checksum-sha256'] = options.checksum;
+    if (options.checksumBase64) {
+      headers['x-amz-checksum-sha256'] = options.checksumBase64;
     }
 
     const req = new Request(url.toString(), { method: 'PUT', headers });
     const signedReq = await this.client.sign(req, { aws: { signQuery: true, allHeaders: true } });
+
+    return signedReq.url;
+  }
+
+  /**
+   * Get a presigned URL for checking existence (HEAD).
+   */
+  async presignHead(key: string, expiresIn?: number): Promise<string> {
+    const url = this.url(key);
+    url.searchParams.append('X-Amz-Expires', String(expiresIn ?? 300));
+
+    const req = new Request(url.toString(), { method: 'HEAD' });
+    const signedReq = await this.client.sign(req, { aws: { signQuery: true } });
 
     return signedReq.url;
   }
