@@ -49,8 +49,8 @@ databaseTokens.get('/:id/tokens', async (c) => {
         name: token.name,
         tokenPrefix: token.tokenPrefix,
         allowedOperations: token.allowedOperations,
-        lastUsedAt: token.lastUsedAt?.toISOString() ?? null,
-        createdAt: token.createdAt.toISOString()
+        lastUsedAt: token.lastUsedAt ?? null,
+        createdAt: token.createdAt
       }))
     );
   } catch (error) {

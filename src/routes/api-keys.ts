@@ -27,8 +27,8 @@ apiKeys.post('/', async (c) => {
         name: apiKey.name,
         tokenPrefix: apiKey.tokenPrefix,
         token, // Full token - user must save this!
-        expiresAt: apiKey.expiresAt?.toISOString() ?? null,
-        createdAt: apiKey.createdAt.toISOString()
+        expiresAt: apiKey.expiresAt ?? null,
+        createdAt: apiKey.createdAt
       },
       201
     );
@@ -53,9 +53,9 @@ apiKeys.get('/', async (c) => {
         id: key.id,
         name: key.name,
         tokenPrefix: key.tokenPrefix,
-        lastUsedAt: key.lastUsedAt?.toISOString() ?? null,
-        expiresAt: key.expiresAt?.toISOString() ?? null,
-        createdAt: key.createdAt.toISOString()
+        lastUsedAt: key.lastUsedAt ?? null,
+        expiresAt: key.expiresAt ?? null,
+        createdAt: key.createdAt
       }))
     );
   } catch (error) {
