@@ -1,6 +1,6 @@
 import { kysely } from './kysely-client';
 import { sql } from 'kysely';
-import { uuid, jsonb, timestamptz, now } from './kysely-helpers';
+import { uuid, jsonb, timestamptz, timestamptzOrNull, now } from './kysely-helpers';
 
 export interface KvNamespaceRow {
   id: string;
@@ -161,12 +161,12 @@ export async function putKvData(
       namespaceId: uuid(namespaceId),
       key,
       value: jsonb(value),
-      expiresAt: expiresAt ? timestamptz(expiresAt) : null,
+      expiresAt: timestamptzOrNull(expiresAt),
     })
     .onConflict((oc) =>
       oc.columns(['namespaceId', 'key']).doUpdateSet({
         value: jsonb(value),
-        expiresAt: expiresAt ? timestamptz(expiresAt) : null,
+        expiresAt: timestamptzOrNull(expiresAt),
         updatedAt: now(),
       })
     )

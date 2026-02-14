@@ -43,6 +43,16 @@ export const timestamptz = (value: Date | string): RawBuilder<Date> => {
 };
 
 /**
+ * Cast optional value to TIMESTAMPTZ or NULL
+ * @example
+ * .values({ expiresAt: timestamptzOrNull(expiresDate) })
+ * // Generates: VALUES ($1::timestamptz) or NULL::timestamptz if null/undefined
+ */
+export const timestamptzOrNull = (value: Date | string | null | undefined): RawBuilder<Date | null> => {
+  return value ? timestamptz(value) : sql`NULL::timestamptz`;
+};
+
+/**
  * Cast value to TEXT[] type for Postgate
  * @example
  * .where('tags', '@>', textArray(['admin', 'user']))
