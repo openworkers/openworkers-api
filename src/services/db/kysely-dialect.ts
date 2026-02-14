@@ -122,26 +122,6 @@ class SqlClientDriver implements Driver {
 }
 
 /**
- * Parse date columns from SQL result
- * Postgate returns dates as ISO strings, we need to convert them to Date objects
- */
-function parseDates<T>(rows: T[]): T[] {
-  const dateColumns = ['createdAt', 'updatedAt', 'expiresAt', 'lastUsedAt', 'lastRun', 'nextRun'];
-
-  return rows.map(row => {
-    if (!row || typeof row !== 'object') return row;
-
-    const parsed = { ...row } as any;
-    for (const col of dateColumns) {
-      if (col in parsed && typeof parsed[col] === 'string') {
-        parsed[col] = new Date(parsed[col]);
-      }
-    }
-    return parsed;
-  });
-}
-
-/**
  * Connection implementation using SQL client
  */
 class SqlClientConnection implements DatabaseConnection {
@@ -154,12 +134,9 @@ class SqlClientConnection implements DatabaseConnection {
   async executeQuery<R>(compiledQuery: CompiledQuery): Promise<QueryResult<R>> {
     const result = await this.#client<R>(compiledQuery.sql, compiledQuery.parameters as unknown[]);
 
-    // Parse date columns
-    const rows = parseDates(result as any[]) as R[];
-
     // Map SqlResult to Kysely QueryResult
     return {
-      rows,
+      rows: result,
       numAffectedRows: result.count !== undefined ? BigInt(result.count) : undefined,
     };
   }
