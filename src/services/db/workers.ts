@@ -202,14 +202,14 @@ export async function updateWorker(
     return null;
   }
 
-  const envId = updates.environmentId === undefined ? (current.environmentId ?? null) : updates.environmentId;
+  const envId = updates.environmentId === undefined ? current.environmentId : updates.environmentId;
 
   // Update worker name/environment if provided
   await kysely
     .updateTable('workers')
     .set({
       name: updates.name ?? current.name,
-      environmentId: envId ? uuid(envId) : null
+      environmentId: uuidOrNull(envId)
     })
     .where('id', '=', uuid(workerId))
     .where('userId', '=', uuid(userId))
