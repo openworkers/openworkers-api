@@ -12,6 +12,16 @@ export const uuid = (value: string): RawBuilder<string> => {
 };
 
 /**
+ * Cast optional value to UUID or NULL
+ * @example
+ * .values({ environmentId: uuidOrNull(envId) })
+ * // Generates: VALUES ($1::uuid) or NULL::uuid if null/undefined
+ */
+export const uuidOrNull = (value: string | null | undefined): RawBuilder<string | null> => {
+  return value ? uuid(value) : sql`NULL::uuid`;
+};
+
+/**
  * Cast value to JSONB type for Postgate
  * @example
  * .set({ data: jsonb({ foo: 'bar' }) })

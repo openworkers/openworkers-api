@@ -1,5 +1,5 @@
 import { kysely } from './kysely-client';
-import { uuid, enumCast, base64Decode, byteaToText, enumToText } from './kysely-helpers';
+import { uuid, uuidOrNull, enumCast, base64Decode, byteaToText, enumToText } from './kysely-helpers';
 import { sql } from 'kysely';
 import type { IWorker, IWorkerLanguage } from '../../types';
 import { sha256Hex } from '../../utils/crypto';
@@ -32,9 +32,7 @@ export async function findAllWorkers(userId: string): Promise<IWorker[]> {
   return kysely
     .selectFrom('workers as w')
     .leftJoin('workerDeployments as wd', (join) =>
-      join
-        .onRef('wd.workerId', '=', 'w.id')
-        .onRef('wd.version', '=', 'w.currentVersion')
+      join.onRef('wd.workerId', '=', 'w.id').onRef('wd.version', '=', 'w.currentVersion')
     )
     .select([
       'w.id',
@@ -45,7 +43,7 @@ export async function findAllWorkers(userId: string): Promise<IWorker[]> {
       'w.createdAt',
       'w.updatedAt',
       enumToText<IWorkerLanguage>('wd.codeType').as('language'),
-      byteaToText('wd.code').as('script'),
+      byteaToText('wd.code').as('script')
     ])
     .where('w.userId', '=', uuid(userId))
     .where('w.name', 'is not', null)
@@ -54,11 +52,7 @@ export async function findAllWorkers(userId: string): Promise<IWorker[]> {
 }
 
 export async function checkWorkerNameExists(name: string): Promise<boolean> {
-  const worker = await kysely
-    .selectFrom('workers')
-    .select('id')
-    .where('name', '=', name)
-    .executeTakeFirst();
+  const worker = await kysely.selectFrom('workers').select('id').where('name', '=', name).executeTakeFirst();
 
   return worker !== undefined;
 }
@@ -84,9 +78,7 @@ export async function findWorker(
   let query = kysely
     .selectFrom('workers as w')
     .leftJoin('workerDeployments as wd', (join) =>
-      join
-        .onRef('wd.workerId', '=', 'w.id')
-        .onRef('wd.version', '=', 'w.currentVersion')
+      join.onRef('wd.workerId', '=', 'w.id').onRef('wd.version', '=', 'w.currentVersion')
     )
     .select([
       'w.id',
@@ -132,7 +124,7 @@ export async function findWorker(
         )), '[]'::json)
         FROM domains d
         WHERE d.worker_id = w.id
-      )`.as('domains'),
+      )`.as('domains')
     ]);
 
   if (byId) {
@@ -141,9 +133,7 @@ export async function findWorker(
     query = query.where('w.name', '=', idOrName);
   }
 
-  const worker = await query
-    .where('w.userId', '=', uuid(userId))
-    .executeTakeFirst();
+  const worker = await query.where('w.userId', '=', uuid(userId)).executeTakeFirst();
 
   return worker ?? null;
 }
@@ -160,9 +150,9 @@ export async function createWorker(userId: string, input: CreateWorkerInput): Pr
     .values({
       name: input.name ?? null,
       userId: uuid(userId),
-      environmentId: input.environmentId ? uuid(input.environmentId) : null,
-      projectId: input.projectId ? uuid(input.projectId) : null,
-      currentVersion: 1,
+      environmentId: uuidOrNull(input.environmentId),
+      projectId: uuidOrNull(input.projectId),
+      currentVersion: 1
     })
     .returning(['id', 'name', 'userId', 'environmentId', 'createdAt', 'updatedAt'])
     .executeTakeFirstOrThrow();
@@ -180,7 +170,7 @@ export async function createWorker(userId: string, input: CreateWorkerInput): Pr
       codeType: enumCast(input.language, 'enum_code_type'),
       code: base64Decode(codeBase64),
       deployedBy: uuid(userId),
-      message: 'Initial deployment',
+      message: 'Initial deployment'
     })
     .execute();
 
@@ -189,11 +179,10 @@ export async function createWorker(userId: string, input: CreateWorkerInput): Pr
     ...worker,
     name: worker.name!,
     currentVersion: 1,
-    script: input.script,
     language: input.language,
     crons: [],
-    domains: [],
-  } as IWorker;
+    domains: []
+  };
 }
 
 export async function updateWorker(
@@ -213,16 +202,14 @@ export async function updateWorker(
     return null;
   }
 
-  const envId = updates.environmentId === undefined
-    ? (current.environmentId ?? null)
-    : updates.environmentId;
+  const envId = updates.environmentId === undefined ? (current.environmentId ?? null) : updates.environmentId;
 
   // Update worker name/environment if provided
   await kysely
     .updateTable('workers')
     .set({
       name: updates.name ?? current.name,
-      environmentId: envId ? uuid(envId) : null,
+      environmentId: envId ? uuid(envId) : null
     })
     .where('id', '=', uuid(workerId))
     .where('userId', '=', uuid(userId))
@@ -253,15 +240,11 @@ export async function updateWorker(
         codeType: enumCast(language, 'enum_code_type'),
         code: base64Decode(codeBase64),
         deployedBy: uuid(userId),
-        message: 'Update',
+        message: 'Update'
       })
       .execute();
 
-    await kysely
-      .updateTable('workers')
-      .set({ currentVersion: nextVersion })
-      .where('id', '=', uuid(workerId))
-      .execute();
+    await kysely.updateTable('workers').set({ currentVersion: nextVersion }).where('id', '=', uuid(workerId)).execute();
   }
 
   // Update domains if provided
@@ -312,7 +295,7 @@ export async function findWorkerAssetsBinding(userId: string, workerId: string):
       'sc.accessKeyId',
       'sc.secretAccessKey',
       'sc.endpoint',
-      'sc.region',
+      'sc.region'
     ])
     .where('w.id', '=', uuid(workerId))
     .where('w.userId', '=', uuid(userId))
