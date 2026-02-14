@@ -1,5 +1,5 @@
 import { kysely } from './kysely-client';
-import { uuid, enumArray, now } from './kysely-helpers';
+import { uuid, textArray, now } from './kysely-helpers';
 import { sql } from 'kysely';
 import { postgate } from '../../config';
 import type { DatabaseOperation } from '../../types/schemas/database-token.schema';
@@ -50,7 +50,7 @@ export async function createDatabaseToken(
       name,
       tokenHash,
       tokenPrefix,
-      allowedOperations: enumArray(allowedOperations, 'enum_database_operation'),
+      allowedOperations: textArray(allowedOperations),
     })
     .returning(['id', 'databaseId', 'name', 'tokenPrefix', 'allowedOperations', 'lastUsedAt', 'createdAt'])
     .executeTakeFirstOrThrow();
