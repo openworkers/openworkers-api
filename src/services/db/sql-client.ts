@@ -14,7 +14,7 @@ export interface SqlResult<T = Record<string, unknown>> extends Array<T> {
 export type NamedParams = Record<string, unknown>;
 
 /**
- * Postgate SQL client interface - supports both positional ($1, $2) and named (:name, :userId) params
+ * SQL client interface - supports both positional ($1, $2) and named ($name) params
  */
 export interface PostgateSqlClient {
   <T = Record<string, unknown>>(query: string, params?: unknown[] | NamedParams): Promise<SqlResult<T>>;
@@ -49,6 +49,43 @@ function isNamedParams(params: unknown[] | NamedParams): params is NamedParams {
 }
 
 /**
+ * Resolve query params (named → positional conversion)
+ */
+function resolveParams(query: string, params?: unknown[] | NamedParams): { query: string; params: unknown[] } {
+  if (!params) {
+    return { query, params: [] };
+  }
+
+  if (isNamedParams(params)) {
+    const converted = convertNamedParams(query, params);
+    return { query: converted.query, params: converted.values };
+  }
+
+  return { query, params };
+}
+
+/**
+ * Database binding interface (worker runtime)
+ */
+interface DatabaseBinding {
+  query(sql: string, params?: unknown[]): Promise<unknown[]>;
+}
+
+/**
+ * Create a SQL client backed by a DATABASE binding (worker runtime)
+ */
+function createBindingSqlClient(db: DatabaseBinding): PostgateSqlClient {
+  return async function sql<T = Record<string, unknown>>(
+    query: string,
+    params?: unknown[] | NamedParams
+  ): Promise<SqlResult<T>> {
+    const resolved = resolveParams(query, params);
+    const rows = (await db.query(resolved.query, resolved.params)) as SqlResult<T>;
+    return rows;
+  };
+}
+
+/**
  * Create a Postgate-backed SQL client from a token
  */
 function createPostgateClientFromToken(baseUrl: string, token: string): PostgateSqlClient {
@@ -58,20 +95,8 @@ function createPostgateClientFromToken(baseUrl: string, token: string): Postgate
     query: string,
     params?: unknown[] | NamedParams
   ): Promise<SqlResult<T>> {
-    let finalQuery = query;
-    let finalParams: unknown[] = [];
-
-    if (params) {
-      if (isNamedParams(params)) {
-        const converted = convertNamedParams(query, params);
-        finalQuery = converted.query;
-        finalParams = converted.values;
-      } else {
-        finalParams = params;
-      }
-    }
-
-    const result = await client.query<T>(finalQuery, finalParams);
+    const resolved = resolveParams(query, params);
+    const result = await client.query<T>(resolved.query, resolved.params);
 
     // Return array-like result with count property
     const rows = result.rows as SqlResult<T>;
@@ -88,5 +113,23 @@ export function createSqlClient(token: string): PostgateSqlClient {
   return createPostgateClientFromToken(postgateConfig.url, token);
 }
 
+/**
+ * Get the default SQL client: DATABASE binding if available, otherwise Postgate HTTP
+ */
+function getDefaultSqlClient(): PostgateSqlClient {
+  const binding = (globalThis as any).env?.DATABASE as DatabaseBinding | undefined;
+
+  if (binding?.query) {
+    console.log('Using DATABASE binding for SQL client');
+    return createBindingSqlClient(binding);
+  }
+
+  if (postgateConfig.token) {
+    return createPostgateClientFromToken(postgateConfig.url, postgateConfig.token);
+  }
+
+  throw new Error('No database client available: neither DATABASE binding nor POSTGATE_TOKEN configured');
+}
+
 // Default SQL client for OpenWorkers database
-export const sql = createPostgateClientFromToken(postgateConfig.url, postgateConfig.token);
+export const sql = getDefaultSqlClient();

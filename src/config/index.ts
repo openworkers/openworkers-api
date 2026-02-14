@@ -27,6 +27,9 @@ const uuidLike = z
 // Environment schema
 const EnvironmentSchema = z.enum(['development', 'staging', 'production', 'test']);
 
+// Check if DATABASE binding is available (worker runtime)
+const hasDatabaseBinding = !!(globalThis as any).env?.DATABASE?.query;
+
 // Configuration schema
 const ConfigSchema = z.object({
   // Environment
@@ -57,7 +60,10 @@ const ConfigSchema = z.object({
   postgate: z.object({
     url: z.url().default('http://localhost:6080'),
     // Token (pg_xxx format) - for accessing OpenWorkers database
-    token: z.string().regex(/^pg_[a-f0-9]{64}$/, 'POSTGATE_TOKEN must be a valid pg_xxx token'),
+    token: (() => {
+      const pgToken = z.string().regex(/^pg_[a-f0-9]{64}$/, 'POSTGATE_TOKEN must be a valid pg_xxx token');
+      return hasDatabaseBinding ? pgToken.optional() : pgToken;
+    })(),
     // Secret for generating deterministic system tokens
     systemTokenSecret: z.string().min(32, 'POSTGATE_SYSTEM_TOKEN_SECRET must be at least 32 characters')
   }),

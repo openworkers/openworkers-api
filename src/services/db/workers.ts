@@ -202,7 +202,7 @@ export async function updateWorker(
   );
 
   // Update script if provided
-  if (updates.script !== undefined && updates.script !== current.script) {
+  if (updates.script !== undefined) {
     const hash = await sha256Hex(updates.script);
     const codeBase64 = stringToBase64(updates.script);
 
