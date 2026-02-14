@@ -1,6 +1,6 @@
 {
   "name": "openworkers-api",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "license": "MIT",
   "module": "src/index.ts",
   "type": "module",
@@ -21,7 +21,8 @@
     "generate-types": "bun scripts/generate-types.ts",
     "clean": "rimraf dist node_modules",
     "deploy:dev": "bun build:worker && ow dev worker deploy openworkers-api ./dist/worker.js",
-    "deploy:local": "bun build:worker && ow local worker deploy openworkers-api ./dist/worker.js"
+    "deploy:local": "bun build:worker && ow local worker deploy openworkers-api ./dist/worker.js",
+    "deploy:main": "bun build:worker && ow main worker deploy openworkers-api ./dist/worker.js"
   },
   "dependencies": {
     "@openworkers/croner-wasm": "^0.3.1",

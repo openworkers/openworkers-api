@@ -55,8 +55,20 @@ export class PostgateClient {
     });
 
     if (!response.ok) {
-      const error = (await response.json()) as PostgateError;
-      throw new Error(error.message || error.error || `Postgate error: ${response.status}`);
+      let errorMessage = `Postgate error: ${response.status}`;
+      const contentType = response.headers.get('content-type');
+
+      if (contentType?.includes('application/json')) {
+        const error = (await response.json()) as PostgateError;
+        console.error('Postgate error:', error);
+        errorMessage = error.message || error.error || errorMessage;
+      } else {
+        const text = await response.text();
+        console.error('Postgate error:', text);
+        if (text) errorMessage = text;
+      }
+
+      throw new Error(errorMessage);
     }
 
     return response.json() as Promise<PostgateQueryResponse<T>>;
