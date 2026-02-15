@@ -158,6 +158,24 @@ export interface Database {
     message: string | null;
     createdAt: Generated<Date>;
   };
+  projects: {
+    id: Generated<string>;
+    name: string;
+    desc: string | null;
+    userId: string;
+    environmentId: string | null;
+    createdAt: Generated<Date>;
+    updatedAt: Generated<Date>;
+  };
+  projectRoutes: {
+    projectId: string;
+    pattern: string;
+    priority: number;
+    backendType: 'worker' | 'storage';
+    workerId: string | null;
+    createdAt: Generated<Date>;
+    updatedAt: Generated<Date>;
+  };
   // Add more tables here as needed...
 }
 

@@ -4,6 +4,7 @@ import { workersService } from '../services/workers';
 import { cronsService } from '../services/crons';
 import { checkWorkerNameExists, findWorkerAssetsBinding } from '../services/db/workers';
 import { sql } from '../services/db/client';
+import * as projectsDb from '../services/db/projects';
 import { WorkerCreateInputSchema, WorkerUpdateInputSchema, WorkerSchema } from '../types';
 import { jsonResponse, jsonArrayResponse, parseAndValidate } from '../utils/validate';
 import { S3Client } from '../utils/s3';
@@ -178,20 +179,13 @@ workers.delete('/:id', async (c) => {
     // we detect if this worker is a main worker and delete the project instead.
     // This avoids the "Cannot delete main worker" constraint error.
     // TODO: Remove this when UI properly distinguishes projects from workers.
-    const projectCheck = await sql('SELECT id FROM projects WHERE id = $1::uuid AND user_id = $2::uuid', [
-      worker.id,
-      userId
-    ]);
+    const isProject = await projectsDb.isProjectMainWorker(userId, worker.id);
 
     let deleted: number;
 
-    if (projectCheck.length > 0) {
+    if (isProject) {
       // This is a main worker - delete the project instead (cascades to all workers)
-      const deleteResult = await sql('DELETE FROM projects WHERE id = $1::uuid AND user_id = $2::uuid RETURNING id', [
-        worker.id,
-        userId
-      ]);
-      deleted = deleteResult.length;
+      deleted = await projectsDb.deleteProject(userId, worker.id);
     } else {
       // Regular worker - delete normally
       deleted = await workersService.delete(userId, worker.id);
