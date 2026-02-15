@@ -83,10 +83,7 @@ export function base64Encode(buffer: Uint8Array): string {
     const z = buffer[i + 2]!;
 
     result +=
-      b64char(x >> 2) +
-      b64char(((x & 3) << 4) | (y >> 4)) +
-      b64char(((y & 15) << 2) | (z >> 6)) +
-      b64char(z & 63);
+      b64char(x >> 2) + b64char(((x & 3) << 4) | (y >> 4)) + b64char(((y & 15) << 2) | (z >> 6)) + b64char(z & 63);
   }
 
   // Add padding if needed

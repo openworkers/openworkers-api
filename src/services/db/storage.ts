@@ -72,7 +72,7 @@ export async function createStorageConfig(
       secretAccessKey,
       endpoint: endpoint ?? null,
       region: region ?? null,
-      publicUrl: publicUrl ?? null,
+      publicUrl: publicUrl ?? null
     })
     .returningAll()
     .executeTakeFirstOrThrow();

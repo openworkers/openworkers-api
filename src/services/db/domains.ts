@@ -13,11 +13,7 @@ export async function findAllDomains(userId: string): Promise<IDomain[]> {
 }
 
 export async function findDomainByName(name: string): Promise<IDomain | null> {
-  const domain = await kysely
-    .selectFrom('domains')
-    .selectAll()
-    .where('name', '=', name)
-    .executeTakeFirst();
+  const domain = await kysely.selectFrom('domains').selectAll().where('name', '=', name).executeTakeFirst();
 
   return domain ?? null;
 }
@@ -34,7 +30,7 @@ export async function createDomain(userId: string, workerId: string, name: strin
     .values({
       name,
       workerId: uuid(workerId),
-      userId: uuid(userId),
+      userId: uuid(userId)
     })
     .returningAll()
     .executeTakeFirstOrThrow();
@@ -92,6 +88,6 @@ export async function updateWorkerDomains(userId: string, workerId: string, newD
     toDelete.length > 0 ? deleteDomainsForWorker(userId, workerId, toDelete) : Promise.resolve(0),
 
     // Create new domains
-    ...toCreate.map((name) => createDomain(userId, workerId, name)),
+    ...toCreate.map((name) => createDomain(userId, workerId, name))
   ]);
 }

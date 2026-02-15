@@ -1,11 +1,11 @@
 import { kysely } from './kysely-client';
 import { uuid, uuidOrNull, enumCast, base64Decode, byteaToText, enumToText } from './kysely-helpers';
-import { sql } from 'kysely';
 import type { IWorker, IWorkerLanguage } from '../../types';
 import { sha256Hex } from '../../utils/crypto';
 import { stringToBase64 } from '../../utils/base64';
 import { isUuid } from '../../utils/validation';
 import { updateWorkerDomains } from './domains';
+import { sql } from 'kysely';
 
 interface IFullWorker extends IWorker {
   environmentId: string | null;
@@ -276,7 +276,7 @@ export async function findWorkerAssetsBinding(userId: string, workerId: string):
   const binding = await kysely
     .selectFrom('workers as w')
     .innerJoin('environmentValues as ev', 'ev.environmentId', 'w.environmentId')
-    .innerJoin('storageConfigs as sc', (join) => join.on(sql`sc.id = ev.value::uuid`))
+    .innerJoin('storageConfigs as sc', (join) => join.on('sc.id', '=', sql`sc.id = ev.value::uuid`))
     .select([
       'sc.id as storageConfigId',
       'sc.bucket',
@@ -288,7 +288,7 @@ export async function findWorkerAssetsBinding(userId: string, workerId: string):
     ])
     .where('w.id', '=', uuid(workerId))
     .where('w.userId', '=', uuid(userId))
-    .where(sql<boolean>`ev.type = 'assets'`)
+    .where('ev.type', '=', 'assets')
     .executeTakeFirst();
 
   return binding ?? null;

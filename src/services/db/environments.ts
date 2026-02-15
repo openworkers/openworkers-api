@@ -140,7 +140,7 @@ export async function createEnvironment(userId: string, name: string, desc?: str
     .values({
       name,
       desc: desc ?? null,
-      userId: uuid(userId),
+      userId: uuid(userId)
     })
     .returning(['id', 'name', 'desc', 'userId', 'createdAt', 'updatedAt'])
     .executeTakeFirstOrThrow();
@@ -149,7 +149,7 @@ export async function createEnvironment(userId: string, name: string, desc?: str
   return {
     ...env,
     values: [],
-    workers: [],
+    workers: []
   };
 }
 
@@ -184,7 +184,7 @@ export async function updateEnvironment(
   return {
     ...env,
     values: current.values,
-    workers: current.workers,
+    workers: current.workers
   };
 }
 
@@ -214,7 +214,7 @@ export async function createEnvironmentValue(
       value,
       type: enumCast(type as 'var' | 'secret', 'enum_binding_type'),
       environmentId: uuid(envId),
-      userId: uuid(userId),
+      userId: uuid(userId)
     })
     .returningAll()
     .executeTakeFirstOrThrow();

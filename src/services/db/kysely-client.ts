@@ -119,7 +119,7 @@ export interface Database {
     id: Generated<string>;
     key: string;
     value: string;
-    type: 'var' | 'secret';
+    type: 'var' | 'secret' | 'assets' | 'storage' | 'kv' | 'database' | 'worker';
     environmentId: string;
     userId: string;
     createdAt: Generated<Date>;

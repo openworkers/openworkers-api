@@ -28,7 +28,7 @@ describe('KV service - Kysely SQL generation', () => {
       .values({
         userId: sql<string>`${userId}::uuid`,
         name,
-        desc,
+        desc
       })
       .returningAll()
       .compile();
@@ -47,7 +47,7 @@ describe('KV service - Kysely SQL generation', () => {
       .updateTable('kvConfigs')
       .set({
         name,
-        updatedAt: sql`now()`,
+        updatedAt: sql`now()`
       })
       .where('userId', '=', sql<string>`${userId}::uuid`)
       .where('id', '=', sql<string>`${id}::uuid`)
@@ -106,13 +106,13 @@ describe('KV service - Kysely SQL generation', () => {
         namespaceId: sql<string>`${namespaceId}::uuid`,
         key,
         value: sql`${jsonValue}::jsonb`,
-        expiresAt: sql`${expiresAt}::timestamptz`,
+        expiresAt: sql`${expiresAt}::timestamptz`
       })
       .onConflict((oc) =>
         oc.columns(['namespaceId', 'key']).doUpdateSet({
           value: sql`${jsonValue}::jsonb`,
           expiresAt: sql`${expiresAt}::timestamptz`,
-          updatedAt: sql`now()`,
+          updatedAt: sql`now()`
         })
       )
       .returningAll()

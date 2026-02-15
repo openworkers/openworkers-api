@@ -18,10 +18,7 @@ export const DatabaseTokenSchema = z.object({
 // Create input
 export const DatabaseTokenCreateInputSchema = z.object({
   name: z.string().min(1).max(100),
-  allowedOperations: z
-    .array(z.enum(DatabaseOperations))
-    .min(1)
-    .default(['SELECT', 'INSERT', 'UPDATE', 'DELETE'])
+  allowedOperations: z.array(z.enum(DatabaseOperations)).min(1).default(['SELECT', 'INSERT', 'UPDATE', 'DELETE'])
 });
 
 // Create response (includes the full token - only time it's visible)

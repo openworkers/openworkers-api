@@ -7,14 +7,10 @@ import type {
   Driver,
   Kysely,
   QueryCompiler,
-  QueryResult,
+  QueryResult
 } from 'kysely';
 
-import {
-  PostgresAdapter,
-  PostgresIntrospector,
-  PostgresQueryCompiler,
-} from 'kysely';
+import { PostgresAdapter, PostgresIntrospector, PostgresQueryCompiler } from 'kysely';
 
 import type { PostgateSqlClient } from './sql-client';
 
@@ -137,14 +133,11 @@ class SqlClientConnection implements DatabaseConnection {
     // Map SqlResult to Kysely QueryResult
     return {
       rows: result,
-      numAffectedRows: result.count !== undefined ? BigInt(result.count) : undefined,
+      numAffectedRows: result.count !== undefined ? BigInt(result.count) : undefined
     };
   }
 
-  async *streamQuery<R>(
-    _compiledQuery: CompiledQuery,
-    _chunkSize: number
-  ): AsyncIterableIterator<QueryResult<R>> {
+  async *streamQuery<R>(_compiledQuery: CompiledQuery, _chunkSize: number): AsyncIterableIterator<QueryResult<R>> {
     throw new Error('Streaming queries not supported');
   }
 }

@@ -50,14 +50,14 @@ export async function createDatabaseToken(
       name,
       tokenHash,
       tokenPrefix,
-      allowedOperations: textArray(allowedOperations),
+      allowedOperations: textArray(allowedOperations)
     })
     .returning(['id', 'databaseId', 'name', 'tokenPrefix', 'allowedOperations', 'lastUsedAt', 'createdAt'])
     .executeTakeFirstOrThrow();
 
   return {
     token,
-    fullToken,
+    fullToken
   };
 }
 
@@ -123,7 +123,7 @@ async function createSystemToken(databaseId: string): Promise<string> {
       name: SYSTEM_TOKEN_NAME,
       tokenHash,
       tokenPrefix,
-      allowedOperations: textArray(ALL_OPERATIONS),
+      allowedOperations: textArray(ALL_OPERATIONS)
     })
     .onConflict((oc) => oc.columns(['databaseId', 'name']).doNothing())
     .execute();

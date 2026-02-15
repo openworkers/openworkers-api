@@ -9,7 +9,17 @@ describe('Users service - Kysely SQL generation', () => {
 
     const query = kysely
       .selectFrom('users')
-      .select(['id', 'username', 'avatarUrl', 'limitWorkers', 'limitEnvironments', 'limitDatabases', 'limitKv', 'limitStorage', 'secondPrecision'])
+      .select([
+        'id',
+        'username',
+        'avatarUrl',
+        'limitWorkers',
+        'limitEnvironments',
+        'limitDatabases',
+        'limitKv',
+        'limitStorage',
+        'secondPrecision'
+      ])
       .where('id', '=', sql<string>`${userId}::uuid`)
       .compile();
 
@@ -39,11 +49,7 @@ describe('Users service - Kysely SQL generation', () => {
   test('createUserWithEmail - generates correct INSERT', () => {
     const email = 'test@example.com';
 
-    const query = kysely
-      .insertInto('users')
-      .values({ username: email })
-      .returningAll()
-      .compile();
+    const query = kysely.insertInto('users').values({ username: email }).returningAll().compile();
 
     expect(query.sql).toContain('insert into "users"');
     expect(query.sql).toContain('("username")');
@@ -77,7 +83,7 @@ describe('Users service - Kysely SQL generation', () => {
       .values({
         externalId,
         provider: enumCast('github', 'enum_external_users_provider'),
-        userId: sql<string>`${userId}::uuid`,
+        userId: sql<string>`${userId}::uuid`
       })
       .compile();
 

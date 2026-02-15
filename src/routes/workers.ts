@@ -318,8 +318,9 @@ workers.post('/:id/upload', async (c) => {
 
     // 3b. Parse asset manifest from form data (sent separately from zip)
     const assetsManifest = formData.get('assets');
-    const assetEntries: Array<{ path: string; size: number; contentType: string; hash: string }> =
-      assetsManifest ? JSON.parse(assetsManifest as string) : [];
+    const assetEntries: Array<{ path: string; size: number; contentType: string; hash: string }> = assetsManifest
+      ? JSON.parse(assetsManifest as string)
+      : [];
 
     // 4. Extract zip (code-only: worker script, routes, functions)
     const zipBuffer = await file.arrayBuffer();

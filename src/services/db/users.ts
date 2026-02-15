@@ -4,11 +4,7 @@ import { uuid, enumCast } from './kysely-helpers';
 import type { ISelf } from '../../types';
 
 export async function findUserById(userId: string): Promise<ISelf | null> {
-  const user = await kysely
-    .selectFrom('users')
-    .selectAll()
-    .where('id', '=', uuid(userId))
-    .executeTakeFirst();
+  const user = await kysely.selectFrom('users').selectAll().where('id', '=', uuid(userId)).executeTakeFirst();
 
   if (!user) return null;
 
@@ -22,8 +18,8 @@ export async function findUserById(userId: string): Promise<ISelf | null> {
       databases: user.limitDatabases,
       kv: user.limitKv,
       storage: user.limitStorage,
-      secondPrecision: user.secondPrecision,
-    },
+      secondPrecision: user.secondPrecision
+    }
   };
 }
 
@@ -31,7 +27,17 @@ export async function findUserByGitHub(externalId: string): Promise<ISelf | null
   const user = await kysely
     .selectFrom('users as u')
     .innerJoin('externalUsers as eu', 'u.id', 'eu.userId')
-    .select(['u.id', 'u.username', 'u.avatarUrl', 'u.limitWorkers', 'u.limitEnvironments', 'u.limitDatabases', 'u.limitKv', 'u.limitStorage', 'u.secondPrecision'])
+    .select([
+      'u.id',
+      'u.username',
+      'u.avatarUrl',
+      'u.limitWorkers',
+      'u.limitEnvironments',
+      'u.limitDatabases',
+      'u.limitKv',
+      'u.limitStorage',
+      'u.secondPrecision'
+    ])
     .where('eu.externalId', '=', externalId)
     .where('eu.provider', '=', enumCast('github', 'enum_external_users_provider'))
     .executeTakeFirst();
@@ -48,8 +54,8 @@ export async function findUserByGitHub(externalId: string): Promise<ISelf | null
       databases: user.limitDatabases,
       kv: user.limitKv,
       storage: user.limitStorage,
-      secondPrecision: user.secondPrecision,
-    },
+      secondPrecision: user.secondPrecision
+    }
   };
 }
 
@@ -58,7 +64,7 @@ export async function createUserWithGitHub(externalId: string, username: string,
     .insertInto('users')
     .values({
       username,
-      avatarUrl,
+      avatarUrl
     })
     .returningAll()
     .executeTakeFirstOrThrow();
@@ -73,8 +79,8 @@ export async function createUserWithGitHub(externalId: string, username: string,
       databases: newUser.limitDatabases,
       kv: newUser.limitKv,
       storage: newUser.limitStorage,
-      secondPrecision: newUser.secondPrecision,
-    },
+      secondPrecision: newUser.secondPrecision
+    }
   };
 
   await kysely
@@ -82,7 +88,7 @@ export async function createUserWithGitHub(externalId: string, username: string,
     .values({
       externalId,
       provider: enumCast('github', 'enum_external_users_provider'),
-      userId: uuid(user.id),
+      userId: uuid(user.id)
     })
     .execute();
 
@@ -94,11 +100,7 @@ export async function createUserWithGitHub(externalId: string, username: string,
 // ============================================================================
 
 export async function findUserByEmail(email: string): Promise<ISelf | null> {
-  const user = await kysely
-    .selectFrom('users')
-    .selectAll()
-    .where('username', '=', email)
-    .executeTakeFirst();
+  const user = await kysely.selectFrom('users').selectAll().where('username', '=', email).executeTakeFirst();
 
   if (!user) return null;
 
@@ -112,8 +114,8 @@ export async function findUserByEmail(email: string): Promise<ISelf | null> {
       databases: user.limitDatabases,
       kv: user.limitKv,
       storage: user.limitStorage,
-      secondPrecision: user.secondPrecision,
-    },
+      secondPrecision: user.secondPrecision
+    }
   };
 }
 
@@ -137,11 +139,7 @@ export async function getPasswordHash(email: string): Promise<string | null> {
 }
 
 export async function createUserWithEmail(email: string): Promise<ISelf> {
-  const user = await kysely
-    .insertInto('users')
-    .values({ username: email })
-    .returningAll()
-    .executeTakeFirstOrThrow();
+  const user = await kysely.insertInto('users').values({ username: email }).returningAll().executeTakeFirstOrThrow();
 
   return {
     id: user.id,
@@ -153,15 +151,11 @@ export async function createUserWithEmail(email: string): Promise<ISelf> {
       databases: user.limitDatabases,
       kv: user.limitKv,
       storage: user.limitStorage,
-      secondPrecision: user.secondPrecision,
-    },
+      secondPrecision: user.secondPrecision
+    }
   };
 }
 
 export async function updatePassword(userId: string, passwordHash: string): Promise<void> {
-  await kysely
-    .updateTable('users')
-    .set({ passwordHash })
-    .where('id', '=', uuid(userId))
-    .execute();
+  await kysely.updateTable('users').set({ passwordHash }).where('id', '=', uuid(userId)).execute();
 }

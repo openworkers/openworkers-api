@@ -4,6 +4,7 @@
     "bytea",
     "croner",
     "healthcheck",
+    "introspector",
     "kysely",
     "openworkers",
     "postgate",

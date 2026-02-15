@@ -23,7 +23,7 @@ const wasmInlinePlugin: Plugin = {
   setup(build) {
     build.onResolve({ filter: /^@openworkers\/croner-wasm$/ }, () => ({
       path: 'croner-wasm-inline',
-      namespace: 'croner-wasm-inline',
+      namespace: 'croner-wasm-inline'
     }));
 
     build.onLoad({ filter: /.*/, namespace: 'croner-wasm-inline' }, () => {
@@ -37,9 +37,7 @@ const wasmInlinePlugin: Plugin = {
       // Discover WASM imports at build time
       const wasmModule = new WebAssembly.Module(wasmBytes);
       const imports = WebAssembly.Module.imports(wasmModule);
-      const importNames = imports
-        .filter(i => i.module === './croner_wasm_bg.js')
-        .map(i => i.name);
+      const importNames = imports.filter((i) => i.module === './croner_wasm_bg.js').map((i) => i.name);
 
       return {
         contents: `
@@ -63,7 +61,7 @@ const wasmInlinePlugin: Plugin = {
           export { WasmCron, parseAndDescribe };
         `,
         loader: 'js',
-        resolveDir: process.cwd(),
+        resolveDir: process.cwd()
       };
     });
   }
@@ -103,11 +101,13 @@ if (ANALYZE && result.metafile) {
     inputs.slice(0, 20).forEach((input, i) => {
       const sizeKB = (input.bytes / 1024).toFixed(1);
       const percent = ((input.bytes / totalBytes) * 100).toFixed(1);
-      console.log(`${(i + 1).toString().padStart(2)}. ${sizeKB.padStart(6)} KB (${percent.padStart(5)}%) ${input.path}`);
+      console.log(
+        `${(i + 1).toString().padStart(2)}. ${sizeKB.padStart(6)} KB (${percent.padStart(5)}%) ${input.path}`
+      );
     });
 
-    const categories = { 'node_modules': 0, 'src': 0, 'other': 0 };
-    inputs.forEach(input => {
+    const categories = { node_modules: 0, src: 0, other: 0 };
+    inputs.forEach((input) => {
       if (input.path.startsWith('node_modules/')) categories['node_modules'] += input.bytes;
       else if (input.path.startsWith('src/')) categories['src'] += input.bytes;
       else categories['other'] += input.bytes;

@@ -58,7 +58,7 @@ api.get('/cron-test', (c) => {
       pattern: cron.pattern(),
       description: cron.describe(),
       nextRun: cron.nextRun()?.toISOString() ?? null,
-      nextRuns: cron.nextRuns(5).map((d: Date) => d.toISOString()),
+      nextRuns: cron.nextRuns(5).map((d: Date) => d.toISOString())
     });
   } catch (error) {
     return c.json({ status: 'error', wasm: true, error: String(error) }, 400);

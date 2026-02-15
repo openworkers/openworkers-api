@@ -27,12 +27,12 @@ export async function parseAndValidate<T>(c: Context, schema: z.ZodType<T>): Pro
     if (error instanceof ZodError) {
       const errors = error.issues.map((issue) => ({
         path: issue.path.join('.'),
-        message: issue.message,
+        message: issue.message
       }));
 
       throw new HTTPException(400, {
         message: 'Validation failed',
-        cause: errors,
+        cause: errors
       });
     }
 

@@ -8,7 +8,15 @@ export async function findCronById(userId: string, cronId: string): Promise<ICro
   const cron = await kysely
     .selectFrom('crons')
     .innerJoin('workers', 'crons.workerId', 'workers.id')
-    .select(['crons.id', 'crons.value', 'crons.workerId', 'crons.nextRun', 'crons.lastRun', 'crons.createdAt', 'crons.updatedAt'])
+    .select([
+      'crons.id',
+      'crons.value',
+      'crons.workerId',
+      'crons.nextRun',
+      'crons.lastRun',
+      'crons.createdAt',
+      'crons.updatedAt'
+    ])
     .where('crons.id', '=', uuid(cronId))
     .where('workers.userId', '=', uuid(userId))
     .executeTakeFirst();
@@ -28,7 +36,7 @@ export async function createCron(userId: string, workerId: string, value: string
     .values({
       value,
       workerId: uuid(workerId),
-      nextRun: timestamptz(nextRun),
+      nextRun: timestamptz(nextRun)
     })
     .returningAll()
     .executeTakeFirstOrThrow();
