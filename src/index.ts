@@ -17,6 +17,7 @@ import ai from './routes/ai';
 import apiKeys from './routes/api-keys';
 import pkg from '../package.json';
 import { sql } from './services/db/client';
+import { WasmCron } from '@openworkers/croner-wasm';
 
 export const app = new Hono();
 
@@ -43,6 +44,24 @@ api.get('/postgate', async (c) => {
     return c.json({ status: 'ok', result: result[0]?.result });
   } catch (error) {
     return c.json({ status: 'error', error: String(error) }, 500);
+  }
+});
+
+// Cron WASM test (no auth required)
+api.get('/cron-test', (c) => {
+  const pattern = c.req.query('pattern') || '*/5 * * * *';
+  try {
+    const cron = new WasmCron(pattern);
+    return c.json({
+      status: 'ok',
+      wasm: true,
+      pattern: cron.pattern(),
+      description: cron.describe(),
+      nextRun: cron.nextRun()?.toISOString() ?? null,
+      nextRuns: cron.nextRuns(5).map((d: Date) => d.toISOString()),
+    });
+  } catch (error) {
+    return c.json({ status: 'error', wasm: true, error: String(error) }, 400);
   }
 });
 

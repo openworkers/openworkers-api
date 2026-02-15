@@ -1,6 +1,6 @@
 import { kysely } from './kysely-client';
 import { sql } from 'kysely';
-import { uuid } from './kysely-helpers';
+import { uuid, enumCast } from './kysely-helpers';
 import type { ISelf } from '../../types';
 
 export async function findUserById(userId: string): Promise<ISelf | null> {
@@ -33,7 +33,7 @@ export async function findUserByGitHub(externalId: string): Promise<ISelf | null
     .innerJoin('externalUsers as eu', 'u.id', 'eu.userId')
     .select(['u.id', 'u.username', 'u.avatarUrl', 'u.limitWorkers', 'u.limitEnvironments', 'u.limitDatabases', 'u.limitKv', 'u.limitStorage', 'u.secondPrecision'])
     .where('eu.externalId', '=', externalId)
-    .where('eu.provider', '=', 'github')
+    .where('eu.provider', '=', enumCast('github', 'enum_external_users_provider'))
     .executeTakeFirst();
 
   if (!user) return null;
@@ -81,7 +81,7 @@ export async function createUserWithGitHub(externalId: string, username: string,
     .insertInto('externalUsers')
     .values({
       externalId,
-      provider: 'github',
+      provider: enumCast('github', 'enum_external_users_provider'),
       userId: uuid(user.id),
     })
     .execute();

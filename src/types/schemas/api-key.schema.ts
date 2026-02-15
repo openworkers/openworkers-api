@@ -15,7 +15,7 @@ export const ApiKeySchema = z.object({
 export const ApiKeyCreateInputSchema = z.object({
   name: z.string().min(1).max(100),
   desc: z.string().max(255).optional(),
-  expiresAt: z.string().datetime().optional()
+  expiresAt: z.iso.datetime().optional()
 });
 
 // Create response (includes the full token - only time it's visible)

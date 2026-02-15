@@ -12,6 +12,7 @@ export class CronsService {
     try {
       new WasmCron(input.value);
     } catch (error) {
+      console.error('Invalid cron expression:', error);
       throw new Error('Invalid cron expression');
     }
 
@@ -30,6 +31,7 @@ export class CronsService {
     try {
       new WasmCron(input.expression);
     } catch (error) {
+      console.error('Invalid cron expression:', error);
       throw new Error('Invalid cron expression');
     }
 

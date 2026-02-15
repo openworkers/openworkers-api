@@ -45,7 +45,7 @@ async function refreshAccessToken(originalRefreshToken: string): Promise<string>
   // Check cache first
   const cached = tokenCache.get(cacheKey);
 
-  if (cached && cached.expiresAt > Date.now() + 60000) {
+  if (cached && cached.expiresAt > Date.now() + 60_000) {
     // Still valid with 1 min buffer
     return cached.accessToken;
   }

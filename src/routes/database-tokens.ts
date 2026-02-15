@@ -9,10 +9,7 @@ const databaseTokens = new Hono();
 // Schema for creating a database token
 const CreateTokenSchema = z.object({
   name: z.string().min(1).max(100),
-  allowedOperations: z
-    .array(z.enum(DatabaseOperations))
-    .min(1)
-    .default(['SELECT', 'INSERT', 'UPDATE', 'DELETE'])
+  allowedOperations: z.array(z.enum(DatabaseOperations)).min(1).default(['SELECT', 'INSERT', 'UPDATE', 'DELETE'])
 });
 
 // Helper to find database by ID or name
@@ -85,7 +82,7 @@ databaseTokens.post('/:id/tokens', async (c) => {
         tokenPrefix: token.tokenPrefix,
         token: fullToken, // Full token - user must save this!
         allowedOperations: token.allowedOperations,
-        createdAt: token.createdAt.toISOString()
+        createdAt: token.createdAt
       },
       201
     );

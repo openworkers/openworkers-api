@@ -1,6 +1,6 @@
 import { kysely } from './kysely-client';
 import { sql } from 'kysely';
-import { uuid, jsonb, timestamptz, timestamptzOrNull, now } from './kysely-helpers';
+import { uuid, jsonb, timestamptzOrNull, now } from './kysely-helpers';
 
 export interface KvNamespaceRow {
   id: string;
@@ -47,7 +47,7 @@ export async function createKvNamespace(userId: string, name: string, desc?: str
     .values({
       userId: uuid(userId),
       name,
-      desc: desc ?? null,
+      desc: desc ?? null
     })
     .returning(['id', 'name', 'desc', 'createdAt', 'updatedAt'])
     .executeTakeFirstOrThrow();
@@ -138,7 +138,10 @@ export async function listKvData(
     query = query.where('key', '>', options.cursor);
   }
 
-  const rows = await query.orderBy('key', 'asc').limit(limit + 1).execute();
+  const rows = await query
+    .orderBy('key', 'asc')
+    .limit(limit + 1)
+    .execute();
 
   const hasMore = rows.length > limit;
   const items = hasMore ? rows.slice(0, limit) : rows;
@@ -161,13 +164,13 @@ export async function putKvData(
       namespaceId: uuid(namespaceId),
       key,
       value: jsonb(value),
-      expiresAt: timestamptzOrNull(expiresAt),
+      expiresAt: timestamptzOrNull(expiresAt)
     })
     .onConflict((oc) =>
       oc.columns(['namespaceId', 'key']).doUpdateSet({
         value: jsonb(value),
         expiresAt: timestamptzOrNull(expiresAt),
-        updatedAt: now(),
+        updatedAt: now()
       })
     )
     .returningAll()
