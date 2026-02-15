@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { domainsService } from '../services/domains';
 import { DomainSchema, DomainCreateInputSchema } from '../types';
-import { jsonResponse, jsonArrayResponse } from '../utils/validate';
+import { jsonResponse, jsonArrayResponse, parseAndValidate } from '../utils/validate';
 
 const domains = new Hono();
 
@@ -20,10 +20,9 @@ domains.get('/', async (c) => {
 // POST /domains - Create domain
 domains.post('/', async (c) => {
   const userId = c.get('userId');
-  const body = await c.req.json();
+  const payload = await parseAndValidate(c, DomainCreateInputSchema);
 
   try {
-    const payload = DomainCreateInputSchema.parse(body);
     const domain = await domainsService.create(userId, payload);
     return jsonResponse(c, DomainSchema, domain, 201);
   } catch (error) {

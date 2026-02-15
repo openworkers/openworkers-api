@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
 import { setCookie } from 'hono/cookie';
 import { verify } from 'hono/jwt';
-import { ZodError } from 'zod';
 
 import { authService } from '../services/auth';
 import { github as githubConfig, jwt as jwtConfig } from '../config';
@@ -14,7 +13,7 @@ import {
   ResetPasswordInputSchema,
   ResendSetPasswordInputSchema
 } from '../types';
-import { jsonResponse } from '../utils/validate';
+import { jsonResponse, parseAndValidate } from '../utils/validate';
 
 const auth = new Hono();
 
@@ -134,8 +133,7 @@ auth.get('/callback/github', async (c) => {
 // Step 1: Register with email only (sends set-password link)
 auth.post('/register', async (c) => {
   try {
-    const body = await c.req.json();
-    const input = RegisterInputSchema.parse(body);
+    const input = await parseAndValidate(c, RegisterInputSchema);
 
     await authService.registerWithEmail(input.email);
 
@@ -146,10 +144,6 @@ auth.post('/register', async (c) => {
       201
     );
   } catch (error) {
-    if (error instanceof ZodError) {
-      return c.json({ error: 'Invalid email format' }, 400);
-    }
-
     if (error instanceof Error && error.message === 'Email already registered') {
       return c.json({ error: 'Email already registered' }, 409);
     }
@@ -162,8 +156,7 @@ auth.post('/register', async (c) => {
 // Step 2: Set password using token from email
 auth.post('/set-password', async (c) => {
   try {
-    const body = await c.req.json();
-    const input = SetPasswordInputSchema.parse(body);
+    const input = await parseAndValidate(c, SetPasswordInputSchema);
 
     const user = await authService.setPassword(input.token, input.password);
     const tokens = await authService.createTokens(user);
@@ -176,10 +169,6 @@ auth.post('/set-password', async (c) => {
 
     return jsonResponse(c, LoginResponseSchema, tokens);
   } catch (error) {
-    if (error instanceof ZodError) {
-      return c.json({ error: 'Invalid token or password format' }, 400);
-    }
-
     if (error instanceof Error && error.message === 'Invalid or expired token') {
       return c.json({ error: 'Invalid or expired link' }, 400);
     }
@@ -192,8 +181,7 @@ auth.post('/set-password', async (c) => {
 // Login with email and password
 auth.post('/login', async (c) => {
   try {
-    const body = await c.req.json();
-    const input = LoginInputSchema.parse(body);
+    const input = await parseAndValidate(c, LoginInputSchema);
 
     const user = await authService.loginWithPassword(input.email, input.password);
     const tokens = await authService.createTokens(user);
@@ -206,10 +194,6 @@ auth.post('/login', async (c) => {
 
     return jsonResponse(c, LoginResponseSchema, tokens);
   } catch (error) {
-    if (error instanceof ZodError) {
-      return c.json({ error: 'Invalid email or password format' }, 400);
-    }
-
     if (error instanceof Error && error.message === 'Invalid credentials') {
       return c.json({ error: 'Invalid email or password' }, 401);
     }
@@ -222,8 +206,7 @@ auth.post('/login', async (c) => {
 // Request password reset
 auth.post('/forgot-password', async (c) => {
   try {
-    const body = await c.req.json();
-    const input = ForgotPasswordInputSchema.parse(body);
+    const input = await parseAndValidate(c, ForgotPasswordInputSchema);
 
     await authService.requestPasswordReset(input.email);
 
@@ -232,10 +215,6 @@ auth.post('/forgot-password', async (c) => {
       message: 'If an account exists with this email, you will receive a password reset link.'
     });
   } catch (error) {
-    if (error instanceof ZodError) {
-      return c.json({ error: 'Invalid email format' }, 400);
-    }
-
     console.error('Password reset request error:', error);
     return c.json({
       message: 'If an account exists with this email, you will receive a password reset link.'
@@ -246,8 +225,7 @@ auth.post('/forgot-password', async (c) => {
 // Reset password with token
 auth.post('/reset-password', async (c) => {
   try {
-    const body = await c.req.json();
-    const input = ResetPasswordInputSchema.parse(body);
+    const input = await parseAndValidate(c, ResetPasswordInputSchema);
 
     const user = await authService.resetPassword(input.token, input.password);
     const tokens = await authService.createTokens(user);
@@ -260,10 +238,6 @@ auth.post('/reset-password', async (c) => {
 
     return jsonResponse(c, LoginResponseSchema, tokens);
   } catch (error) {
-    if (error instanceof ZodError) {
-      return c.json({ error: 'Invalid token or password format' }, 400);
-    }
-
     if (error instanceof Error && error.message === 'Invalid or expired token') {
       return c.json({ error: 'Invalid or expired reset link' }, 400);
     }
@@ -276,8 +250,7 @@ auth.post('/reset-password', async (c) => {
 // Resend set-password email
 auth.post('/resend-set-password', async (c) => {
   try {
-    const body = await c.req.json();
-    const input = ResendSetPasswordInputSchema.parse(body);
+    const input = await parseAndValidate(c, ResendSetPasswordInputSchema);
 
     await authService.resendSetPasswordEmail(input.email);
 
@@ -285,10 +258,6 @@ auth.post('/resend-set-password', async (c) => {
       message: 'If a pending account exists with this email, a new link has been sent.'
     });
   } catch (error) {
-    if (error instanceof ZodError) {
-      return c.json({ error: 'Invalid email format' }, 400);
-    }
-
     console.error('Resend set-password error:', error);
     return c.json({
       message: 'If a pending account exists with this email, a new link has been sent.'

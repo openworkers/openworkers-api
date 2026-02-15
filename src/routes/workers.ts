@@ -5,7 +5,7 @@ import { cronsService } from '../services/crons';
 import { checkWorkerNameExists, findWorkerAssetsBinding } from '../services/db/workers';
 import { sql } from '../services/db/client';
 import { WorkerCreateInputSchema, WorkerUpdateInputSchema, WorkerSchema } from '../types';
-import { jsonResponse, jsonArrayResponse } from '../utils/validate';
+import { jsonResponse, jsonArrayResponse, parseAndValidate } from '../utils/validate';
 import { S3Client } from '../utils/s3';
 import { stringToBase64, bytesToString, base64Encode } from '../utils/base64';
 import { hexDecode } from '../utils/hex';
@@ -66,10 +66,9 @@ workers.get('/:id', async (c) => {
 // POST /workers - Create new worker
 workers.post('/', async (c) => {
   const userId = c.get('userId');
-  const body = await c.req.json();
+  const payload = await parseAndValidate(c, WorkerCreateInputSchema);
 
   try {
-    const payload = WorkerCreateInputSchema.parse(body);
     const defaultScript = payload.language === 'typescript' ? defaultWorkerTs : defaultWorkerJs;
     const script = payload.script ?? defaultScript;
 
@@ -96,11 +95,9 @@ workers.post('/', async (c) => {
 workers.patch('/:id', async (c) => {
   const userId = c.get('userId');
   const idOrName = c.req.param('id');
-  const body = await c.req.json();
+  const payload = await parseAndValidate(c, WorkerUpdateInputSchema);
 
   try {
-    const payload = WorkerUpdateInputSchema.parse(body);
-
     const worker = await workersService.findByIdOrName(userId, idOrName);
 
     if (!worker) {

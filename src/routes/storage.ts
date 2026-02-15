@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { storageService } from '../services/storage';
 import { StorageConfigSchema, StorageConfigCreateInputSchema, StorageConfigUpdateInputSchema } from '../types';
-import { jsonResponse, jsonArrayResponse } from '../utils/validate';
+import { jsonResponse, jsonArrayResponse, parseAndValidate } from '../utils/validate';
 import { S3Client, type S3Config } from '../utils/s3';
 import { sharedStorage } from '../config';
 import type { StorageConfigRow } from '../services/db/storage';
@@ -63,10 +63,9 @@ storage.get('/:id', async (c) => {
 // POST /storage - Create new storage config
 storage.post('/', async (c) => {
   const userId = c.get('userId');
-  const body = await c.req.json();
+  const payload = await parseAndValidate(c, StorageConfigCreateInputSchema);
 
   try {
-    const payload = StorageConfigCreateInputSchema.parse(body);
     const config = await storageService.create(userId, payload);
 
     return jsonResponse(c, StorageConfigSchema, config, 201);
@@ -86,7 +85,7 @@ storage.post('/', async (c) => {
 storage.patch('/:id', async (c) => {
   const userId = c.get('userId');
   const idOrName = c.req.param('id');
-  const body = await c.req.json();
+  const payload = await parseAndValidate(c, StorageConfigUpdateInputSchema);
 
   try {
     const existing = await storageService.findByIdOrName(userId, idOrName);
@@ -95,7 +94,6 @@ storage.patch('/:id', async (c) => {
       return c.json({ error: 'Storage config not found' }, 404);
     }
 
-    const payload = StorageConfigUpdateInputSchema.parse(body);
     const config = await storageService.update(userId, existing.id, payload);
 
     if (!config) {

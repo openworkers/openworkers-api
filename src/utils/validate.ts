@@ -1,7 +1,44 @@
 import type { Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
-import { z } from 'zod';
+import { HTTPException } from 'hono/http-exception';
+import { z, ZodError } from 'zod';
 import { nodeEnv } from '../config';
+
+/**
+ * Parse and validate JSON body with Zod schema.
+ * Throws HTTPException on validation errors.
+ */
+export async function parseAndValidate<T>(c: Context, schema: z.ZodType<T>): Promise<T> {
+  let body: unknown;
+
+  try {
+    body = await c.req.json();
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new HTTPException(400, { message: 'Invalid JSON in request body' });
+    }
+
+    throw error;
+  }
+
+  try {
+    return schema.parse(body);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      const errors = error.issues.map((issue) => ({
+        path: issue.path.join('.'),
+        message: issue.message,
+      }));
+
+      throw new HTTPException(400, {
+        message: 'Validation failed',
+        cause: errors,
+      });
+    }
+
+    throw error;
+  }
+}
 
 /**
  * Validates data against a Zod schema and returns a JSON response

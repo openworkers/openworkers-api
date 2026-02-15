@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { kvService } from '../services/kv';
 import { KvNamespaceSchema, KvNamespaceCreateInputSchema, KvNamespaceUpdateInputSchema } from '../types';
-import { jsonResponse, jsonArrayResponse } from '../utils/validate';
+import { jsonResponse, jsonArrayResponse, parseAndValidate } from '../utils/validate';
 
 const kv = new Hono();
 
@@ -40,10 +40,9 @@ kv.get('/:id', async (c) => {
 // POST /kv - Create new KV namespace
 kv.post('/', async (c) => {
   const userId = c.get('userId');
-  const body = await c.req.json();
+  const payload = await parseAndValidate(c, KvNamespaceCreateInputSchema);
 
   try {
-    const payload = KvNamespaceCreateInputSchema.parse(body);
     const namespace = await kvService.create(userId, payload);
 
     return jsonResponse(c, KvNamespaceSchema, namespace, 201);
@@ -63,7 +62,7 @@ kv.post('/', async (c) => {
 kv.patch('/:id', async (c) => {
   const userId = c.get('userId');
   const idOrName = c.req.param('id');
-  const body = await c.req.json();
+  const payload = await parseAndValidate(c, KvNamespaceUpdateInputSchema);
 
   try {
     const existing = await kvService.findByIdOrName(userId, idOrName);
@@ -72,7 +71,6 @@ kv.patch('/:id', async (c) => {
       return c.json({ error: 'KV namespace not found' }, 404);
     }
 
-    const payload = KvNamespaceUpdateInputSchema.parse(body);
     const namespace = await kvService.update(userId, existing.id, payload);
 
     if (!namespace) {

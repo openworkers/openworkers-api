@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { environmentsService } from '../services/environments';
 import { EnvironmentCreateInputSchema, EnvironmentUpdateInputSchema, EnvironmentSchema } from '../types';
-import { jsonResponse, jsonArrayResponse } from '../utils/validate';
+import { jsonResponse, jsonArrayResponse, parseAndValidate } from '../utils/validate';
 
 const environments = new Hono();
 
@@ -39,10 +39,9 @@ environments.get('/:id', async (c) => {
 // POST /environments - Create environment
 environments.post('/', async (c) => {
   const userId = c.get('userId');
-  const body = await c.req.json();
+  const payload = await parseAndValidate(c, EnvironmentCreateInputSchema);
 
   try {
-    const payload = EnvironmentCreateInputSchema.parse(body);
     const env = await environmentsService.create(userId, payload);
     return jsonResponse(c, EnvironmentSchema, env, 201);
   } catch (error) {
@@ -55,7 +54,6 @@ environments.post('/', async (c) => {
 environments.patch('/:id', async (c) => {
   const userId = c.get('userId');
   const idOrName = c.req.param('id');
-  const body = await c.req.json();
 
   try {
     // Resolve environment
@@ -66,6 +64,7 @@ environments.patch('/:id', async (c) => {
     }
 
     const envId = existingEnv.id;
+    const body = await c.req.json();
     const payload = EnvironmentUpdateInputSchema.parse({ ...body, id: envId });
 
     // Update name/desc if provided

@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
-import { z } from 'zod';
 import { tablesService } from '../services/tables';
 import { ColumnDefinitionSchema, CreateTableInputSchema, type IColumnDefinition } from '../types';
+import { parseAndValidate } from '../utils/validate';
 
 const tables = new Hono();
 
@@ -59,19 +59,13 @@ tables.get('/:tableName', async (c) => {
 tables.post('/', async (c) => {
   const userId = c.get('userId');
   const databaseId = c.req.param('databaseId')!;
-  const body = await c.req.json();
+  const { name, columns } = await parseAndValidate(c, CreateTableInputSchema);
 
   try {
-    const { name, columns } = CreateTableInputSchema.parse(body);
-
     await tablesService.createTable(userId, databaseId, name, columns as IColumnDefinition[]);
 
     return c.json({ created: true, name }, 201);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return c.json({ error: 'Validation error', details: error.issues }, 400);
-    }
-
     console.error('Failed to create table:', error);
 
     if (error instanceof Error && error.message === 'Database not found') {
@@ -113,17 +107,12 @@ tables.post('/:tableName/columns', async (c) => {
   const userId = c.get('userId');
   const databaseId = c.req.param('databaseId')!;
   const tableName = c.req.param('tableName')!;
-  const body = await c.req.json();
+  const column = await parseAndValidate(c, ColumnDefinitionSchema);
 
   try {
-    const column = ColumnDefinitionSchema.parse(body);
     await tablesService.addColumn(userId, databaseId, tableName, column);
     return c.json({ created: true, name: column.name }, 201);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return c.json({ error: 'Validation error', details: error.issues }, 400);
-    }
-
     console.error('Failed to add column:', error);
 
     if (error instanceof Error && error.message === 'Database not found') {

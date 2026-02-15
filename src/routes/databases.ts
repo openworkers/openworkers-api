@@ -1,11 +1,11 @@
 import { Hono } from 'hono';
-import { z, ZodError } from 'zod';
+import { z } from 'zod';
 import { databasesService } from '../services/databases';
 import { getSystemToken } from '../services/db/database-tokens';
 import { PostgateClient } from '../services/postgate';
 import { postgate as postgateConfig } from '../config';
 import { DatabaseSchema, DatabaseCreateInputSchema } from '../types';
-import { jsonResponse, jsonArrayResponse } from '../utils/validate';
+import { jsonResponse, jsonArrayResponse, parseAndValidate } from '../utils/validate';
 import tables from './tables';
 
 const databases = new Hono();
@@ -48,23 +48,12 @@ databases.get('/:id', async (c) => {
 // POST /databases - Create new database
 databases.post('/', async (c) => {
   const userId = c.get('userId');
-  const body = await c.req.json();
+  const payload = await parseAndValidate(c, DatabaseCreateInputSchema);
 
   try {
-    const payload = DatabaseCreateInputSchema.parse(body);
     const db = await databasesService.create(userId, payload);
     return jsonResponse(c, DatabaseSchema, db, 201);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return c.json(
-        {
-          error: 'Validation error',
-          details: error.issues
-        },
-        400
-      );
-    }
-
     console.error('Failed to create database:', error);
     return c.json(
       {
@@ -80,7 +69,6 @@ databases.post('/', async (c) => {
 databases.patch('/:id', async (c) => {
   const userId = c.get('userId');
   const idOrName = c.req.param('id');
-  const body = await c.req.json();
 
   const UpdateSchema = z.object({
     name: z.string().min(1).max(100).trim().optional(),
@@ -89,6 +77,8 @@ databases.patch('/:id', async (c) => {
     timeoutSeconds: z.number().int().positive().max(300).optional()
   });
 
+  const payload = await parseAndValidate(c, UpdateSchema);
+
   try {
     const existing = await databasesService.findByIdOrName(userId, idOrName);
 
@@ -96,7 +86,6 @@ databases.patch('/:id', async (c) => {
       return c.json({ error: 'Database not found' }, 404);
     }
 
-    const payload = UpdateSchema.parse(body);
     const db = await databasesService.update(userId, existing.id, payload);
 
     if (!db) {
@@ -105,16 +94,6 @@ databases.patch('/:id', async (c) => {
 
     return jsonResponse(c, DatabaseSchema, db);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return c.json(
-        {
-          error: 'Validation error',
-          details: error.issues
-        },
-        400
-      );
-    }
-
     console.error('Failed to update database:', error);
     return c.json({ error: 'Failed to update database' }, 500);
   }
@@ -153,20 +132,17 @@ const ExecSchema = z.object({
 
 // POST /databases/:id/exec - Execute SQL on a database
 databases.post('/:id/exec', async (c) => {
-  try {
-    const userId = c.get('userId');
-    const idOrName = c.req.param('id');
+  const userId = c.get('userId');
+  const idOrName = c.req.param('id');
+  const { sql, params } = await parseAndValidate(c, ExecSchema);
 
+  try {
     // Verify database ownership
     const database = await databasesService.findByIdOrName(userId, idOrName);
 
     if (!database) {
       return c.json({ error: 'Database not found' }, 404);
     }
-
-    // Parse request body
-    const body = await c.req.json();
-    const { sql, params } = ExecSchema.parse(body);
 
     // Get or create system token for this database
     const systemToken = await getSystemToken(database.id);
@@ -180,10 +156,6 @@ databases.post('/:id/exec', async (c) => {
       rowCount: result.row_count
     });
   } catch (error) {
-    if (error instanceof ZodError) {
-      return c.json({ error: 'Invalid input', details: error.issues }, 400);
-    }
-
     console.error('SQL execution failed:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     return c.json({ error: message }, 500);

@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { cronsService } from '../services/crons';
 import { workersService } from '../services/workers';
 import { CronCreateInputSchema, CronUpdateInputSchema, CronSchema, WorkerSchema } from '../types';
-import { jsonResponse } from '../utils/validate';
+import { jsonResponse, parseAndValidate } from '../utils/validate';
 
 const crons = new Hono();
 
@@ -10,10 +10,9 @@ const crons = new Hono();
 crons.patch('/:id', async (c) => {
   const userId = c.get('userId');
   const id = c.req.param('id');
-  const body = await c.req.json();
+  const payload = await parseAndValidate(c, CronUpdateInputSchema);
 
   try {
-    const payload = CronUpdateInputSchema.parse(body);
     const cron = await cronsService.update(userId, id, payload);
 
     // Return updated worker
@@ -62,10 +61,9 @@ crons.delete('/:id', async (c) => {
 // POST /crons - Create cron
 crons.post('/', async (c) => {
   const userId = c.get('userId');
-  const body = await c.req.json();
+  const payload = await parseAndValidate(c, CronCreateInputSchema);
 
   try {
-    const payload = CronCreateInputSchema.parse(body);
     const cron = await cronsService.create(userId, payload);
     return jsonResponse(c, CronSchema, cron, 201);
   } catch (error) {

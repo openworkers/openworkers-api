@@ -1,8 +1,9 @@
 import { Hono } from 'hono';
-import { z, ZodError } from 'zod';
+import { z } from 'zod';
 import { createDatabaseToken, listDatabaseTokens, deleteDatabaseToken } from '../services/db/database-tokens';
 import { findDatabaseById, findDatabaseByName } from '../services/db/databases';
 import { DatabaseOperations } from '../types/schemas/database-token.schema';
+import { parseAndValidate } from '../utils/validate';
 
 const databaseTokens = new Hono();
 
@@ -58,12 +59,11 @@ databaseTokens.get('/:id/tokens', async (c) => {
 
 // POST /databases/:id/tokens - Create a new token
 databaseTokens.post('/:id/tokens', async (c) => {
-  try {
-    const userId = c.get('userId');
-    const idOrName = c.req.param('id');
-    const body = await c.req.json();
-    const input = CreateTokenSchema.parse(body);
+  const userId = c.get('userId');
+  const idOrName = c.req.param('id');
+  const input = await parseAndValidate(c, CreateTokenSchema);
 
+  try {
     // Verify database ownership
     const database = await findDatabase(userId, idOrName);
 
@@ -87,10 +87,6 @@ databaseTokens.post('/:id/tokens', async (c) => {
       201
     );
   } catch (error) {
-    if (error instanceof ZodError) {
-      return c.json({ error: 'Invalid input', details: error.issues }, 400);
-    }
-
     // Handle unique constraint violation (duplicate name)
     if (error instanceof Error && error.message.includes('unique constraint')) {
       return c.json({ error: 'A token with this name already exists for this database' }, 409);

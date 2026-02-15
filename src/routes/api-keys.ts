@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
-import { z, ZodError } from 'zod';
+import { z } from 'zod';
 import { createApiKey, listApiKeys, deleteApiKey } from '../services/db/api-keys';
+import { parseAndValidate } from '../utils/validate';
 
 const apiKeys = new Hono();
 
@@ -14,8 +15,7 @@ const CreateApiKeySchema = z.object({
 apiKeys.post('/', async (c) => {
   try {
     const userId = c.get('userId');
-    const body = await c.req.json();
-    const input = CreateApiKeySchema.parse(body);
+    const input = await parseAndValidate(c, CreateApiKeySchema);
 
     const expiresAt = input.expiresAt ? new Date(input.expiresAt) : undefined;
     const { apiKey, token } = await createApiKey(userId, input.name, expiresAt);
@@ -33,10 +33,6 @@ apiKeys.post('/', async (c) => {
       201
     );
   } catch (error) {
-    if (error instanceof ZodError) {
-      return c.json({ error: 'Invalid input', details: error.issues }, 400);
-    }
-
     console.error('Failed to create API key:', error);
     return c.json({ error: 'Failed to create API key' }, 500);
   }
