@@ -9,6 +9,7 @@ export const WorkerLanguageSchema = z.enum(['javascript', 'typescript']);
 
 // Worker
 export const WorkerSchema = ResourceSchema.extend({
+  name: z.string().min(1).max(100).trim().nullable(),
   language: WorkerLanguageSchema.nullable(),
   script: z.string().nullable().optional(),
   currentVersion: z.number().nullable().optional(),

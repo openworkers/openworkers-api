@@ -1,3 +1,5 @@
+/// <reference types="@openworkers/workers-types" />
+
 import { hexEncode } from './hex';
 
 /**
@@ -7,7 +9,7 @@ export async function sha256Hex(input: string): Promise<string> {
   return sha256HexUint8(new TextEncoder().encode(input));
 }
 
-export async function sha256HexUint8(input: Uint8Array): Promise<string> {
+export async function sha256HexUint8(input: BufferSource): Promise<string> {
   const hashBuffer = await crypto.subtle.digest('SHA-256', input);
 
   return hexEncode(new Uint8Array(hashBuffer));

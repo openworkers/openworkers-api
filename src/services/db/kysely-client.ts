@@ -185,7 +185,7 @@ export function createKyselyClient(token: string): Kysely<Database> {
 
   return new Kysely<Database>({
     dialect: new SqlClientDialect({ client: sqlClient }),
-    plugins: [new CamelCasePlugin()],
+    plugins: [new CamelCasePlugin()]
   });
 }
 
@@ -194,5 +194,5 @@ export function createKyselyClient(token: string): Kysely<Database> {
  */
 export const kysely = new Kysely<Database>({
   dialect: new SqlClientDialect({ client: sql }),
-  plugins: [new CamelCasePlugin()],
+  plugins: [new CamelCasePlugin()]
 });

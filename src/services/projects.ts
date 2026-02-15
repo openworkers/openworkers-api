@@ -1,4 +1,4 @@
-import type JSZip from 'jszip';
+import { strFromU8 } from 'fflate';
 import { sql } from './db/client';
 import { workersService } from './workers';
 
@@ -26,7 +26,7 @@ export async function createFunctionRoutes(
   userId: string,
   projectId: string,
   functions: Array<{ pattern: string; worker: string }>,
-  zip: JSZip
+  unzippedFiles: Record<string, Uint8Array>
 ): Promise<void> {
   // Function routes have high priority (10) - after storage but before SSR
   const priority = 10;
@@ -40,15 +40,15 @@ export async function createFunctionRoutes(
 
   for (const func of functions) {
     try {
-      // Find and read function worker script from zip
-      const zipEntry = zip.file(func.worker);
+      // Find and read function worker script from unzipped files
+      const fileData = unzippedFiles[func.worker];
 
-      if (!zipEntry) {
+      if (!fileData) {
         console.error(`Function file not found in zip: ${func.worker}`);
         continue;
       }
 
-      const script = await zipEntry.async('string');
+      const script = strFromU8(fileData);
 
       // Create a new worker (without name) for this function using service
       const newWorker = await workersService.create(userId, {

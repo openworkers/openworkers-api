@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { unzipSync, strFromU8 } from 'fflate';
 import { workersService } from '../services/workers';
 import { cronsService } from '../services/crons';
 import { checkWorkerNameExists, findWorkerAssetsBinding } from '../services/db/workers';
@@ -325,25 +326,17 @@ workers.post('/:id/upload', async (c) => {
 
     // 4. Extract zip (code-only: worker script, routes, functions)
     const zipBuffer = await file.arrayBuffer();
-    const JSZip = (await import('jszip')).default;
-    const zip = await JSZip.loadAsync(zipBuffer);
+    const unzipped = unzipSync(new Uint8Array(zipBuffer));
 
-    // 5. Classify zip entries (sync), then extract all sequentially
+    // 5. Process extracted files
     let workerScript: Uint8Array | null = null;
     let language: 'javascript' | 'typescript' = 'javascript';
     let routesJson: string | null = null;
     const functionScripts = new Map<string, string>();
 
-    type ZipJob =
-      | { type: 'worker'; filename: string }
-      | { type: 'routes' }
-      | { type: 'function'; funcPath: string };
+    let fileCount = 0;
 
-    const jobs: Array<{ entry: any; job: ZipJob }> = [];
-
-    for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
-      if ((zipEntry as any).dir) continue;
-
+    for (const [relativePath, fileData] of Object.entries(unzipped)) {
       const normalizedPath = relativePath.replace(/^[^/]+\//, '');
       const filename = normalizedPath || relativePath;
 
@@ -354,32 +347,20 @@ workers.post('/:id/upload', async (c) => {
         filename === '_worker.ts'
       ) {
         language = filename.endsWith('.ts') ? 'typescript' : 'javascript';
-        jobs.push({ entry: zipEntry, job: { type: 'worker', filename } });
+        workerScript = fileData;
+        fileCount++;
       } else if (filename === '_routes.json') {
-        jobs.push({ entry: zipEntry, job: { type: 'routes' } });
+        routesJson = strFromU8(fileData);
+        fileCount++;
       } else if (relativePath.includes('functions/')) {
         const funcIdx = relativePath.indexOf('functions/');
-        jobs.push({ entry: zipEntry, job: { type: 'function', funcPath: relativePath.slice(funcIdx) } });
+        const funcPath = relativePath.slice(funcIdx);
+        functionScripts.set(funcPath, strFromU8(fileData));
+        fileCount++;
       }
     }
 
-    console.log(`Extracting ${jobs.length} files from zip...`);
-
-    for (const { entry, job } of jobs) {
-      const data = await entry.async(job.type === 'worker' ? 'uint8array' : 'string');
-
-      switch (job.type) {
-        case 'worker':
-          workerScript = data as Uint8Array;
-          break;
-        case 'routes':
-          routesJson = data as string;
-          break;
-        case 'function':
-          functionScripts.set(job.funcPath, data as string);
-          break;
-      }
-    }
+    console.log(`Extracted ${fileCount} files from zip...`);
 
     console.log(
       `Extracted: worker=${!!workerScript}, routes=${!!routesJson}, functions=${functionScripts.size}, assets=${assetEntries.length} (manifest)`

@@ -5,20 +5,10 @@ import type { IWorker, IWorkerLanguage } from '../../types';
 import { sha256Hex } from '../../utils/crypto';
 import { stringToBase64 } from '../../utils/base64';
 import { isUuid } from '../../utils/validation';
+import { updateWorkerDomains } from './domains';
 
-interface WorkerRow {
-  id: string;
-  name: string | null;
-  script: string;
-  language: IWorkerLanguage;
-  userId: string;
-  environmentId?: string | null;
-  currentVersion?: number | null;
-  createdAt: Date;
-  updatedAt: Date;
-  environment?: IWorker['environment'];
-  crons?: IWorker['crons'];
-  domains?: IWorker['domains'];
+interface IFullWorker extends IWorker {
+  environmentId: string | null;
 }
 
 // Union type: named worker OR anonymous worker with required projectId
@@ -48,7 +38,7 @@ export async function findAllWorkers(userId: string): Promise<IWorker[]> {
     .where('w.userId', '=', uuid(userId))
     .where('w.name', 'is not', null)
     .orderBy('w.createdAt', 'desc')
-    .execute() as Promise<IWorker[]>;
+    .execute();
 }
 
 export async function checkWorkerNameExists(name: string): Promise<boolean> {
@@ -70,7 +60,7 @@ export async function findWorker(
   userId: string,
   idOrName: string,
   options: FindWorkerOptions = {}
-): Promise<WorkerRow | null> {
+): Promise<IFullWorker | null> {
   const { includeScript = false } = options;
 
   const byId = isUuid(idOrName);
@@ -139,7 +129,7 @@ export async function findWorker(
 }
 
 // Convenience wrapper for internal use
-export async function findWorkerById(userId: string, workerId: string): Promise<WorkerRow | null> {
+export async function findWorkerById(userId: string, workerId: string): Promise<IFullWorker | null> {
   return findWorker(userId, workerId, { includeScript: true });
 }
 
@@ -195,7 +185,7 @@ export async function updateWorker(
     environmentId?: string | null;
     domains?: string[];
   }
-): Promise<WorkerRow | null> {
+): Promise<IWorker | null> {
   const current = await findWorkerById(userId, workerId);
 
   if (!current) {
@@ -249,7 +239,6 @@ export async function updateWorker(
 
   // Update domains if provided
   if (updates.domains !== undefined) {
-    const { updateWorkerDomains } = await import('./domains');
     await updateWorkerDomains(userId, workerId, updates.domains);
   }
 
