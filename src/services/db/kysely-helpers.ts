@@ -126,3 +126,13 @@ export const byteaToText = (column: string): RawBuilder<string> => {
 export const enumToText = <T = string>(column: string): RawBuilder<T> => {
   return sql<T>`${sql.ref(column)}::text`;
 };
+
+/**
+ * Cast text column to UUID
+ * @example
+ * .innerJoin('table as t', (join) => join.on('t.id', '=', asUuid('ev.value')))
+ * // Generates: t.id = ev.value::uuid
+ */
+export const asUuid = (column: string): RawBuilder<string> => {
+  return sql<string>`${sql.ref(column)}::uuid`;
+};

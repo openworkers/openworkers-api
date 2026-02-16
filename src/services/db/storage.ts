@@ -8,6 +8,8 @@ export interface StorageConfigRow {
   desc: string | null;
   bucket: string;
   prefix: string | null;
+  accessKeyId: string;
+  secretAccessKey: string;
   endpoint: string | null;
   region: string | null;
   publicUrl: string | null;
@@ -15,7 +17,16 @@ export interface StorageConfigRow {
   updatedAt: Date;
 }
 
-const storageConfigSelect = [...resourceSelect, 'bucket', 'prefix', 'endpoint', 'region', 'publicUrl'] as const;
+const storageConfigSelect = [
+  ...resourceSelect,
+  'bucket',
+  'prefix',
+  'endpoint',
+  'region',
+  'publicUrl',
+  'accessKeyId',
+  'secretAccessKey'
+] as const;
 
 export async function findAllStorageConfigs(userId: string): Promise<StorageConfigRow[]> {
   return kysely
