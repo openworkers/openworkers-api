@@ -74,7 +74,7 @@ export async function createPlatformDatabase(userId: string, input: CreatePlatfo
       userId: uuid(userId),
       name: input.name,
       desc: input.desc ?? null,
-      provider: enumCast('platform' as DatabaseProvider, 'database_provider'),
+      provider: enumCast<DatabaseProvider>('platform', 'enum_database_provider'),
       schemaName: input.schemaName,
       maxRows: input.maxRows,
       timeoutSeconds: input.timeoutSeconds
@@ -98,7 +98,7 @@ export async function createPostgresDatabase(userId: string, input: CreatePostgr
       userId: uuid(userId),
       name: input.name,
       desc: input.desc ?? null,
-      provider: enumCast('postgres' as DatabaseProvider, 'database_provider'),
+      provider: enumCast<DatabaseProvider>('postgres', 'enum_database_provider'),
       connectionString: input.connectionString,
       maxRows: input.maxRows,
       timeoutSeconds: input.timeoutSeconds
