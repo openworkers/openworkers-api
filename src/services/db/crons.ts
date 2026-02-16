@@ -4,19 +4,21 @@ import { sql } from 'kysely';
 import type { ICron } from '../../types';
 import { findWorkerById } from './workers';
 
+const cronSelect = [
+  'crons.id',
+  'crons.value',
+  'crons.workerId',
+  'crons.nextRun',
+  'crons.lastRun',
+  'crons.createdAt',
+  'crons.updatedAt'
+] as const;
+
 export async function findCronById(userId: string, cronId: string): Promise<ICron | null> {
   const cron = await kysely
     .selectFrom('crons')
     .innerJoin('workers', 'crons.workerId', 'workers.id')
-    .select([
-      'crons.id',
-      'crons.value',
-      'crons.workerId',
-      'crons.nextRun',
-      'crons.lastRun',
-      'crons.createdAt',
-      'crons.updatedAt'
-    ])
+    .select(cronSelect)
     .where('crons.id', '=', uuid(cronId))
     .where('workers.userId', '=', uuid(userId))
     .executeTakeFirst();
@@ -38,7 +40,7 @@ export async function createCron(userId: string, workerId: string, value: string
       workerId: uuid(workerId),
       nextRun: timestamptz(nextRun)
     })
-    .returningAll()
+    .returning(cronSelect)
     .executeTakeFirstOrThrow();
 }
 

@@ -1,5 +1,5 @@
 import { kysely } from './kysely-client';
-import { uuid, now } from './kysely-helpers';
+import { uuid, now, resourceSelect } from './kysely-helpers';
 import { sql } from 'kysely';
 
 export interface StorageConfigRow {
@@ -8,8 +8,6 @@ export interface StorageConfigRow {
   desc: string | null;
   bucket: string;
   prefix: string | null;
-  accessKeyId: string;
-  secretAccessKey: string;
   endpoint: string | null;
   region: string | null;
   publicUrl: string | null;
@@ -17,10 +15,12 @@ export interface StorageConfigRow {
   updatedAt: Date;
 }
 
+const storageConfigSelect = [...resourceSelect, 'bucket', 'prefix', 'endpoint', 'region', 'publicUrl'] as const;
+
 export async function findAllStorageConfigs(userId: string): Promise<StorageConfigRow[]> {
   return kysely
     .selectFrom('storageConfigs')
-    .selectAll()
+    .select(storageConfigSelect)
     .where('userId', '=', uuid(userId))
     .orderBy('createdAt', 'desc')
     .execute();
@@ -29,7 +29,7 @@ export async function findAllStorageConfigs(userId: string): Promise<StorageConf
 export async function findStorageConfigById(userId: string, id: string): Promise<StorageConfigRow | null> {
   const row = await kysely
     .selectFrom('storageConfigs')
-    .selectAll()
+    .select(storageConfigSelect)
     .where('userId', '=', uuid(userId))
     .where('id', '=', uuid(id))
     .executeTakeFirst();
@@ -40,7 +40,7 @@ export async function findStorageConfigById(userId: string, id: string): Promise
 export async function findStorageConfigByName(userId: string, name: string): Promise<StorageConfigRow | null> {
   const row = await kysely
     .selectFrom('storageConfigs')
-    .selectAll()
+    .select(storageConfigSelect)
     .where('userId', '=', uuid(userId))
     .where('name', '=', name)
     .executeTakeFirst();
@@ -74,7 +74,7 @@ export async function createStorageConfig(
       region: region ?? null,
       publicUrl: publicUrl ?? null
     })
-    .returningAll()
+    .returning(storageConfigSelect)
     .executeTakeFirstOrThrow();
 }
 
@@ -116,7 +116,7 @@ export async function updateStorageConfig(
     .set({ ...updates, updatedAt: now() })
     .where('userId', '=', uuid(userId))
     .where('id', '=', uuid(id))
-    .returningAll()
+    .returning(storageConfigSelect)
     .executeTakeFirst();
 
   return row ?? null;

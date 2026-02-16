@@ -1,5 +1,5 @@
 import { kysely } from './kysely-client';
-import { uuid, enumCast } from './kysely-helpers';
+import { uuid, enumCast, resourceSelect } from './kysely-helpers';
 import { sql } from 'kysely';
 import type { IEnvironment, IEnvironmentValue } from '../../types';
 
@@ -14,12 +14,9 @@ interface EnvironmentRow {
   workers: IEnvironment['workers'];
 }
 
-interface EnvironmentValueRow {
-  id: string;
-  key: string;
-  value: string;
-  type: string;
-}
+const environmentSelect = [...resourceSelect] as const;
+
+const environmentValueSelect = ['id', 'key', 'value', 'type'] as const;
 
 // Environments
 export async function findAllEnvironments(userId: string): Promise<IEnvironment[]> {
@@ -142,7 +139,7 @@ export async function createEnvironment(userId: string, name: string, desc?: str
       desc: desc ?? null,
       userId: uuid(userId)
     })
-    .returning(['id', 'name', 'desc', 'userId', 'createdAt', 'updatedAt'])
+    .returning(environmentSelect)
     .executeTakeFirstOrThrow();
 
   // Return with empty values and workers arrays
@@ -175,7 +172,7 @@ export async function updateEnvironment(
     .set(updateData)
     .where('id', '=', uuid(envId))
     .where('userId', '=', uuid(userId))
-    .returning(['id', 'name', 'desc', 'userId', 'createdAt', 'updatedAt'])
+    .returning(environmentSelect)
     .executeTakeFirst();
 
   if (!env) return null;
@@ -216,7 +213,7 @@ export async function createEnvironmentValue(
       environmentId: uuid(envId),
       userId: uuid(userId)
     })
-    .returningAll()
+    .returning(environmentValueSelect)
     .executeTakeFirstOrThrow();
 }
 
@@ -242,7 +239,7 @@ export async function updateEnvironmentValue(
   if (Object.keys(updateData).length === 0) {
     const full = await kysely
       .selectFrom('environmentValues')
-      .selectAll()
+      .select(environmentValueSelect)
       .where('id', '=', uuid(valId))
       .executeTakeFirst();
     return full ?? null;
@@ -253,7 +250,7 @@ export async function updateEnvironmentValue(
     .set(updateData)
     .where('id', '=', uuid(valId))
     .where('userId', '=', uuid(userId))
-    .returningAll()
+    .returning(environmentValueSelect)
     .executeTakeFirst();
 
   return val ?? null;

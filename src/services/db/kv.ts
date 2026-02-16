@@ -10,10 +10,12 @@ export interface KvNamespaceRow {
   updatedAt: Date;
 }
 
+const kvNamespaceSelect = ['id', 'name', 'desc', 'createdAt', 'updatedAt'] as const;
+
 export async function findAllKvNamespaces(userId: string): Promise<KvNamespaceRow[]> {
   return kysely
     .selectFrom('kvConfigs')
-    .select(['id', 'name', 'desc', 'createdAt', 'updatedAt'])
+    .select(kvNamespaceSelect)
     .where('userId', '=', uuid(userId))
     .orderBy('createdAt', 'desc')
     .execute();
@@ -22,7 +24,7 @@ export async function findAllKvNamespaces(userId: string): Promise<KvNamespaceRo
 export async function findKvNamespaceById(userId: string, id: string): Promise<KvNamespaceRow | null> {
   const result = await kysely
     .selectFrom('kvConfigs')
-    .select(['id', 'name', 'desc', 'createdAt', 'updatedAt'])
+    .select(kvNamespaceSelect)
     .where('userId', '=', uuid(userId))
     .where('id', '=', uuid(id))
     .executeTakeFirst();
@@ -33,7 +35,7 @@ export async function findKvNamespaceById(userId: string, id: string): Promise<K
 export async function findKvNamespaceByName(userId: string, name: string): Promise<KvNamespaceRow | null> {
   const result = await kysely
     .selectFrom('kvConfigs')
-    .select(['id', 'name', 'desc', 'createdAt', 'updatedAt'])
+    .select(kvNamespaceSelect)
     .where('userId', '=', uuid(userId))
     .where('name', '=', name)
     .executeTakeFirst();
@@ -49,7 +51,7 @@ export async function createKvNamespace(userId: string, name: string, desc?: str
       name,
       desc: desc ?? null
     })
-    .returning(['id', 'name', 'desc', 'createdAt', 'updatedAt'])
+    .returning(kvNamespaceSelect)
     .executeTakeFirstOrThrow();
 }
 
@@ -75,7 +77,7 @@ export async function updateKvNamespace(
     .set(updates)
     .where('userId', '=', uuid(userId))
     .where('id', '=', uuid(id))
-    .returning(['id', 'name', 'desc', 'createdAt', 'updatedAt'])
+    .returning(kvNamespaceSelect)
     .executeTakeFirst();
 
   return result ?? null;
@@ -112,6 +114,8 @@ export interface KvDataRow {
   updatedAt: Date;
 }
 
+const kvDataSelect = ['key', 'value', 'expiresAt', 'createdAt', 'updatedAt'] as const;
+
 export interface KvDataListResult {
   items: KvDataRow[];
   cursor: string | null;
@@ -126,7 +130,7 @@ export async function listKvData(
 
   let query = kysely
     .selectFrom('kvData')
-    .selectAll()
+    .select(kvDataSelect)
     .where('namespaceId', '=', uuid(namespaceId))
     .where((eb) => eb.or([eb('expiresAt', 'is', null), eb('expiresAt', '>', now())]));
 
@@ -173,7 +177,7 @@ export async function putKvData(
         updatedAt: now()
       })
     )
-    .returningAll()
+    .returning(kvDataSelect)
     .executeTakeFirstOrThrow();
 }
 

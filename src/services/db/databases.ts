@@ -1,5 +1,5 @@
 import { kysely } from './kysely-client';
-import { uuid, now, enumCast } from './kysely-helpers';
+import { uuid, now, enumCast, enumToText } from './kysely-helpers';
 import type { DatabaseProvider } from '../../types';
 
 interface DatabaseConfigRow {
@@ -8,7 +8,6 @@ interface DatabaseConfigRow {
   desc: string | null;
   userId: string;
   provider: DatabaseProvider;
-  connectionString: string | null;
   schemaName: string | null;
   maxRows: number;
   timeoutSeconds: number;
@@ -16,10 +15,23 @@ interface DatabaseConfigRow {
   updatedAt: Date;
 }
 
+const selectAttributes = [
+  'id',
+  'name',
+  'desc',
+  'userId',
+  enumToText<DatabaseProvider>('provider').as('provider'),
+  'schemaName',
+  'maxRows',
+  'timeoutSeconds',
+  'createdAt',
+  'updatedAt'
+] as const;
+
 export async function findAllDatabases(userId: string): Promise<DatabaseConfigRow[]> {
   return kysely
     .selectFrom('databaseConfigs')
-    .selectAll()
+    .select(selectAttributes)
     .where('userId', '=', uuid(userId))
     .orderBy('createdAt', 'desc')
     .execute();
@@ -28,7 +40,7 @@ export async function findAllDatabases(userId: string): Promise<DatabaseConfigRo
 export async function findDatabaseById(userId: string, id: string): Promise<DatabaseConfigRow | null> {
   const row = await kysely
     .selectFrom('databaseConfigs')
-    .selectAll()
+    .select(selectAttributes)
     .where('id', '=', uuid(id))
     .where('userId', '=', uuid(userId))
     .executeTakeFirst();
@@ -39,7 +51,7 @@ export async function findDatabaseById(userId: string, id: string): Promise<Data
 export async function findDatabaseByName(userId: string, name: string): Promise<DatabaseConfigRow | null> {
   const row = await kysely
     .selectFrom('databaseConfigs')
-    .selectAll()
+    .select(selectAttributes)
     .where('name', '=', name)
     .where('userId', '=', uuid(userId))
     .executeTakeFirst();
@@ -67,7 +79,7 @@ export async function createPlatformDatabase(userId: string, input: CreatePlatfo
       maxRows: input.maxRows,
       timeoutSeconds: input.timeoutSeconds
     })
-    .returningAll()
+    .returning(selectAttributes)
     .executeTakeFirstOrThrow();
 }
 
@@ -91,7 +103,7 @@ export async function createPostgresDatabase(userId: string, input: CreatePostgr
       maxRows: input.maxRows,
       timeoutSeconds: input.timeoutSeconds
     })
-    .returningAll()
+    .returning(selectAttributes)
     .executeTakeFirstOrThrow();
 }
 
@@ -136,7 +148,7 @@ export async function updateDatabase(
     .set(updates)
     .where('id', '=', uuid(id))
     .where('userId', '=', uuid(userId))
-    .returningAll()
+    .returning(selectAttributes)
     .executeTakeFirst();
 
   return row ?? null;

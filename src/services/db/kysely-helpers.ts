@@ -1,6 +1,9 @@
 import { sql } from 'kysely';
 import type { RawBuilder } from 'kysely';
 
+export const timestampsSelect = ['createdAt', 'updatedAt'] as const;
+export const resourceSelect = ['id', 'name', 'desc', 'userId', ...timestampsSelect] as const;
+
 /**
  * Cast value to UUID type for Postgate
  * @example

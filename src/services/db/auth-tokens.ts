@@ -12,6 +12,8 @@ interface AuthToken {
   createdAt: Date;
 }
 
+const authTokenSelect = ['id', 'userId', 'token', 'type', 'expiresAt', 'createdAt'] as const;
+
 function generateToken(): string {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
@@ -40,7 +42,7 @@ export async function createAuthToken(userId: string, type: TokenType, expiresIn
 export async function findAuthToken(token: string, type: TokenType): Promise<AuthToken | null> {
   const authToken = await kysely
     .selectFrom('authTokens')
-    .selectAll()
+    .select(authTokenSelect)
     .where('token', '=', token)
     .where('type', '=', enumCast(type, 'auth_token_type'))
     .where('expiresAt', '>', now())

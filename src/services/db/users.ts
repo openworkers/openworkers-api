@@ -3,8 +3,20 @@ import { sql } from 'kysely';
 import { uuid, enumCast } from './kysely-helpers';
 import type { ISelf } from '../../types';
 
+const userSelect = [
+  'users.id',
+  'users.username',
+  'users.avatarUrl',
+  'users.limitWorkers',
+  'users.limitEnvironments',
+  'users.limitDatabases',
+  'users.limitKv',
+  'users.limitStorage',
+  'users.secondPrecision'
+] as const;
+
 export async function findUserById(userId: string): Promise<ISelf | null> {
-  const user = await kysely.selectFrom('users').selectAll().where('id', '=', uuid(userId)).executeTakeFirst();
+  const user = await kysely.selectFrom('users').select(userSelect).where('id', '=', uuid(userId)).executeTakeFirst();
 
   if (!user) return null;
 
@@ -25,19 +37,9 @@ export async function findUserById(userId: string): Promise<ISelf | null> {
 
 export async function findUserByGitHub(externalId: string): Promise<ISelf | null> {
   const user = await kysely
-    .selectFrom('users as u')
-    .innerJoin('externalUsers as eu', 'u.id', 'eu.userId')
-    .select([
-      'u.id',
-      'u.username',
-      'u.avatarUrl',
-      'u.limitWorkers',
-      'u.limitEnvironments',
-      'u.limitDatabases',
-      'u.limitKv',
-      'u.limitStorage',
-      'u.secondPrecision'
-    ])
+    .selectFrom('users')
+    .innerJoin('externalUsers as eu', 'users.id', 'eu.userId')
+    .select(userSelect)
     .where('eu.externalId', '=', externalId)
     .where('eu.provider', '=', enumCast('github', 'enum_external_users_provider'))
     .executeTakeFirst();
@@ -66,7 +68,7 @@ export async function createUserWithGitHub(externalId: string, username: string,
       username,
       avatarUrl
     })
-    .returningAll()
+    .returning(userSelect)
     .executeTakeFirstOrThrow();
 
   const user: ISelf = {
@@ -100,7 +102,7 @@ export async function createUserWithGitHub(externalId: string, username: string,
 // ============================================================================
 
 export async function findUserByEmail(email: string): Promise<ISelf | null> {
-  const user = await kysely.selectFrom('users').selectAll().where('username', '=', email).executeTakeFirst();
+  const user = await kysely.selectFrom('users').select(userSelect).where('username', '=', email).executeTakeFirst();
 
   if (!user) return null;
 
@@ -139,7 +141,11 @@ export async function getPasswordHash(email: string): Promise<string | null> {
 }
 
 export async function createUserWithEmail(email: string): Promise<ISelf> {
-  const user = await kysely.insertInto('users').values({ username: email }).returningAll().executeTakeFirstOrThrow();
+  const user = await kysely
+    .insertInto('users')
+    .values({ username: email })
+    .returning(userSelect)
+    .executeTakeFirstOrThrow();
 
   return {
     id: user.id,

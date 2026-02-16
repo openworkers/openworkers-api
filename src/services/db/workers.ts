@@ -32,8 +32,7 @@ export async function findAllWorkers(userId: string): Promise<IWorker[]> {
       'w.currentVersion',
       'w.createdAt',
       'w.updatedAt',
-      enumToText<IWorkerLanguage>('wd.codeType').as('language'),
-      byteaToText('wd.code').as('script')
+      enumToText<IWorkerLanguage>('wd.codeType').as('language')
     ])
     .where('w.userId', '=', uuid(userId))
     .where('w.name', 'is not', null)

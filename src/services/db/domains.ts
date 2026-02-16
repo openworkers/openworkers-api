@@ -1,19 +1,21 @@
 import { kysely } from './kysely-client';
-import { uuid } from './kysely-helpers';
+import { timestampsSelect, uuid } from './kysely-helpers';
 import type { IDomain } from '../../types';
 import { findWorkerById } from './workers';
+
+const domainSelect = ['workerId', 'userId', 'name', ...timestampsSelect] as const;
 
 export async function findAllDomains(userId: string): Promise<IDomain[]> {
   return kysely
     .selectFrom('domains')
-    .selectAll()
+    .select(domainSelect)
     .where('userId', '=', uuid(userId))
     .orderBy('createdAt', 'desc')
     .execute();
 }
 
 export async function findDomainByName(name: string): Promise<IDomain | null> {
-  const domain = await kysely.selectFrom('domains').selectAll().where('name', '=', name).executeTakeFirst();
+  const domain = await kysely.selectFrom('domains').select(domainSelect).where('name', '=', name).executeTakeFirst();
 
   return domain ?? null;
 }
@@ -32,7 +34,7 @@ export async function createDomain(userId: string, workerId: string, name: strin
       workerId: uuid(workerId),
       userId: uuid(userId)
     })
-    .returningAll()
+    .returning(domainSelect)
     .executeTakeFirstOrThrow();
 }
 
@@ -71,7 +73,7 @@ export async function updateWorkerDomains(userId: string, workerId: string, newD
   // Get current domains for this worker
   const currentDomains = await kysely
     .selectFrom('domains')
-    .selectAll()
+    .select(domainSelect)
     .where('workerId', '=', uuid(workerId))
     .where('userId', '=', uuid(userId))
     .execute();
