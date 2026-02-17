@@ -281,19 +281,7 @@ workers.post('/:id/upload', async (c) => {
       return c.json({ error: 'Worker not found' }, 404);
     }
 
-    // 2. Check worker has ASSETS binding
-    const assetsBinding = await findWorkerAssetsBinding(userId, worker.id);
-
-    if (!assetsBinding) {
-      return c.json(
-        { error: 'Worker has no ASSETS binding. Add an assets binding to the worker environment first.' },
-        400
-      );
-    }
-
-    console.log('Found ASSETS binding for worker:', assetsBinding);
-
-    // 3. Parse multipart form data
+    // 2. Parse multipart form data
     const formData = await c.req.formData();
     const file = formData.get('file');
 
@@ -310,13 +298,27 @@ workers.post('/:id/upload', async (c) => {
       return c.json({ error: 'File too large. Maximum size is 50MB.' }, 413);
     }
 
-    // 3b. Parse asset manifest from form data (sent separately from zip)
+    // 3. Parse asset manifest from form data (sent separately from zip)
     const assetsManifest = formData.get('assets');
     const assetEntries: Array<{ path: string; size: number; contentType: string; hash: string }> = assetsManifest
       ? JSON.parse(assetsManifest as string)
       : [];
 
-    // 4. Extract zip (code-only: worker script, routes, functions)
+    // 4. Check ASSETS binding (only needed when uploading static assets)
+    let assetsBinding: Awaited<ReturnType<typeof findWorkerAssetsBinding>> = null;
+
+    if (assetEntries.length > 0) {
+      assetsBinding = await findWorkerAssetsBinding(userId, worker.id);
+
+      if (!assetsBinding) {
+        return c.json(
+          { error: 'Worker has no ASSETS binding. Add an assets binding to the worker environment first.' },
+          400
+        );
+      }
+    }
+
+    // 5. Extract zip (code-only: worker script, routes, functions)
     const zipBuffer = await file.arrayBuffer();
     const unzipped = unzipSync(new Uint8Array(zipBuffer));
 
@@ -369,7 +371,7 @@ workers.post('/:id/upload', async (c) => {
     // 7. Generate presigned URLs for asset uploads (if manifest provided)
     let presignedAssets: Array<{ path: string; headUrl: string; putUrl: string }> = [];
 
-    if (assetEntries.length > 0) {
+    if (assetEntries.length > 0 && assetsBinding) {
       const endpoint = assetsBinding.endpoint ?? sharedStorage.endpoint;
 
       if (!endpoint) {
