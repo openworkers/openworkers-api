@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+
 import { nodeEnv, port } from './config';
 import { createAuthMiddleware, extractUser, errorHandler } from './middlewares/auth';
 import authRoutes from './routes/auth';
@@ -15,9 +16,8 @@ import kv from './routes/kv';
 import storage from './routes/storage';
 import ai from './routes/ai';
 import apiKeys from './routes/api-keys';
+import health from './routes/health';
 import pkg from '../package.json';
-import { sql } from './services/db/client';
-import { WasmCron } from '@openworkers/croner-wasm';
 
 export const app = new Hono();
 
@@ -32,38 +32,8 @@ if (nodeEnv === 'development') {
 // API routes (no version prefix for health checks)
 const api = new Hono();
 
-// Health check (no auth required)
-api.get('/health', (c) => {
-  return c.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// Postgate connection test (no auth required)
-api.get('/postgate', async (c) => {
-  try {
-    const result = await sql<{ result: number }>('SELECT 1 + 1 AS result');
-    return c.json({ status: 'ok', result: result[0]?.result });
-  } catch (error) {
-    return c.json({ status: 'error', error: String(error) }, 500);
-  }
-});
-
-// Cron WASM test (no auth required)
-api.get('/cron-test', (c) => {
-  const pattern = c.req.query('pattern') || '*/5 * * * *';
-  try {
-    const cron = new WasmCron(pattern);
-    return c.json({
-      status: 'ok',
-      wasm: true,
-      pattern: cron.pattern(),
-      description: cron.describe(),
-      nextRun: cron.nextRun()?.toISOString() ?? null,
-      nextRuns: cron.nextRuns(5).map((d: Date) => d.toISOString())
-    });
-  } catch (error) {
-    return c.json({ status: 'error', wasm: true, error: String(error) }, 400);
-  }
-});
+// Health endpoints (no auth required)
+api.route('/health', health);
 
 // API v1 routes
 const v1 = new Hono();
