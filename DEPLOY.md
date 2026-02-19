@@ -2,7 +2,7 @@
 
 ## Infrastructure setup (from scratch)
 
-All infrastructure operations use the CLI with a **DB alias** (direct PostgreSQL access).
+All `ow infra` commands use a **DB alias** with direct PostgreSQL access. This is the only way to bootstrap the platform.
 
 ### 1. Configure CLI alias
 
@@ -53,11 +53,11 @@ ow infra env bind openworkers-api-env DATABASE openworkers-api --type database
 ow infra storage create openworkers-api-storage
 ow infra env bind openworkers-api-env ASSETS openworkers-api-storage --type assets
 
-# Set variables and secrets
+# Set variables and secrets (see environment variables table below)
 ow infra env set openworkers-api-env APP_URL https://dash.example.com
+ow infra env set openworkers-api-env POSTGATE_SYSTEM_TOKEN_SECRET --secret
 ow infra env set openworkers-api-env JWT_ACCESS_SECRET --secret
 ow infra env set openworkers-api-env JWT_REFRESH_SECRET --secret
-# ... (see environment variables table below)
 
 # Build and upload
 cd openworkers-api
@@ -81,18 +81,18 @@ ow infra worker upload openworkers-dash ./dist/openworkers
 
 ## Worker mode (subsequent deploys)
 
-Build then upload as a worker:
+Once the platform is running, use a **space alias** (goes through the API) for subsequent deploys:
 
 ```bash
 bun run build
 ow <space> worker upload openworkers-api ./build
 ```
 
-Where `<space>` is the target namespace (`dev`, `infra`, `main`, `ps`, ...).
+Where `<space>` is the target space (`dev`, `main`, `ps`, ...).
 
 Create the environment **before** the first upload so the project inherits it automatically. If the worker was already uploaded without an environment, `worker link` will cascade it to the project and all function workers.
 
-### Environment variables
+## Environment variables
 
 Secrets are prompted interactively (masked input) when value is omitted:
 
@@ -104,28 +104,30 @@ ow <space> env set openworkers-api-env APP_URL https://dash.example.com
 ow <space> env set openworkers-api-env JWT_ACCESS_SECRET --secret
 ```
 
-| Variable                           | Type    | Required | Description                            |
-| ---------------------------------- | ------- | -------- | -------------------------------------- |
-| `DATABASE`                         | binding | yes      | Database binding (type: database)      |
-| `APP_URL`                          | var     | yes      | Dashboard URL (for OAuth redirects)    |
-| `JWT_ACCESS_SECRET`                | secret  | yes      | JWT signing secret (>= 32 chars)       |
-| `JWT_REFRESH_SECRET`               | secret  | yes      | JWT refresh token secret (>= 32 chars) |
-| `GITHUB_CLIENT_ID`                 | secret  | no       | GitHub OAuth app client ID             |
-| `GITHUB_CLIENT_SECRET`             | secret  | no       | GitHub OAuth app client secret         |
-| `MISTRAL_API_KEY`                  | secret  | no       | Mistral AI API key                     |
-| `ANTHROPIC_API_KEY`                | secret  | no       | Anthropic API key                      |
-| `SHARED_STORAGE_BUCKET`            | secret  | no       | S3 bucket name                         |
-| `SHARED_STORAGE_ENDPOINT`          | secret  | no       | S3 endpoint URL                        |
-| `SHARED_STORAGE_ACCESS_KEY_ID`     | secret  | no       | S3 access key                          |
-| `SHARED_STORAGE_SECRET_ACCESS_KEY` | secret  | no       | S3 secret key                          |
-| `SHARED_STORAGE_PUBLIC_URL`        | var     | no       | S3 public URL                          |
-| `EMAIL_PROVIDER`                   | var     | no       | Email provider (e.g. `scaleway`)       |
-| `EMAIL_FROM`                       | var     | no       | Sender email address                   |
-| `SCW_SECRET_KEY`                   | secret  | no       | Scaleway secret key                    |
-| `SCW_PROJECT_ID`                   | secret  | no       | Scaleway project ID                    |
-| `SCW_REGION`                       | var     | no       | Scaleway region                        |
+| Variable                           | Type    | Required | Description                              |
+| ---------------------------------- | ------- | -------- | ---------------------------------------- |
+| `DATABASE`                         | binding | yes      | Database binding (type: database)        |
+| `ASSETS`                           | binding | yes      | Assets storage binding (SvelteKit files) |
+| `APP_URL`                          | var     | yes      | Dashboard URL (for OAuth redirects)      |
+| `POSTGATE_SYSTEM_TOKEN_SECRET`     | secret  | yes      | System token HMAC secret (>= 32 chars)   |
+| `JWT_ACCESS_SECRET`                | secret  | yes      | JWT signing secret (>= 32 chars)         |
+| `JWT_REFRESH_SECRET`               | secret  | yes      | JWT refresh token secret (>= 32 chars)   |
+| `GITHUB_CLIENT_ID`                 | var     | no       | GitHub OAuth app client ID               |
+| `GITHUB_CLIENT_SECRET`             | secret  | no       | GitHub OAuth app client secret           |
+| `MISTRAL_API_KEY`                  | secret  | no       | Mistral AI API key                       |
+| `ANTHROPIC_API_KEY`                | secret  | no       | Anthropic API key                        |
+| `SHARED_STORAGE_BUCKET`            | var     | no       | S3 bucket name                           |
+| `SHARED_STORAGE_ENDPOINT`          | var     | no       | S3 endpoint URL                          |
+| `SHARED_STORAGE_ACCESS_KEY_ID`     | secret  | no       | S3 access key                            |
+| `SHARED_STORAGE_SECRET_ACCESS_KEY` | secret  | no       | S3 secret key                            |
+| `SHARED_STORAGE_PUBLIC_URL`        | var     | no       | S3 public URL                            |
+| `EMAIL_PROVIDER`                   | var     | no       | Email provider (e.g. `scaleway`)         |
+| `EMAIL_FROM`                       | var     | no       | Sender email address                     |
+| `SCW_SECRET_KEY`                   | secret  | no       | Scaleway secret key                      |
+| `SCW_PROJECT_ID`                   | var     | no       | Scaleway project ID                      |
+| `SCW_REGION`                       | var     | no       | Scaleway region                          |
 
-Note: `POSTGATE_URL` and `POSTGATE_TOKEN` are only needed when running outside OpenWorkers (Docker mode). In worker mode, the `DATABASE` binding provides direct database access.
+In worker mode, the `DATABASE` binding provides direct database access. `POSTGATE_URL` and `POSTGATE_TOKEN` are only needed in Docker mode (see below).
 
 ## Docker mode
 
@@ -143,7 +145,14 @@ bun start
 
 The server listens on `PORT` (default `7000`).
 
-In Docker mode, set `POSTGATE_URL` and `POSTGATE_TOKEN` in `.env` instead of the `DB` binding.
+In Docker mode, there is no `DATABASE` binding. Set these additional variables in `.env`:
+
+| Variable         | Required | Description                      |
+| ---------------- | -------- | -------------------------------- |
+| `POSTGATE_URL`   | yes      | Postgate HTTP proxy URL          |
+| `POSTGATE_TOKEN` | yes      | Postgate token (`pg_xxx` format) |
+
+All other environment variables from the table above also apply (without the bindings).
 
 ## Managing projects
 
