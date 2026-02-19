@@ -83,10 +83,6 @@ const ConfigSchema = z.object({
     apiKey: z.string().optional()
   }),
 
-  anthropic: z.object({
-    apiKey: z.string().optional()
-  }),
-
   // Email provider (verification, password reset)
   email: z.object({
     provider: z.enum(['scaleway']).optional(),
@@ -139,9 +135,6 @@ function loadConfig(): Config {
     mistral: {
       apiKey: getEnv('MISTRAL_API_KEY')
     },
-    anthropic: {
-      apiKey: getEnv('ANTHROPIC_API_KEY')
-    },
     email: {
       provider: getEnv('EMAIL_PROVIDER'),
       from: getEnv('EMAIL_FROM'),
@@ -193,7 +186,6 @@ function buildConfig(): Config {
     sharedStorage: {},
     email: {},
     mistral: {},
-    anthropic: {},
     appUrl: 'http://localhost:4200'
   } as Config;
 }
@@ -202,4 +194,4 @@ function buildConfig(): Config {
 export const config: Config = building ? buildConfig() : loadConfig();
 
 // Export individual sections for convenience
-export const { nodeEnv, port, jwt, github, postgate, sharedStorage, mistral, anthropic, email, appUrl } = config;
+export const { nodeEnv, port, jwt, github, postgate, sharedStorage, mistral, email, appUrl } = config;

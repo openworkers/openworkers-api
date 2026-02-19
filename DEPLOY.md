@@ -115,7 +115,6 @@ ow <space> env set openworkers-api-env JWT_ACCESS_SECRET --secret
 | `GITHUB_CLIENT_ID`                 | var     | no       | GitHub OAuth app client ID               |
 | `GITHUB_CLIENT_SECRET`             | secret  | no       | GitHub OAuth app client secret           |
 | `MISTRAL_API_KEY`                  | secret  | no       | Mistral AI API key                       |
-| `ANTHROPIC_API_KEY`                | secret  | no       | Anthropic API key                        |
 | `SHARED_STORAGE_BUCKET`            | var     | no       | S3 bucket name                           |
 | `SHARED_STORAGE_ENDPOINT`          | var     | no       | S3 endpoint URL                          |
 | `SHARED_STORAGE_ACCESS_KEY_ID`     | secret  | no       | S3 access key                            |
