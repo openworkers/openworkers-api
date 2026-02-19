@@ -1,4 +1,4 @@
-FROM oven/bun:1.3.3-alpine AS installer
+FROM oven/bun:1-alpine AS installer
 
 RUN mkdir -p /build
 
@@ -16,27 +16,28 @@ FROM installer AS sources
 
 ## Copy sources
 COPY src /build/src
+COPY static /build/static
 COPY examples /build/examples
-COPY tsconfig.json /build/tsconfig.json
-COPY server.ts /build
+COPY svelte.config.ts /build/
+COPY vite.config.ts /build/
+COPY tsconfig.json /build/
+COPY server.ts /build/
 
 # Builder Image
 FROM sources AS builder
 
 WORKDIR /build
-RUN bun compile
+RUN bun run build
 
 # Final image
-FROM alpine:3.22
-
-# Bun runtime dependencies
-RUN apk add --no-cache libstdc++ libgcc
+FROM oven/bun:1-alpine
 
 WORKDIR /build
 
-COPY --from=builder /build/dist /build/dist
-COPY --from=builder /build/node_modules/@openworkers/croner-wasm/dist/node node_modules/@openworkers/croner-wasm/dist/node
+COPY --from=builder /build/.svelte-kit/output/server .svelte-kit/output/server
+COPY --from=builder /build/node_modules node_modules
+COPY --from=builder /build/server.ts .
 
 EXPOSE 7000
 
-CMD [ "./dist/openworkers-api" ]
+CMD ["bun", "server.ts"]

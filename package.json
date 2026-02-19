@@ -1,8 +1,7 @@
 {
   "name": "openworkers-api",
-  "version": "1.5.6",
+  "version": "1.6.0",
   "license": "MIT",
-  "module": "src/index.ts",
   "type": "module",
   "repository": {
     "type": "git",
@@ -10,39 +9,40 @@
   },
   "private": true,
   "scripts": {
-    "dev": "bun --hot src/index.ts",
-    "start": "bun src/index.ts",
-    "compile": "bun build --compile --minify --sourcemap server.ts --outfile dist/openworkers-api",
-    "build:worker": "bun worker.compile.ts",
-    "build:worker:bun": "bun build --minify --sourcemap --target=browser worker.ts --outdir dist",
+    "start": "bun server.ts",
+    "dev": "bun x --bun vite dev",
+    "build": "NODE_ENV=production bun x --bun vite build",
+    "preview": "bun x --bun vite preview --port 7000",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test": "bun test",
-    "check": "tsc --noEmit",
     "lint": "prettier --write .",
     "format": "prettier --write .",
     "generate-types": "bun scripts/generate-types.ts",
-    "clean": "rimraf dist node_modules",
-    "deploy:dev": "bun build:worker && ow dev worker deploy openworkers-api ./dist/worker.js",
-    "deploy:local": "bun build:worker && ow local worker deploy openworkers-api ./dist/worker.js",
-    "deploy:main": "bun build:worker && ow main worker deploy openworkers-api ./dist/worker.js"
+    "clean": "rimraf .svelte-kit build node_modules",
+    "deploy:dev": "ow dev worker upload openworkers-api ./build",
+    "deploy:local": "ow local worker upload openworkers-api ./build",
+    "deploy:main": "ow main worker upload openworkers-api ./build"
   },
   "dependencies": {
     "@openworkers/croner-wasm": "^0.3.1",
     "aws4fetch": "^1.0.20",
-    "hono": "^4.11.3",
     "kysely": "^0.28.11",
     "p-limit": "^7.2.0",
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@openworkers/adapter-sveltekit": "^0.5.6",
     "@openworkers/workers-types": "^0.1.9",
+    "@sveltejs/kit": "^2.0.0",
+    "@sveltejs/vite-plugin-svelte": "^6.2.4",
     "@types/bun": "^1.3.9",
-    "esbuild": "^0.27.3",
     "fflate": "^0.8.2",
     "prettier": "^3.7.4",
     "rimraf": "^6.1.2",
+    "svelte": "^5.0.0",
+    "svelte-check": "^4.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
     "zod-to-ts": "^2.0.0"
-  },
-  "peerDependencies": {
-    "typescript": "^5.9.3"
   }
 }

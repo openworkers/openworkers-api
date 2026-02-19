@@ -11,11 +11,11 @@ function printNode(node: ts.Node): string {
 }
 
 // Import all schemas
-import { ResourceSchema, TimestampsSchema } from '../src/types/schemas/base.schema';
+import { ResourceSchema, TimestampsSchema } from '../src/lib/types/schemas/base.schema';
 
-import { LoginResponseSchema } from '../src/types/schemas/auth.schema';
+import { LoginResponseSchema } from '../src/lib/types/schemas/auth.schema';
 
-import { SelfSchema, ResourceLimitsSchema } from '../src/types/schemas/user.schema';
+import { SelfSchema, ResourceLimitsSchema } from '../src/lib/types/schemas/user.schema';
 
 import {
   EnvironmentSchema,
@@ -23,18 +23,18 @@ import {
   EnvironmentUpdateInputSchema,
   EnvironmentValueSchema,
   EnvironmentValueUpdateInputSchema
-} from '../src/types/schemas/environment.schema';
+} from '../src/lib/types/schemas/environment.schema';
 
-import { CronSchema, CronCreateInputSchema, CronUpdateInputSchema } from '../src/types/schemas/cron.schema';
+import { CronSchema, CronCreateInputSchema, CronUpdateInputSchema } from '../src/lib/types/schemas/cron.schema';
 
-import { DomainSchema, DomainCreateInputSchema } from '../src/types/schemas/domain.schema';
+import { DomainSchema, DomainCreateInputSchema } from '../src/lib/types/schemas/domain.schema';
 
 import {
   WorkerSchema,
   WorkerCreateInputSchema,
   WorkerUpdateInputSchema,
   WorkerLanguageSchema
-} from '../src/types/schemas/worker.schema';
+} from '../src/lib/types/schemas/worker.schema';
 
 import {
   DatabaseSchema,
@@ -44,28 +44,28 @@ import {
   TableInfoSchema,
   TableDetailsSchema,
   CreateTableInputSchema
-} from '../src/types/schemas/database.schema';
+} from '../src/lib/types/schemas/database.schema';
 
 import {
   DatabaseTokenSchema,
   DatabaseTokenCreateInputSchema,
   DatabaseTokenCreateResponseSchema,
   DatabaseOperations
-} from '../src/types/schemas/database-token.schema';
+} from '../src/lib/types/schemas/database-token.schema';
 
 import {
   KvNamespaceSchema,
   KvNamespaceCreateInputSchema,
   KvNamespaceUpdateInputSchema
-} from '../src/types/schemas/kv.schema';
+} from '../src/lib/types/schemas/kv.schema';
 
 import {
   StorageConfigSchema,
   StorageConfigCreateInputSchema,
   StorageConfigUpdateInputSchema
-} from '../src/types/schemas/storage.schema';
+} from '../src/lib/types/schemas/storage.schema';
 
-import { ApiKeySchema, ApiKeyCreateInputSchema, ApiKeyCreateResponseSchema } from '../src/types/schemas/api-key.schema';
+import { ApiKeySchema, ApiKeyCreateInputSchema, ApiKeyCreateResponseSchema } from '../src/lib/types/schemas/api-key.schema';
 
 // Schema definitions to generate
 const schemas = [

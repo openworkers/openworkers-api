@@ -1,77 +1,43 @@
-# OpenWorkers API (Hono + Bun)
+# OpenWorkers API
 
-Lightweight REST API for OpenWorkers platform using Hono framework and Bun runtime.
+REST API for the OpenWorkers platform, built with SvelteKit and deployed as a worker on OpenWorkers itself.
 
 ## Features
 
-- **Hono** - Ultra-fast web framework
+- **SvelteKit** - File-based routing (`src/routes/api/...`)
 - **Postgate** - HTTP-based PostgreSQL access via [postgate](https://github.com/openworkers/postgate)
 - **Zod validation** - Type-safe input/output validation
-- **Pure REST** - No GraphQL complexity
-- **JWT auth** - Using `hono/jwt`
-- **Standalone binary** - Compile to single executable
-
-## Structure
-
-```
-src/
-├── services/
-│   ├── db/
-│   │   ├── sql-client.ts    - Postgate SQL client (named params support)
-│   │   ├── users.ts         - User DB queries
-│   │   ├── workers.ts       - Worker DB queries
-│   │   ├── crons.ts         - Cron DB queries
-│   │   ├── databases.ts     - Database DB queries
-│   │   ├── environments.ts  - Environment DB queries
-│   │   └── domains.ts       - Domain DB queries
-│   ├── postgate.ts          - Postgate HTTP client
-│   ├── auth.ts              - Authentication logic
-│   ├── workers.ts           - Workers business logic
-│   ├── crons.ts             - Crons business logic
-│   ├── databases.ts         - Databases business logic
-│   ├── environments.ts      - Environments business logic
-│   └── domains.ts           - Domains business logic
-├── routes/
-│   ├── auth.ts              - Auth endpoints
-│   ├── users.ts             - User endpoints
-│   ├── workers.ts           - Workers endpoints
-│   ├── crons.ts             - Crons endpoints
-│   ├── databases.ts         - Databases endpoints
-│   ├── environments.ts      - Environments endpoints
-│   └── domains.ts           - Domains endpoints
-├── middlewares/
-│   └── auth.ts              - JWT middleware
-├── types/
-│   ├── schemas/             - Zod validation schemas
-│   ├── validators.ts        - Schema validators
-│   └── index.ts             - Type exports
-├── utils/
-│   └── validate.ts          - Response validation helpers
-├── config/
-│   └── index.ts             - Configuration
-└── index.ts                 - Main app
-```
+- **JWT auth** - Authentication middleware in `hooks.server.ts`
 
 ## Quick Start
 
 ```bash
-# Install dependencies
 bun install
-
-# Create .env from example
 cp .env.example .env
-# Edit .env with your Postgate URL/tokens and JWT secrets
-
-# Run development server (hot reload)
 bun run dev
-
-# Production (run with Bun)
-bun run start
-
-# Compile standalone binary
-bun run compile
-# → Creates dist/openworkers-api (executable)
 ```
+
+## Build & Deploy
+
+```bash
+bun run build
+```
+
+The build **must** run with `NODE_ENV=production` (already set in the build script).
+This is required because SvelteKit and Svelte use `esm-env` to gate Node.js-specific
+code behind `if (DEV)` blocks (`node:path`, `node:process` imports for stack trace
+formatting). Without production mode, these imports leak into the bundle and cause
+`SyntaxError` in the OpenWorkers runtime which supports neither `node:*` builtins
+nor dynamic `import()`.
+
+## Docker
+
+```bash
+docker build -t openworkers-api .
+docker run -p 7000:7000 --env-file .env openworkers-api
+```
+
+Or use `bun run build && bun start` to run locally without Docker.
 
 ## API Endpoints
 
@@ -156,4 +122,3 @@ console.log(users[0], users.count);
 - SQL validation and injection prevention
 - Token-based access control per database
 - Same API works from workers (OpenWorkers runtime)
-

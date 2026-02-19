@@ -1,26 +1,23 @@
-/**
- * Production server entrypoint with graceful shutdown support
- *
- * This file is used for:
- * - Production runtime (bun server.ts)
- * - Compiled binary (bun run compile)
- *
- * It explicitly creates a Bun server to handle SIGTERM/SIGINT signals
- * for graceful shutdown (Docker, Ctrl+C, process managers).
- *
- * For development, use `bun --hot src/index.ts` which relies on
- * the default export and lets Bun handle hot reload lifecycle.
- */
-import app from './src';
+import { Server } from './.svelte-kit/output/server/index.js';
+import { manifest } from './.svelte-kit/output/server/manifest.js';
 
-const server = Bun.serve(app);
+// @ts-expect-error generated manifest diverges from SSRManifest (missing matcher on RouteParam)
+const server = new Server(manifest);
 
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully...');
-  server.stop(true);
+await server.init({ env: process.env as Record<string, string> });
+
+const port = parseInt(process.env.PORT || '7000', 10);
+
+const instance = Bun.serve({
+  port,
+  fetch: (req) =>
+    server.respond(req, {
+      getClientAddress: () =>
+        req.headers.get('x-forwarded-for')?.split(',')[0].trim() || req.headers.get('x-real-ip') || ''
+    })
 });
 
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully...');
-  server.stop(true);
-});
+console.log(`Listening on ${instance.url}`);
+
+process.on('SIGTERM', () => instance.stop(true));
+process.on('SIGINT', () => instance.stop(true));

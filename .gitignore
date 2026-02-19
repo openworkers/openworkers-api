@@ -4,7 +4,11 @@ node_modules
 # output
 out
 dist
+build
 *.tgz
+
+# SvelteKit
+.svelte-kit
 
 # code coverage
 coverage
