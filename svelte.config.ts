@@ -3,7 +3,7 @@ import type { Config } from '@sveltejs/kit';
 
 const config: Config = {
   kit: {
-    adapter: adapter({ functions: true, debug: { prettier: false } }),
+    adapter: adapter({ functions: false, debug: { prettier: false } }),
     csrf: {
       trustedOrigins: ['*']
     },
