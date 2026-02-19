@@ -1,3 +1,4 @@
+import { building } from '$app/environment';
 import { z } from 'zod';
 
 /**
@@ -181,8 +182,24 @@ function loadConfig(): Config {
   }
 }
 
+// At build time, env vars are unavailable — use safe defaults
+function buildConfig(): Config {
+  return {
+    nodeEnv: 'development',
+    port: 7000,
+    jwt: { access: { secret: '-' }, refresh: { secret: '-' } },
+    github: {},
+    postgate: { url: '-', token: '-', systemTokenSecret: '-' },
+    sharedStorage: {},
+    email: {},
+    mistral: {},
+    anthropic: {},
+    appUrl: 'http://localhost:4200'
+  } as Config;
+}
+
 // Export singleton config instance
-export const config = loadConfig();
+export const config: Config = building ? buildConfig() : loadConfig();
 
 // Export individual sections for convenience
 export const { nodeEnv, port, jwt, github, postgate, sharedStorage, mistral, anthropic, email, appUrl } = config;
