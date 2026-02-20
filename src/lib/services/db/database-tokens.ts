@@ -7,6 +7,10 @@ import type { DatabaseOperation } from '../../types/schemas/database-token.schem
 const SYSTEM_TOKEN_NAME = '__system__';
 const ALL_OPERATIONS: DatabaseOperation[] = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP'];
 
+function isProtectedDatabase(databaseId: string): boolean {
+  return databaseId === '00000000-0000-0000-0000-000000000000';
+}
+
 export interface DatabaseToken {
   id: string;
   databaseId: string;
@@ -116,6 +120,11 @@ async function createSystemToken(databaseId: string): Promise<string> {
   const tokenPrefix = fullToken.substring(0, 8);
   const tokenHash = await hashToken(fullToken);
 
+  const isProtected = isProtectedDatabase(databaseId);
+  const allowedOperations: DatabaseOperation[] = isProtected
+    ? ['SELECT', 'INSERT', 'UPDATE', 'DELETE']
+    : ALL_OPERATIONS;
+
   await kysely
     .insertInto('databaseTokens')
     .values({
@@ -123,7 +132,7 @@ async function createSystemToken(databaseId: string): Promise<string> {
       name: SYSTEM_TOKEN_NAME,
       tokenHash,
       tokenPrefix,
-      allowedOperations: textArray(ALL_OPERATIONS)
+      allowedOperations: textArray(allowedOperations)
     })
     .onConflict((oc) => oc.columns(['databaseId', 'name']).doNothing())
     .execute();

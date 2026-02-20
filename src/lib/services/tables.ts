@@ -3,6 +3,10 @@ import * as db from './db/databases';
 import type { ITableInfo, IColumnInfo, IColumnDefinition } from '../types';
 
 export class TablesService {
+  private isProtectedDatabase(databaseId: string): boolean {
+    return databaseId === '00000000-0000-0000-0000-000000000000';
+  }
+
   /**
    * List all tables in a database schema
    */
@@ -91,6 +95,10 @@ export class TablesService {
       throw new Error('Schema not configured');
     }
 
+    if (this.isProtectedDatabase(databaseId)) {
+      throw new Error('Cannot modify protected database');
+    }
+
     await sql(`SELECT create_tenant_table($1::uuid, $2, $3, $4::jsonb)`, [
       userId,
       dbConfig.schemaName,
@@ -117,6 +125,10 @@ export class TablesService {
       throw new Error('Schema not configured');
     }
 
+    if (this.isProtectedDatabase(databaseId)) {
+      throw new Error('Cannot modify protected database');
+    }
+
     await sql(`SELECT drop_tenant_table($1::uuid, $2, $3)`, [userId, dbConfig.schemaName, tableName]);
   }
 
@@ -136,6 +148,10 @@ export class TablesService {
 
     if (!dbConfig.schemaName) {
       throw new Error('Schema not configured');
+    }
+
+    if (this.isProtectedDatabase(databaseId)) {
+      throw new Error('Cannot modify protected database');
     }
 
     await sql(`SELECT add_tenant_column($1::uuid, $2, $3, $4::jsonb)`, [
@@ -162,6 +178,10 @@ export class TablesService {
 
     if (!dbConfig.schemaName) {
       throw new Error('Schema not configured');
+    }
+
+    if (this.isProtectedDatabase(databaseId)) {
+      throw new Error('Cannot modify protected database');
     }
 
     await sql(`SELECT drop_tenant_column($1::uuid, $2, $3, $4)`, [userId, dbConfig.schemaName, tableName, columnName]);

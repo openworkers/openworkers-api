@@ -85,10 +85,10 @@ Once the platform is running, use a **space alias** (goes through the API) for s
 
 ```bash
 bun run build
-ow <space> worker upload openworkers-api ./build
+ow infra worker upload openworkers-api ./build
 ```
 
-Where `<space>` is the target space (`dev`, `main`, `ps`, ...).
+Where `infra` is the target space alias (could be `dev`, `main`, `local`, ...).
 
 Create the environment **before** the first upload so the project inherits it automatically. If the worker was already uploaded without an environment, `worker link` will cascade it to the project and all function workers.
 
@@ -100,10 +100,10 @@ Secrets are prompted interactively (masked input) when value is omitted:
 
 ```bash
 # Variables (plain text)
-ow <space> env set openworkers-api-env APP_URL https://dash.example.com
+ow infra env set openworkers-api-env APP_URL https://dash.example.com
 
 # Secrets (prompted interactively, not stored in shell history)
-ow <space> env set openworkers-api-env JWT_ACCESS_SECRET --secret
+ow infra env set openworkers-api-env JWT_ACCESS_SECRET --secret
 ```
 
 Bindings (`DATABASE`, `ASSETS`) are set with `ow infra env bind` during the initial setup (see step 5 above). They connect the worker to its database and assets storage at runtime.
@@ -133,17 +133,17 @@ In Docker mode, `POSTGATE_URL` and `POSTGATE_TOKEN` must be set in `.env` to con
 Workers that are uploaded with multiple routes/functions are automatically promoted to **projects**. Projects group related workers.
 
 ```bash
-ow <space> projects list              # List all projects
-ow <space> projects delete my-app     # Delete project and all its workers
+ow infra projects list              # List all projects
+ow infra projects delete my-app     # Delete project and all its workers
 ```
 
 To delete a worker that belongs to a project, delete the project instead:
 
 ```bash
 # This fails:
-ow <space> worker delete my-app
+ow infra worker delete my-app
 # → "Cannot delete main worker - delete the project instead"
 
 # Do this instead:
-ow <space> projects delete my-app
+ow infra projects delete my-app
 ```
