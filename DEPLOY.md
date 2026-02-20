@@ -19,11 +19,27 @@ ow infra migrate run
 
 ### 3. Claim the system user
 
-The system user (`00000000-...`) owns shared resources (the API database config, etc.). Claim it with your username:
+The system user (`00000000-...`) owns shared resources (the API database config, etc.). Claim it with your admin identity.
+
+**The username must match exactly how you will log in:**
+
+- **GitHub OAuth** → use your GitHub username (e.g. `max-lt`)
+- **Email/password (headless)** → use your email (e.g. `admin@example.com`)
+
+> **Important:** Anyone who signs up or logs in with this username gets admin access to platform resources. Double-check it before proceeding.
 
 ```bash
-ow infra users create your-username --system
-ow alias set infra --db postgres://... --user your-username --force
+# GitHub login
+ow infra users create my-github-handle --system
+
+# Or email/password login (headless, no GitHub)
+ow infra users create admin@example.com --system --password
+```
+
+Update the alias to reference the admin user:
+
+```bash
+ow alias set infra --db postgres://... --user my-github-handle --force
 ```
 
 ### 4. Configure platform storage
