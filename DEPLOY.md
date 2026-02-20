@@ -94,6 +94,8 @@ Create the environment **before** the first upload so the project inherits it au
 
 ## Environment variables
 
+See [README.md](./README.md#environment-variables) for the full list of environment variables.
+
 Secrets are prompted interactively (masked input) when value is omitted:
 
 ```bash
@@ -104,29 +106,9 @@ ow <space> env set openworkers-api-env APP_URL https://dash.example.com
 ow <space> env set openworkers-api-env JWT_ACCESS_SECRET --secret
 ```
 
-| Variable                           | Type    | Required | Description                              |
-| ---------------------------------- | ------- | -------- | ---------------------------------------- |
-| `DATABASE`                         | binding | yes      | Database binding (type: database)        |
-| `ASSETS`                           | binding | yes      | Assets storage binding (SvelteKit files) |
-| `APP_URL`                          | var     | yes      | Dashboard URL (for OAuth redirects)      |
-| `POSTGATE_SYSTEM_TOKEN_SECRET`     | secret  | yes      | System token HMAC secret (>= 32 chars)   |
-| `JWT_ACCESS_SECRET`                | secret  | yes      | JWT signing secret (>= 32 chars)         |
-| `JWT_REFRESH_SECRET`               | secret  | yes      | JWT refresh token secret (>= 32 chars)   |
-| `GITHUB_CLIENT_ID`                 | var     | no       | GitHub OAuth app client ID               |
-| `GITHUB_CLIENT_SECRET`             | secret  | no       | GitHub OAuth app client secret           |
-| `MISTRAL_API_KEY`                  | secret  | no       | Mistral AI API key                       |
-| `SHARED_STORAGE_BUCKET`            | var     | no       | S3 bucket name                           |
-| `SHARED_STORAGE_ENDPOINT`          | var     | no       | S3 endpoint URL                          |
-| `SHARED_STORAGE_ACCESS_KEY_ID`     | secret  | no       | S3 access key                            |
-| `SHARED_STORAGE_SECRET_ACCESS_KEY` | secret  | no       | S3 secret key                            |
-| `SHARED_STORAGE_PUBLIC_URL`        | var     | no       | S3 public URL                            |
-| `EMAIL_PROVIDER`                   | var     | no       | Email provider (e.g. `scaleway`)         |
-| `EMAIL_FROM`                       | var     | no       | Sender email address                     |
-| `SCW_SECRET_KEY`                   | secret  | no       | Scaleway secret key                      |
-| `SCW_PROJECT_ID`                   | var     | no       | Scaleway project ID                      |
-| `SCW_REGION`                       | var     | no       | Scaleway region                          |
+Bindings (`DATABASE`, `ASSETS`) are set with `ow infra env bind` during the initial setup (see step 5 above). They connect the worker to its database and assets storage at runtime.
 
-In worker mode, the `DATABASE` binding provides direct database access. `POSTGATE_URL` and `POSTGATE_TOKEN` are only needed in Docker mode (see below).
+In worker mode, the `DATABASE` binding provides direct database access — no Postgate HTTP proxy needed. `POSTGATE_URL` and `POSTGATE_TOKEN` are only required in Docker mode, where there are no runtime bindings.
 
 ## Docker mode
 
@@ -144,14 +126,7 @@ bun start
 
 The server listens on `PORT` (default `7000`).
 
-In Docker mode, there is no `DATABASE` binding. Set these additional variables in `.env`:
-
-| Variable         | Required | Description                      |
-| ---------------- | -------- | -------------------------------- |
-| `POSTGATE_URL`   | yes      | Postgate HTTP proxy URL          |
-| `POSTGATE_TOKEN` | yes      | Postgate token (`pg_xxx` format) |
-
-All other environment variables from the table above also apply (without the bindings).
+In Docker mode, `POSTGATE_URL` and `POSTGATE_TOKEN` must be set in `.env` to connect to the Postgate HTTP proxy. All other environment variables from the README also apply (without the bindings).
 
 ## Managing projects
 
