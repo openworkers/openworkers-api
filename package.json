@@ -19,9 +19,9 @@
     "format": "prettier --write .",
     "generate-types": "bun scripts/generate-types.ts",
     "clean": "rimraf .svelte-kit build node_modules",
-    "deploy:dev": "ow dev worker upload openworkers-api ./build",
-    "deploy:local": "ow local worker upload openworkers-api ./build",
-    "deploy:main": "ow main worker upload openworkers-api ./build"
+    "deploy:dev": "bun run build && ow dev worker upload openworkers-api ./build",
+    "deploy:local": "bun run build && ow local worker upload openworkers-api ./build",
+    "deploy:main": "bun run build && ow main worker upload openworkers-api ./build"
   },
   "dependencies": {
     "@openworkers/croner-wasm": "^0.3.1",
