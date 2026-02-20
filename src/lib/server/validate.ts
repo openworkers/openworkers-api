@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import { z, ZodError } from 'zod';
-import { nodeEnv } from '$lib/config';
+import { getNodeEnv } from '$lib/config';
 
 /**
  * Parse and validate JSON body from a Request with Zod schema.
@@ -43,7 +43,7 @@ export function jsonResponse<T extends z.ZodTypeAny>(schema: T, data: unknown, s
     console.error('API Response validation failed:', result.error.issues);
     console.error('Invalid data:', JSON.stringify(data, null, 2));
 
-    if (nodeEnv === 'production') {
+    if (getNodeEnv() === 'production') {
       return json({ error: 'Internal server error' }, { status: 500 });
     } else {
       return json({ error: 'Response validation failed', issues: result.error.issues, data }, { status: 500 });

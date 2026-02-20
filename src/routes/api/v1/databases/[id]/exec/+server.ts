@@ -4,7 +4,7 @@ import type { RequestHandler } from './$types';
 import { databasesService } from '$lib/services/databases';
 import { getSystemToken } from '$lib/services/db/database-tokens';
 import { PostgateClient } from '$lib/services/postgate';
-import { postgate as postgateConfig } from '$lib/config';
+import { getPostgateConfig } from '$lib/config';
 import { parseAndValidate } from '$lib/server/validate';
 
 const ExecSchema = z.object({
@@ -26,7 +26,7 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
     }
 
     const systemToken = await getSystemToken(database.id);
-    const client = new PostgateClient(postgateConfig.url, systemToken);
+    const client = new PostgateClient(getPostgateConfig().url, systemToken);
     const result = await client.query(sql, sqlParams);
 
     return json({

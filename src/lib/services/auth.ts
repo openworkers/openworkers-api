@@ -14,7 +14,7 @@ import { createAuthToken, findAuthToken, deleteAuthToken, deleteUserTokens, TOKE
 import { sendSetPasswordEmail, sendPasswordResetEmail } from './email';
 import { hashPassword, verifyPassword } from '../utils/password';
 import type { ISelf } from '../types';
-import { jwt as jwtConfig } from '../config';
+import { getJwtConfig } from '../config';
 
 interface GitHubUser {
   id: number;
@@ -64,6 +64,8 @@ export class AuthService {
       sub: user.id,
       iat: Math.floor(Date.now() / 1000)
     };
+
+    const jwtConfig = getJwtConfig();
 
     const accessToken = await sign(
       {

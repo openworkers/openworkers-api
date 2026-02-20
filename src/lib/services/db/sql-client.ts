@@ -1,4 +1,4 @@
-import { postgate as postgateConfig } from '../../config';
+import { getPostgateConfig } from '../../config';
 import { PostgateClient } from '../postgate';
 
 /**
@@ -110,7 +110,7 @@ function createPostgateClientFromToken(baseUrl: string, token: string): Postgate
  * @param token - The pg_xxx token for authentication
  */
 export function createSqlClient(token: string): PostgateSqlClient {
-  return createPostgateClientFromToken(postgateConfig.url, token);
+  return createPostgateClientFromToken(getPostgateConfig().url, token);
 }
 
 /**
@@ -124,6 +124,8 @@ function getDefaultSqlClient(): PostgateSqlClient {
     return createBindingSqlClient(binding);
   }
 
+  const postgateConfig = getPostgateConfig();
+
   if (postgateConfig.token) {
     return createPostgateClientFromToken(postgateConfig.url, postgateConfig.token);
   }
@@ -131,5 +133,17 @@ function getDefaultSqlClient(): PostgateSqlClient {
   throw new Error('No database client available: neither DATABASE binding nor POSTGATE_TOKEN configured');
 }
 
-// Default SQL client for OpenWorkers database
-export const sql = getDefaultSqlClient();
+// Default SQL client for OpenWorkers database (lazy: resolves on first query)
+let defaultClient: PostgateSqlClient | null = null;
+
+export const sql: PostgateSqlClient = async function sql<T = Record<string, unknown>>(
+  query: string,
+  params?: unknown[] | NamedParams
+): Promise<SqlResult<T>> {
+
+  if (!defaultClient) {
+    defaultClient = getDefaultSqlClient();
+  }
+
+  return defaultClient<T>(query, params);
+};

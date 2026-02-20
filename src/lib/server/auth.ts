@@ -1,5 +1,5 @@
 import { verify } from '$lib/utils/jwt';
-import { jwt as jwtConfig } from '$lib/config';
+import { getJwtConfig } from '$lib/config';
 import { findApiKeyByToken, updateApiKeyLastUsed } from '$lib/services/db/api-keys';
 
 interface AuthResult {
@@ -52,7 +52,7 @@ export async function authenticate(request: Request): Promise<AuthResult | null>
   }
 
   try {
-    const payload = await verify(token, jwtConfig.access.secret);
+    const payload = await verify(token, getJwtConfig().access.secret);
 
     if (!payload.sub || typeof payload.sub !== 'string') {
       return null;

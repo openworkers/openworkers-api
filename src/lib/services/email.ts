@@ -1,4 +1,4 @@
-import { email, appUrl } from '../config';
+import { getEmailConfig } from '../config';
 
 interface ScalewayEmailRequest {
   from: { email: string; name?: string };
@@ -10,27 +10,29 @@ interface ScalewayEmailRequest {
 }
 
 async function sendWithScaleway(to: string, subject: string, text: string, html: string): Promise<boolean> {
-  if (!email.secretKey || !email.projectId) {
+  const config = getEmailConfig();
+
+  if (!config.secretKey || !config.projectId) {
     console.error('[Email] Scaleway not configured (missing SCW_SECRET_KEY or SCW_PROJECT_ID)');
     return false;
   }
 
-  const url = `https://api.scaleway.com/transactional-email/v1alpha1/regions/${email.region}/emails`;
+  const url = `https://api.scaleway.com/transactional-email/v1alpha1/regions/${config.region}/emails`;
 
   const body: ScalewayEmailRequest = {
-    from: { email: email.from },
+    from: { email: config.from },
     to: [{ email: to }],
     subject,
     text,
     html,
-    project_id: email.projectId
+    project_id: config.projectId
   };
 
   try {
     const res = await fetch(url, {
       method: 'POST',
       headers: {
-        'X-Auth-Token': email.secretKey,
+        'X-Auth-Token': config.secretKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(body)
@@ -50,10 +52,13 @@ async function sendWithScaleway(to: string, subject: string, text: string, html:
 }
 
 export function isEmailConfigured(): boolean {
-  return email.provider === 'scaleway' && !!email.secretKey && !!email.projectId;
+  const config = getEmailConfig();
+  return config.provider === 'scaleway' && !!config.secretKey && !!config.projectId;
 }
 
 export async function sendSetPasswordEmail(emailTo: string, token: string): Promise<boolean> {
+  const { appUrl } = getEmailConfig();
+
   if (!isEmailConfigured()) {
     console.log(`[Email] Set password link for ${emailTo}: ${appUrl}/sign-in/set-password?token=${token}`);
     return true;
@@ -97,6 +102,8 @@ If you didn't create an account, you can ignore this email.`;
 }
 
 export async function sendPasswordResetEmail(emailTo: string, token: string): Promise<boolean> {
+  const { appUrl } = getEmailConfig();
+
   if (!isEmailConfigured()) {
     console.log(`[Email] Password reset link for ${emailTo}: ${appUrl}/sign-in/reset-password?token=${token}`);
     return true;

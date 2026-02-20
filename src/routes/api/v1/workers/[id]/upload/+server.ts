@@ -8,7 +8,7 @@ import { S3Client } from '$lib/utils/s3';
 import { base64Encode } from '$lib/utils/base64';
 import { hexDecode } from '$lib/utils/hex';
 import { sha256HexUint8 } from '$lib/utils/crypto';
-import { sharedStorage } from '$lib/config';
+import { getStorageConfig } from '$lib/config';
 
 // POST /api/v1/workers/:id/upload - Upload zip with _worker.js and assets
 export const POST: RequestHandler = async ({ locals, params, request }) => {
@@ -107,7 +107,7 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
     let presignedAssets: Array<{ path: string; headUrl: string; putUrl: string }> = [];
 
     if (assetEntries.length > 0 && assetsBinding) {
-      const endpoint = assetsBinding.endpoint ?? sharedStorage.endpoint;
+      const endpoint = assetsBinding.endpoint ?? getStorageConfig().endpoint;
 
       if (!endpoint) {
         return json({ error: 'Storage endpoint not configured' }, { status: 500 });

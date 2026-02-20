@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { verify } from '$lib/utils/jwt';
 import { authService } from '$lib/services/auth';
-import { jwt as jwtConfig } from '$lib/config';
+import { getJwtConfig } from '$lib/config';
 import { LoginResponseSchema } from '$lib/types';
 import { jsonResponse } from '$lib/server/validate';
 
@@ -15,7 +15,7 @@ export const POST: RequestHandler = async ({ request }) => {
   }
 
   try {
-    const payload = await verify(refreshToken, jwtConfig.refresh.secret);
+    const payload = await verify(refreshToken, getJwtConfig().refresh.secret);
 
     if (!payload.sub || typeof payload.sub !== 'string') {
       return json({ error: 'Invalid token payload' }, { status: 401 });

@@ -2,11 +2,11 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { storageService } from '$lib/services/storage';
 import { S3Client, type S3Config } from '$lib/utils/s3';
-import { sharedStorage } from '$lib/config';
+import { getStorageConfig } from '$lib/config';
 import type { StorageConfigRow } from '$lib/services/db/storage';
 
 function buildS3Config(config: StorageConfigRow): S3Config | null {
-  const endpoint = config.endpoint ?? sharedStorage.endpoint;
+  const endpoint = config.endpoint ?? getStorageConfig().endpoint;
 
   if (!endpoint) {
     return null;

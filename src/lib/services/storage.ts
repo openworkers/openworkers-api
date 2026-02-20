@@ -1,15 +1,15 @@
 import * as db from './db/storage';
 import * as usersDb from './db/users';
-import { sharedStorage } from '../config';
+import { getStorageConfig } from '../config';
 import { MASKED_SECRET } from '../types';
 import type { IStorageConfig, IStorageConfigCreateInput, IStorageConfigUpdateInput } from '../types';
 import { isUuid } from '../utils/validation';
 
 // Determine provider from storage config row
 function getProvider(row: db.StorageConfigRow): 'platform' | 's3' {
-  // Platform provider uses shared R2 (endpoint is null or matches sharedStorage endpoint)
+  // Platform provider uses shared R2 (endpoint is null or matches shared storage endpoint)
   // S3 provider has user-provided endpoint
-  return row.endpoint === null || row.endpoint === sharedStorage.endpoint ? 'platform' : 's3';
+  return row.endpoint === null || row.endpoint === getStorageConfig().endpoint ? 'platform' : 's3';
 }
 
 function rowToStorageConfig(row: db.StorageConfigRow): IStorageConfig {
@@ -91,6 +91,8 @@ export class StorageService {
 
     if (provider === 'platform') {
       // Platform provider: use shared R2 credentials with user-specific prefix
+      const sharedStorage = getStorageConfig();
+
       if (!sharedStorage.bucket || !sharedStorage.accessKeyId || !sharedStorage.secretAccessKey) {
         throw new Error('Shared storage is not configured on this platform');
       }

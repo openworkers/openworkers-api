@@ -1,7 +1,7 @@
 import { kysely } from './kysely-client';
 import { uuid, textArray, now } from './kysely-helpers';
 import { sql } from 'kysely';
-import { postgate } from '../../config';
+import { getPostgateConfig } from '../../config';
 import type { DatabaseOperation } from '../../types/schemas/database-token.schema';
 
 const SYSTEM_TOKEN_NAME = '__system__';
@@ -91,7 +91,7 @@ export async function updateTokenLastUsed(tokenId: string): Promise<void> {
 
 async function generateSystemToken(databaseId: string): Promise<string> {
   const encoder = new TextEncoder();
-  const keyData = encoder.encode(postgate.systemTokenSecret);
+  const keyData = encoder.encode(getPostgateConfig().systemTokenSecret);
   const message = encoder.encode(`system_token:${databaseId}`);
 
   const key = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);

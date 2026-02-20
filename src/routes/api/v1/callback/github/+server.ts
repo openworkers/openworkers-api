@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { authService } from '$lib/services/auth';
-import { github as githubConfig } from '$lib/config';
+import { getGithubConfig } from '$lib/config';
 import { LoginResponseSchema } from '$lib/types';
 import { jsonResponse } from '$lib/server/validate';
 
@@ -16,6 +16,8 @@ export const GET: RequestHandler = async ({ url }) => {
   if (!code) {
     return json({ error: 'Missing code parameter' }, { status: 400 });
   }
+
+  const githubConfig = getGithubConfig();
 
   if (!githubConfig.clientId || !githubConfig.clientSecret) {
     return json({ error: 'GitHub OAuth not configured' }, { status: 500 });

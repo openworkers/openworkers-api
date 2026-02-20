@@ -1,12 +1,14 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { mistral } from '$lib/config';
+import { getMistralConfig } from '$lib/config';
 
 const VOXTRAL_API_URL = 'https://api.mistral.ai/v1/audio/transcriptions';
 const VOXTRAL_MODEL = 'voxtral-mini-2507';
 
 // POST /api/v1/ai/transcribe - Transcribe audio using Voxtral
 export const POST: RequestHandler = async ({ request }) => {
+  const mistral = getMistralConfig();
+
   if (!mistral.apiKey) {
     return json({ error: 'Transcription service not configured' }, { status: 503 });
   }
