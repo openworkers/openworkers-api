@@ -3,8 +3,8 @@ import type { RequestHandler } from './$types';
 import { workersService } from '$lib/services/workers';
 import { WorkerCreateInputSchema, WorkerSchema } from '$lib/types';
 import { jsonResponse, jsonArrayResponse, parseAndValidate } from '$lib/server/validate';
-import defaultWorkerJs from '../../../../../examples/default-worker-js.txt';
-import defaultWorkerTs from '../../../../../examples/default-worker-ts.txt';
+import defaultWorkerJs from '../../../../../examples/default-worker-js.txt?raw';
+import defaultWorkerTs from '../../../../../examples/default-worker-ts.txt?raw';
 
 // GET /api/v1/workers - List all workers for current user
 export const GET: RequestHandler = async ({ locals }) => {
