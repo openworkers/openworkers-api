@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ResourceSchema, ResourceCreateInputSchema } from './base.schema';
 
 // Database provider enum
-export const DatabaseProviderSchema = z.enum(['platform', 'postgres']);
+export const DatabaseProviderSchema = z.enum(['platform', 'postgres', 'planetscale']);
 export type DatabaseProvider = z.infer<typeof DatabaseProviderSchema>;
 
 // Database schema (extends Resource: id, name, desc, createdAt, updatedAt)
@@ -29,10 +29,22 @@ export const DatabaseCreatePostgresInputSchema = ResourceCreateInputSchema.exten
   timeoutSeconds: z.number().int().positive().max(300).default(30)
 });
 
+// Create input for PlanetScale provider (OAuth-connected)
+export const DatabaseCreatePlanetScaleInputSchema = ResourceCreateInputSchema.extend({
+  provider: z.literal('planetscale'),
+  org: z.string().min(1),
+  database: z.string().min(1),
+  branch: z.string().min(1),
+  dbName: z.string().min(1).default('postgres'),
+  maxRows: z.number().int().positive().max(10000).default(1000),
+  timeoutSeconds: z.number().int().positive().max(300).default(30)
+});
+
 // Union of create inputs
 export const DatabaseCreateInputSchema = z.discriminatedUnion('provider', [
   DatabaseCreatePlatformInputSchema,
-  DatabaseCreatePostgresInputSchema
+  DatabaseCreatePostgresInputSchema,
+  DatabaseCreatePlanetScaleInputSchema
 ]);
 
 // ============================================================================

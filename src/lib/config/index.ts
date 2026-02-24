@@ -13,3 +13,5 @@ export { getMistralConfig } from './mistral';
 export type { MistralConfig } from './mistral';
 export { getEmailConfig } from './email';
 export type { EmailConfig } from './email';
+export { getPlanetScaleConfig } from './planetscale';
+export type { PlanetScaleConfig } from './planetscale';

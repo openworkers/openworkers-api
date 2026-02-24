@@ -140,7 +140,7 @@ export interface Database {
     userId: string;
     name: string;
     desc: string | null;
-    provider: 'platform' | 'postgres';
+    provider: 'platform' | 'postgres' | 'planetscale';
     connectionString: string | null;
     schemaName: string | null;
     maxRows: number;
@@ -173,6 +173,15 @@ export interface Database {
     priority: number;
     backendType: 'worker' | 'storage';
     workerId: string | null;
+    createdAt: Generated<Date>;
+    updatedAt: Generated<Date>;
+  };
+  planetscaleTokens: {
+    id: Generated<string>;
+    userId: string;
+    accessToken: string;
+    refreshToken: string;
+    expiresAt: Date;
     createdAt: Generated<Date>;
     updatedAt: Generated<Date>;
   };

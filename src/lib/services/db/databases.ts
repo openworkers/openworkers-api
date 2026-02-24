@@ -107,6 +107,33 @@ export async function createPostgresDatabase(userId: string, input: CreatePostgr
     .executeTakeFirstOrThrow();
 }
 
+interface CreatePlanetScaleInput {
+  name: string;
+  desc?: string | null;
+  connectionString: string;
+  maxRows: number;
+  timeoutSeconds: number;
+}
+
+export async function createPlanetScaleDatabase(
+  userId: string,
+  input: CreatePlanetScaleInput
+): Promise<DatabaseConfigRow> {
+  return kysely
+    .insertInto('databaseConfigs')
+    .values({
+      userId: uuid(userId),
+      name: input.name,
+      desc: input.desc ?? null,
+      provider: enumCast<DatabaseProvider>('planetscale', 'enum_database_provider'),
+      connectionString: input.connectionString,
+      maxRows: input.maxRows,
+      timeoutSeconds: input.timeoutSeconds
+    })
+    .returning(selectAttributes)
+    .executeTakeFirstOrThrow();
+}
+
 export async function deleteDatabase(userId: string, id: string): Promise<number> {
   const result = await kysely
     .deleteFrom('databaseConfigs')

@@ -15,7 +15,8 @@ const PUBLIC_ROUTES = new Set([
   '/api/v1/forgot-password',
   '/api/v1/reset-password',
   '/api/v1/resend-set-password',
-  '/api/v1/refresh'
+  '/api/v1/refresh',
+  '/api/v1/callback/planetscale'
 ]);
 
 export const handle: Handle = async ({ event, resolve }) => {

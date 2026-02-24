@@ -1,5 +1,6 @@
 import { sql } from './db/client';
 import * as db from './db/databases';
+import { planetScaleService } from './planetscale';
 import type { IDatabase, IDatabaseCreateInput } from '../types';
 import { isUuid } from '../utils/validation';
 
@@ -18,7 +19,7 @@ function toApiResponse(row: {
   id: string;
   name: string;
   desc: string | null;
-  provider: 'platform' | 'postgres';
+  provider: 'platform' | 'postgres' | 'planetscale';
   maxRows: number;
   timeoutSeconds: number;
   createdAt: Date;
@@ -41,6 +42,7 @@ export class DatabasesService {
    * Create a new database config
    * - platform provider: creates schema on shared pool
    * - postgres provider: stores connection string
+   * - planetscale provider: creates password via PlanetScale API, stores connection string
    */
   async create(userId: string, input: IDatabaseCreateInput): Promise<IDatabase> {
     if (input.provider === 'platform') {
@@ -55,6 +57,25 @@ export class DatabasesService {
         name: input.name,
         desc: input.desc,
         schemaName,
+        maxRows: input.maxRows,
+        timeoutSeconds: input.timeoutSeconds
+      });
+
+      return toApiResponse(row);
+    } else if (input.provider === 'planetscale') {
+      // Create a PlanetScale password and get connection string
+      const connectionString = await planetScaleService.createPassword(
+        userId,
+        input.org,
+        input.database,
+        input.branch,
+        input.dbName
+      );
+
+      const row = await db.createPlanetScaleDatabase(userId, {
+        name: input.name,
+        desc: input.desc,
+        connectionString,
         maxRows: input.maxRows,
         timeoutSeconds: input.timeoutSeconds
       });
