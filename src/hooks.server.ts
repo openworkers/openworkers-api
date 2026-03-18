@@ -2,7 +2,7 @@ import { json, type Handle } from '@sveltejs/kit';
 import { authenticate } from '$lib/server/auth';
 
 /** Route prefixes that don't require authentication */
-const PUBLIC_PREFIXES = ['/api/health'];
+const PUBLIC_PREFIXES = ['/api/health', '/api/domain/'];
 
 /** Routes that don't require authentication */
 const PUBLIC_ROUTES = new Set([
