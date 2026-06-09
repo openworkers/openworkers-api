@@ -35,18 +35,20 @@ export const handle: Handle = async ({ event, resolve }) => {
     return response;
   }
 
-  // Protected routes: require auth
-  if (path.startsWith('/api/')) {
-    const auth = await authenticate(event.request);
+  // Authenticate every request (pages included) so SSR loads can read
+  // locals.userId. Only /api enforces a 401 here; page routes handle their own
+  // redirects via layout guards.
+  const auth = await authenticate(event.request);
 
-    if (!auth) {
-      const ms = (performance.now() - start).toFixed(0);
-      console.log(`--> ${method} ${requestId} ${path} 401 ${ms}ms`);
-      return json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+  if (auth) {
     event.locals.userId = auth.userId;
     event.locals.authMethod = auth.authMethod;
+  }
+
+  if (path.startsWith('/api/') && !auth) {
+    const ms = (performance.now() - start).toFixed(0);
+    console.log(`--> ${method} ${requestId} ${path} 401 ${ms}ms`);
+    return json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const response = await resolve(event);

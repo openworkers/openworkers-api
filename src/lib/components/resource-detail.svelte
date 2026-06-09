@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { goto } from '$app/navigation';
   import { api, ApiError } from '$lib/api';
   import { Button } from '$lib/components/ui/button';
@@ -10,31 +10,34 @@
   import PageHeader from './page-header.svelte';
   import type { Snippet } from 'svelte';
 
-  type Resource = { id: string; name: string; desc?: string | null };
+  type Resource = { id: string; name: string | null; desc?: string | null };
 
   let {
     base,
     id,
     listHref,
-    extra
+    extra,
+    initialItem
   }: {
     base: string;
     id: string;
     listHref: string;
     extra?: Snippet<[Resource]>;
+    // SSR-provided item (from a +page.server.ts load) — skips the client fetch.
+    initialItem?: Resource;
   } = $props();
 
-  let item = $state<Resource | null>(null);
-  let name = $state('');
-  let desc = $state('');
-  let loading = $state(true);
+  let item = $state<Resource | null>(untrack(() => initialItem ?? null));
+  let name = $state(untrack(() => initialItem?.name ?? ''));
+  let desc = $state(untrack(() => initialItem?.desc ?? ''));
+  let loading = $state(untrack(() => !initialItem));
   let saving = $state(false);
   let error = $state<string | null>(null);
 
   async function load() {
     try {
       item = await api.get<Resource>(`/api/v1/${base}/${id}`);
-      name = item.name;
+      name = item.name ?? '';
       desc = item.desc ?? '';
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Failed to load';
@@ -68,7 +71,11 @@
     }
   }
 
-  onMount(load);
+  onMount(() => {
+    if (!initialItem) {
+      load();
+    }
+  });
 </script>
 
 <PageHeader title={item?.name ?? 'Loading…'}>

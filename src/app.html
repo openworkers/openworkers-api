@@ -1,11 +1,25 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="icon" href="/favicon-dark.ico" media="(prefers-color-scheme: dark)" sizes="64x64" />
+    <link rel="icon" href="/favicon-light.ico" media="(prefers-color-scheme: light)" sizes="64x64" />
+    <script>
+      // Pre-paint theme: runs before any bundle, so no flash of the wrong theme.
+      (function () {
+        try {
+          var t = localStorage.getItem('theme') || 'dark';
+          var el = document.documentElement;
+          if (t === 'dark') el.classList.add('dark');
+          el.style.backgroundColor = t === 'dark' ? '#09090b' : '#ffffff';
+        } catch (e) {}
+      })();
+    </script>
     %sveltekit.head%
   </head>
-  <body style="background-color: #09090b; color: #fafafa">
+  <body>
     %sveltekit.body%
   </body>
 </html>

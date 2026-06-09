@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { api, ApiError } from '$lib/api';
   import { Button } from '$lib/components/ui/button';
   import { Skeleton } from '$lib/components/ui/skeleton';
@@ -7,7 +7,7 @@
   import { Plus, Trash2 } from '@lucide/svelte';
   import PageHeader from './page-header.svelte';
 
-  type Row = { id: string; name: string; desc?: string | null; createdAt?: string | Date };
+  type Row = { id: string; name: string | null; desc?: string | null; createdAt?: string | Date };
 
   let {
     title,
@@ -15,7 +15,8 @@
     base,
     createHref,
     rowHref,
-    emptyLabel = 'Nothing here yet.'
+    emptyLabel = 'Nothing here yet.',
+    initialItems
   }: {
     title: string;
     description?: string;
@@ -23,10 +24,13 @@
     createHref: string;
     rowHref: (id: string) => string;
     emptyLabel?: string;
+    // When provided (e.g. from an SSR +page.server.ts load), skip the client
+    // fetch and render immediately.
+    initialItems?: Row[];
   } = $props();
 
-  let items = $state<Row[]>([]);
-  let loading = $state(true);
+  let items = $state<Row[]>(untrack(() => initialItems ?? []));
+  let loading = $state(untrack(() => !initialItems));
   let error = $state<string | null>(null);
 
   async function load() {
@@ -55,7 +59,11 @@
     }
   }
 
-  onMount(load);
+  onMount(() => {
+    if (!initialItems) {
+      load();
+    }
+  });
 </script>
 
 <PageHeader {title} {description}>
@@ -97,14 +105,14 @@
         {#each items as item (item.id)}
           <Table.Row class="cursor-pointer">
             <Table.Cell class="font-medium">
-              <a href={rowHref(item.id)} class="hover:underline">{item.name}</a>
+              <a href={rowHref(item.id)} class="hover:underline">{item.name ?? '(unnamed)'}</a>
             </Table.Cell>
             <Table.Cell class="text-muted-foreground">{item.desc ?? '—'}</Table.Cell>
             <Table.Cell>
               <Button
                 variant="ghost"
                 size="icon-sm"
-                onclick={() => remove(item.id, item.name)}
+                onclick={() => remove(item.id, item.name ?? '')}
                 aria-label="Delete"
               >
                 <Trash2 class="size-4" />
