@@ -42,6 +42,11 @@
         <path d="M5 12h14M12 5l7 7-7 7"/>
       </svg>
     </a>
+
+    <a href="/sign-in" class="btn-secondary">
+      Try the beta new UI
+      <span class="badge-beta">beta</span>
+    </a>
   </div>
 </main>
 
@@ -142,6 +147,40 @@
 
   .btn:hover svg {
     transform: translateX(2px);
+  }
+
+  .btn-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0.875rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #fafafa;
+    background: transparent;
+    border: 1px solid #27272a;
+    border-radius: 10px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .btn-secondary:hover {
+    background: #18181b;
+    border-color: #3f3f46;
+  }
+
+  .badge-beta {
+    background: #18181b;
+    border: 1px solid #27272a;
+    border-radius: 9999px;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #a1a1aa;
   }
 
   footer {

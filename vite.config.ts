@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { sveltekit } from '@sveltejs/kit/vite';
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, type Plugin } from 'vite';
 
 /**
@@ -85,7 +86,7 @@ if (!/^\d{1,5}$/.test(envPort || '')) {
 }
 
 export default defineConfig({
-  plugins: [cronerWasmInlinePlugin(), zodLocalesPlugin(), sveltekit()],
+  plugins: [cronerWasmInlinePlugin(), zodLocalesPlugin(), tailwindcss(), sveltekit()],
   server: {
     port: parseInt(process.env.PORT || '5173', 10)
   }
