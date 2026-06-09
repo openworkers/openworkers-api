@@ -10,7 +10,14 @@
 {#key id}
   <ResourceDetail base="environments" {id} listHref="/environments" initialItem={data.item}>
     {#snippet extra()}
-      <EnvironmentValues {id} />
+      <EnvironmentValues
+        {id}
+        values={data.item.values ?? []}
+        storage={data.storage}
+        kv={data.kv}
+        databases={data.databases}
+        workers={data.workers}
+      />
     {/snippet}
   </ResourceDetail>
 {/key}
