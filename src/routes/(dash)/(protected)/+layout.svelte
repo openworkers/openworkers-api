@@ -2,6 +2,7 @@
   import { page } from '$app/state';
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
+  import Logo from '$lib/components/logo.svelte';
   import { theme, toggleTheme } from '$lib/theme.svelte';
   import {
     Boxes,
@@ -33,11 +34,7 @@
 <div class="flex h-screen overflow-hidden">
   <aside class="bg-card flex h-screen w-60 shrink-0 flex-col border-r">
     <div class="flex items-center gap-2 px-4 py-4 font-semibold">
-      <svg viewBox="0 0 283.46 283.46" class="size-6 fill-foreground">
-        <path
-          d="m205.14,205.14l-95.11-95.12,31.71-31.71,63.41,63.41,63.38-63.39C245.26,31.89,197.22,0,141.73,0S38.21,31.89,14.94,78.34l95.09,95.1-31.7,31.7L.71,127.52c-.47,4.67-.71,9.41-.71,14.21,0,78.28,63.46,141.73,141.73,141.73s141.73-63.46,141.73-141.73c0-4.8-.24-9.54-.71-14.21l-77.62,77.62Z"
-        />
-      </svg>
+      <Logo class="size-6 fill-foreground" />
       OpenWorkers
     </div>
 

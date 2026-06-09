@@ -7,6 +7,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
+  import { Textarea } from '$lib/components/ui/textarea';
   import * as Card from '$lib/components/ui/card';
   import { Skeleton } from '$lib/components/ui/skeleton';
   import PageHeader from '$lib/components/page-header.svelte';
@@ -93,12 +94,7 @@
           </div>
           <div class="flex flex-col gap-2">
             <Label for="domains">Domains <span class="text-muted-foreground">(one per line)</span></Label>
-            <textarea
-              id="domains"
-              bind:value={domainsText}
-              rows="3"
-              class="border-input bg-background focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 font-mono text-sm outline-none focus-visible:ring-[3px]"
-            ></textarea>
+            <Textarea id="domains" bind:value={domainsText} rows={3} class="font-mono" />
           </div>
 
           {#if error}<p class="text-destructive text-sm">{error}</p>{/if}

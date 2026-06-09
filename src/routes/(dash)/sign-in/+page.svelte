@@ -116,9 +116,9 @@
     </Card.Content>
 
     <Card.Footer class="justify-center">
-      <button type="button" class="text-muted-foreground text-sm hover:underline" onclick={toggleMode}>
+      <Button variant="link" size="sm" class="text-muted-foreground" onclick={toggleMode}>
         {mode === 'login' ? "Don't have an account? Register" : 'Already have an account? Sign in'}
-      </button>
+      </Button>
     </Card.Footer>
   </Card.Root>
 </main>

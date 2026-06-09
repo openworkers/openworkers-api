@@ -4,6 +4,7 @@
   import { api, ApiError } from '$lib/api';
   import type { IWorker } from '$lib/types';
   import { Button } from '$lib/components/ui/button';
+  import { Textarea } from '$lib/components/ui/textarea';
   import PageHeader from '$lib/components/page-header.svelte';
 
   let id = $derived(page.params.id);
@@ -58,12 +59,12 @@
     <p class="mb-3 text-destructive text-sm">{error}</p>
   {/if}
 
-  <!-- TODO: swap this textarea for Monaco (needs vite worker config). -->
-  <textarea
+  <!-- TODO: swap this Textarea for Monaco (needs vite worker config). -->
+  <Textarea
     bind:value={script}
     spellcheck="false"
     disabled={loading}
-    class="border-input bg-card focus-visible:ring-ring/50 h-[70vh] w-full rounded-md border p-4 font-mono text-sm leading-relaxed outline-none focus-visible:ring-[3px]"
+    class="bg-card h-[70vh] p-4 font-mono leading-relaxed"
     placeholder={loading ? 'Loading…' : '// your worker code'}
-  ></textarea>
+  />
 </div>

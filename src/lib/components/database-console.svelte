@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { api, ApiError } from '$lib/api';
   import { Button } from '$lib/components/ui/button';
+  import { Textarea } from '$lib/components/ui/textarea';
   import * as Card from '$lib/components/ui/card';
   import * as Table from '$lib/components/ui/table';
 
@@ -54,12 +55,7 @@
     {/if}
   </Card.Header>
   <Card.Content class="flex flex-col gap-3">
-    <textarea
-      bind:value={sql}
-      rows="4"
-      spellcheck="false"
-      class="border-input bg-background focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 font-mono text-sm outline-none focus-visible:ring-[3px]"
-    ></textarea>
+    <Textarea bind:value={sql} rows={4} spellcheck="false" class="font-mono" />
 
     <div class="flex justify-end">
       <Button onclick={run} disabled={running}>{running ? 'Running…' : 'Run'}</Button>
