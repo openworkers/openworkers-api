@@ -14,7 +14,7 @@ import { createAuthToken, findAuthToken, deleteAuthToken, deleteUserTokens, TOKE
 import { sendSetPasswordEmail, sendPasswordResetEmail } from './email';
 import { hashPassword, verifyPassword } from '../utils/password';
 import type { ISelf } from '../types';
-import { getJwtConfig } from '../config';
+import { getJwtConfig, getGithubConfig } from '../config';
 
 interface GitHubUser {
   id: number;
@@ -23,7 +23,7 @@ interface GitHubUser {
 }
 
 // Parse JWT expiration to seconds
-function parseExpiration(exp: string): number {
+export function parseExpiration(exp: string): number {
   const value = parseInt(exp);
   const unit = exp.slice(-1);
 
@@ -94,6 +94,44 @@ export class AuthService {
     }
 
     return this.createTokens(user);
+  }
+
+  // Exchange a GitHub OAuth code for our user. Shared by the (deprecated) REST
+  // callback and the BFF callback load.
+  async loginWithGithub(code: string): Promise<ISelf> {
+    const github = getGithubConfig();
+
+    if (!github.clientId || !github.clientSecret) {
+      throw new Error('GitHub OAuth not configured');
+    }
+
+    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        client_id: github.clientId,
+        client_secret: github.clientSecret,
+        code
+      })
+    });
+
+    const tokenData = (await tokenResponse.json()) as { access_token?: string; error?: string };
+
+    if (!tokenData.access_token) {
+      throw new Error(tokenData.error ?? 'Failed to get GitHub access token');
+    }
+
+    const userResponse = await fetch('https://api.github.com/user', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}`, Accept: 'application/json' }
+    });
+
+    if (!(userResponse.headers.get('content-type') || '').includes('application/json')) {
+      throw new Error('Unexpected response from GitHub user API');
+    }
+
+    const githubUser = (await userResponse.json()) as GitHubUser;
+
+    return this.findOrCreateGitHubUser(githubUser);
   }
 
   // ============================================================================

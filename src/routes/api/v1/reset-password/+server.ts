@@ -1,3 +1,6 @@
+// @deprecated — kept for the legacy Angular dashboard. The new UI BFFs this
+// flow as a SvelteKit form action/load; tokens are set as HttpOnly cookies
+// server-side (see src/routes/(dash)/sign-in/**).
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { authService } from '$lib/services/auth';

@@ -1,5 +1,9 @@
 import { json, type Handle } from '@sveltejs/kit';
 import { authenticate } from '$lib/server/auth';
+import { setSession } from '$lib/server/auth-cookies';
+import { authService } from '$lib/services/auth';
+import { getJwtConfig } from '$lib/config';
+import { verify } from '$lib/utils/jwt';
 
 /** Route prefixes that don't require authentication */
 const PUBLIC_PREFIXES = ['/api/health', '/api/domain/'];
@@ -38,7 +42,28 @@ export const handle: Handle = async ({ event, resolve }) => {
   // Authenticate every request (pages included) so SSR loads can read
   // locals.userId. Only /api enforces a 401 here; page routes handle their own
   // redirects via layout guards.
-  const auth = await authenticate(event.request);
+  let auth = await authenticate(event.request);
+
+  // Transparent refresh (BFF): the access token is invalid/expired but a valid
+  // refresh cookie is present → mint a fresh session server-side and set new
+  // HttpOnly cookies. The browser never handles a token.
+  if (!auth) {
+    const refreshToken = event.cookies.get('refresh_token');
+
+    if (refreshToken) {
+      try {
+        const payload = await verify(refreshToken, getJwtConfig().refresh.secret);
+
+        if (typeof payload.sub === 'string') {
+          const tokens = await authService.refreshTokens(payload.sub);
+          setSession(event.cookies, tokens);
+          auth = { userId: payload.sub, authMethod: 'jwt' };
+        }
+      } catch {
+        // Invalid/expired refresh token — stay unauthenticated.
+      }
+    }
+  }
 
   if (auth) {
     event.locals.userId = auth.userId;
