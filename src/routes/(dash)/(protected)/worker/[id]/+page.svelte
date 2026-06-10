@@ -28,6 +28,21 @@
   let saving = $state(false);
   let error = $state<string | null>(null);
 
+  // SvelteKit reuses this component on param-only navigation between workers;
+  // reseed the form when the loaded worker changes so A's settings can never
+  // be saved onto B.
+  $effect(() => {
+    const w = data.worker;
+
+    untrack(() => {
+      worker = w;
+      name = w.name ?? '';
+      desc = w.desc ?? '';
+      domainsText = (w.domains ?? []).map((d) => d.name).join('\n');
+      error = null;
+    });
+  });
+
   async function saveSettings(event: SubmitEvent) {
     event.preventDefault();
     saving = true;
@@ -106,7 +121,10 @@
       </Card.Content>
     </Card.Root>
 
-    <WorkerCrons workerId={id} crons={worker.crons ?? []} />
+    <!-- Keyed: WorkerCrons seeds its cron list once at mount. -->
+    {#key id}
+      <WorkerCrons workerId={id} crons={worker.crons ?? []} />
+    {/key}
   {:else}
     <p class="text-destructive text-sm">{error}</p>
   {/if}
