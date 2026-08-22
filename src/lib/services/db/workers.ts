@@ -1,5 +1,5 @@
 import { kysely } from './kysely-client';
-import { uuid, uuidOrNull, enumCast, base64Decode, byteaToText, enumToText, asUuid } from './kysely-helpers';
+import { uuid, uuidOrNull, enumCast, base64Decode, enumToText, asUuid } from './kysely-helpers';
 import type { IWorker, IWorkerLanguage } from '../../types';
 import { sha256Hex, sha256HexUint8 } from '../../utils/crypto';
 import { base64Decode as base64ToBytes, stringToBase64 } from '../../utils/base64';
@@ -78,7 +78,14 @@ export async function findWorker(
       'w.createdAt',
       'w.updatedAt',
       enumToText<IWorkerLanguage>('wd.codeType').as('language'),
-      ...(includeScript ? [byteaToText('wd.code').as('script')] : []),
+      // Binary code has no text form; converting it would abort the query
+      ...(includeScript
+        ? [
+            sql<string | null>`CASE WHEN wd.code_type = 'wasm' THEN NULL ELSE convert_from(wd.code, 'UTF8') END`.as(
+              'script'
+            )
+          ]
+        : []),
       sql<IWorker['environment']>`(
         SELECT json_build_object(
           'id', e.id,
