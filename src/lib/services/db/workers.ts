@@ -1,8 +1,8 @@
 import { kysely } from './kysely-client';
 import { uuid, uuidOrNull, enumCast, base64Decode, byteaToText, enumToText, asUuid } from './kysely-helpers';
 import type { IWorker, IWorkerLanguage } from '../../types';
-import { sha256Hex } from '../../utils/crypto';
-import { stringToBase64 } from '../../utils/base64';
+import { sha256Hex, sha256HexUint8 } from '../../utils/crypto';
+import { base64Decode as base64ToBytes, stringToBase64 } from '../../utils/base64';
 import { isUuid } from '../../utils/validation';
 import { updateWorkerDomains } from './domains';
 import { sql } from 'kysely';
@@ -180,6 +180,8 @@ export async function updateWorker(
   updates: {
     name?: string;
     script?: string;
+    /** Binary worker code (wasm), already base64-encoded */
+    scriptBase64?: string;
     language?: IWorkerLanguage;
     environmentId?: string | null;
     domains?: string[];
@@ -205,9 +207,11 @@ export async function updateWorker(
     .execute();
 
   // Update script if provided
-  if (updates.script !== undefined) {
-    const hash = await sha256Hex(updates.script);
-    const codeBase64 = stringToBase64(updates.script);
+  if (updates.script !== undefined || updates.scriptBase64 !== undefined) {
+    const codeBase64 = updates.scriptBase64 ?? stringToBase64(updates.script!);
+    // Hash the decoded bytes: same digest as before for text scripts, and
+    // the same one the CLI computes for binary code
+    const hash = await sha256HexUint8(base64ToBytes(codeBase64));
 
     // Get next version
     const result = await kysely

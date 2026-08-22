@@ -26,6 +26,7 @@ export class WorkersService {
     return db.updateWorker(userId, id, {
       name: input.name,
       script: input.script,
+      scriptBase64: input.scriptBase64,
       language: input.language,
       environmentId: input.environment,
       domains: input.domains

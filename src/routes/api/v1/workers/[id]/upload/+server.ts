@@ -101,7 +101,7 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
       return json({ error: 'No worker.js or worker.ts found in zip archive' }, { status: 400 });
     }
 
-    const hash = await sha256HexUint8(workerScript.buffer as ArrayBuffer);
+    const hash = await sha256HexUint8(workerScript);
     const scriptBase64 = base64Encode(workerScript);
 
     let presignedAssets: Array<{ path: string; headUrl: string; putUrl: string }> = [];

@@ -64,7 +64,7 @@
 
   <CodeEditor
     bind:value={script}
-    language={worker.language ?? 'javascript'}
+    language={worker.language === 'wasm' ? 'javascript' : (worker.language ?? 'javascript')}
     {envValues}
     onsave={deploy}
     class="block h-[75vh] overflow-hidden rounded-md border"

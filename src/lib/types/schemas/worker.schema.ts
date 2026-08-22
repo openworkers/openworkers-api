@@ -5,7 +5,7 @@ import { ResourceUpdateInputSchema } from './base.schema';
 import { CronSchema } from './cron.schema';
 
 // Worker Language
-export const WorkerLanguageSchema = z.enum(['javascript', 'typescript']);
+export const WorkerLanguageSchema = z.enum(['javascript', 'typescript', 'wasm']);
 
 // Worker
 export const WorkerSchema = ResourceSchema.extend({
@@ -25,6 +25,7 @@ export const WorkerCreateInputSchema = ResourceCreateInputSchema.extend({
 
 export const WorkerUpdateInputSchema = ResourceUpdateInputSchema.extend({
   script: z.string().optional(),
+  scriptBase64: z.string().optional(),
   environment: z.uuid().nullable().optional(),
   language: WorkerLanguageSchema.optional(),
   domains: z.array(z.string()).optional()

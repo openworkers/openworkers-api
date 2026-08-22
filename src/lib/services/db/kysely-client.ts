@@ -152,7 +152,7 @@ export interface Database {
     workerId: string;
     version: number;
     hash: string;
-    codeType: 'javascript' | 'typescript' | 'python' | 'rust';
+    codeType: 'javascript' | 'typescript' | 'python' | 'rust' | 'wasm';
     code: Uint8Array;
     deployedBy: string;
     message: string | null;
