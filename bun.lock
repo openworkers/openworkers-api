@@ -20,7 +20,7 @@
       "devDependencies": {
         "@internationalized/date": "^3.12.0",
         "@openworkers/adapter-sveltekit": "^0.5.6",
-        "@openworkers/workers-types": "^0.1.9",
+        "@openworkers/workers-types": "^0.1.12",
         "@sveltejs/kit": "^2.0.0",
         "@sveltejs/vite-plugin-svelte": "^6.2.4",
         "@tailwindcss/vite": "^4.3.0",
@@ -121,7 +121,7 @@
 
     "@openworkers/croner-wasm": ["@openworkers/croner-wasm@0.3.1", "", {}, "sha512-03yc9hYWt4Fhu3K9kWw7cV3ig3aefMFMp3ylkqa1t/wWHSwelwzmepHRXlvKL8ZsegnDWK1yQuzS2oruspmLiA=="],
 
-    "@openworkers/workers-types": ["@openworkers/workers-types@0.1.9", "", { "peerDependencies": { "typescript": "^5.9.3" } }, "sha512-aaRfaOc/C/jl12w+QewCFed2eRLXdj1VaOmQOpjrUtA7kI5SDrMtx0FJf4QuVjyIH1fkn2YTt0xbEJZ81voYSw=="],
+    "@openworkers/workers-types": ["@openworkers/workers-types@0.1.12", "", { "peerDependencies": { "typescript": "^5.9.3" } }, "sha512-m0OCISLrZVqm8Go9PowN3sfOmz9s4HXBn0GJrOIRx5OYxAhaflj9+fcAiK6l3LwIqzwmOgbL+DE6GOgZ16nwLg=="],
 
     "@polka/url": ["@polka/url@1.0.0-next.29", "", {}, "sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww=="],
 
