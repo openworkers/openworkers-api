@@ -124,7 +124,8 @@ await env.KV.delete('session:abc');
 
 ## Database Binding
 
-SQL database queries with parameterized statements (SQL injection safe).
+SQL database queries with parameterized statements (SQL injection safe). The
+database is PostgreSQL: placeholders are $1, $2 and on, never ?.
 
 ```typescript
 interface BindingDatabase {
@@ -134,21 +135,21 @@ interface BindingDatabase {
 
 Example:
 ```typescript
-// Query with parameters (use ? placeholders)
+// Query with parameters ($1, $2 bind params in order)
 const users = await env.DB.query<{ id: number; name: string; email: string }>(
-  'SELECT * FROM users WHERE active = ? AND role = ?',
+  'SELECT * FROM users WHERE active = $1 AND role = $2',
   [true, 'admin']
 );
 
 // Insert
 await env.DB.query(
-  'INSERT INTO logs (message, level, created_at) VALUES (?, ?, NOW())',
+  'INSERT INTO logs (message, level, created_at) VALUES ($1, $2, NOW())',
   ['User logged in', 'info']
 );
 
 // Update
 await env.DB.query(
-  'UPDATE users SET last_login = NOW() WHERE id = ?',
+  'UPDATE users SET last_login = NOW() WHERE id = $1',
   [userId]
 );
 ```
@@ -239,7 +240,7 @@ export default {
 
     if (url.pathname === '/api/users' && request.method === 'POST') {
       const { name, email } = await request.json();
-      await env.DB.query('INSERT INTO users (name, email) VALUES (?, ?)', [name, email]);
+      await env.DB.query('INSERT INTO users (name, email) VALUES ($1, $2)', [name, email]);
       return Response.json({ success: true }, { status: 201 });
     }
 
