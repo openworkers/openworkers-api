@@ -14,7 +14,7 @@
   import { Skeleton } from '$lib/components/ui/skeleton';
   import PageHeader from '$lib/components/page-header.svelte';
   import WorkerCrons from '$lib/components/worker-crons.svelte';
-  import { Code, ExternalLink, ScrollText, Trash2 } from '@lucide/svelte';
+  import { ArrowRight, Code, ExternalLink, ScrollText, Trash2 } from '@lucide/svelte';
   import { workerUrl } from '$lib/utils/worker-url';
 
   let { data } = $props();
@@ -140,21 +140,33 @@
             <Input id="desc" bind:value={desc} />
           </div>
           <div class="flex flex-col gap-2">
-            <Label for="environment">
-              Environment
+            <Label for="environment">Environment</Label>
+            <div class="flex gap-2">
+              <Select.Root type="single" bind:value={environment}>
+                <Select.Trigger id="environment" class="flex-1">{environmentName}</Select.Trigger>
+                <Select.Content>
+                  <Select.Item value="" label="None">None</Select.Item>
+                  {#each data.environments as env (env.id)}
+                    <Select.Item value={env.id} label={env.name ?? env.id}>{env.name ?? env.id}</Select.Item>
+                  {/each}
+                </Select.Content>
+              </Select.Root>
               {#if environment}
-                <a href={`/environment/${environment}`} class="text-muted-foreground font-normal hover:underline">(open)</a>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  href={`/environment/${environment}`}
+                  aria-label="Open the environment"
+                  title="Open the environment"
+                >
+                  <ArrowRight class="size-4" />
+                </Button>
+              {:else}
+                <Button variant="outline" size="icon" disabled aria-label="No environment">
+                  <ArrowRight class="size-4" />
+                </Button>
               {/if}
-            </Label>
-            <Select.Root type="single" bind:value={environment}>
-              <Select.Trigger id="environment" class="w-full">{environmentName}</Select.Trigger>
-              <Select.Content>
-                <Select.Item value="" label="None">None</Select.Item>
-                {#each data.environments as env (env.id)}
-                  <Select.Item value={env.id} label={env.name ?? env.id}>{env.name ?? env.id}</Select.Item>
-                {/each}
-              </Select.Content>
-            </Select.Root>
+            </div>
           </div>
           <div class="flex flex-col gap-2">
             <Label for="domains">Domains <span class="text-muted-foreground">(one per line)</span></Label>
