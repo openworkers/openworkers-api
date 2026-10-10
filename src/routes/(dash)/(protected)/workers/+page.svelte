@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { page } from '$app/state';
   import ResourceList from '$lib/components/resource-list.svelte';
+  import { workerUrl } from '$lib/utils/worker-url';
 
   let { data } = $props();
 </script>
@@ -12,4 +14,6 @@
   rowHref={(id) => `/worker/${id}`}
   emptyLabel="No workers yet."
   initialItems={data.workers}
+  limit={data.profile.limits.workers}
+  viewHref={(worker) => workerUrl(worker.name ?? '', page.url.host)}
 />

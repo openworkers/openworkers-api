@@ -12,4 +12,5 @@
   rowHref={(id) => `/database/${id}`}
   emptyLabel="No databases yet."
   initialItems={data.items}
+  limit={data.profile.limits.databases}
 />

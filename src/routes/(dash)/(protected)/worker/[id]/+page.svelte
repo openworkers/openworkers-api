@@ -12,7 +12,8 @@
   import { Skeleton } from '$lib/components/ui/skeleton';
   import PageHeader from '$lib/components/page-header.svelte';
   import WorkerCrons from '$lib/components/worker-crons.svelte';
-  import { Code, ScrollText, Trash2 } from '@lucide/svelte';
+  import { Code, ExternalLink, ScrollText, Trash2 } from '@lucide/svelte';
+  import { workerUrl } from '$lib/utils/worker-url';
 
   let { data } = $props();
   let id = $derived(page.params.id!);
@@ -81,6 +82,17 @@
       <Code class="size-4" />
       Edit code
     </Button>
+    {#if worker?.name}
+      <Button
+        variant="outline"
+        href={workerUrl(worker.name, page.url.host)}
+        target="_blank"
+        rel="noopener"
+      >
+        <ExternalLink class="size-4" />
+        View
+      </Button>
+    {/if}
     <Button variant="outline" href={`/worker/${id}/logs`}>
       <ScrollText class="size-4" />
       Logs

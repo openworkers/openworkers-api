@@ -12,4 +12,5 @@
   rowHref={(id) => `/storage/${id}`}
   emptyLabel="No storage configs yet."
   initialItems={data.items}
+  limit={data.profile.limits.storage}
 />

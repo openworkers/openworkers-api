@@ -8,8 +8,9 @@
   import * as Card from '$lib/components/ui/card';
   import * as Table from '$lib/components/ui/table';
   import PageHeader from '$lib/components/page-header.svelte';
-  import { auth } from '$lib/auth.svelte';
   import { Trash2 } from '@lucide/svelte';
+
+  let { data } = $props();
 
   let keys = $state<IApiKey[]>([]);
   let newKeyName = $state('');
@@ -63,12 +64,26 @@
 <div class="flex max-w-3xl flex-col gap-6 p-8">
   <Card.Root>
     <Card.Header>
+      <Card.Title>Resource limits</Card.Title>
+    </Card.Header>
+    <Card.Content class="grid grid-cols-5 gap-4 text-center">
+      {#each [['Workers', data.profile.limits.workers], ['Environments', data.profile.limits.environments], ['Databases', data.profile.limits.databases], ['KV', data.profile.limits.kv], ['Storage', data.profile.limits.storage]] as [label, value] (label)}
+        <div>
+          <p class="text-2xl font-semibold">{value}</p>
+          <p class="text-muted-foreground text-sm">{label}</p>
+        </div>
+      {/each}
+    </Card.Content>
+  </Card.Root>
+
+  <Card.Root>
+    <Card.Header>
       <Card.Title>Profile</Card.Title>
     </Card.Header>
     <Card.Content class="flex items-center justify-between">
       <div>
-        <p class="font-medium">{auth.profile?.username ?? '—'}</p>
-        <p class="text-muted-foreground text-sm">{auth.profile?.id ?? ''}</p>
+        <p class="font-medium">{data.profile.username}</p>
+        <p class="text-muted-foreground text-sm">{data.profile.id}</p>
       </div>
       <form method="POST" action="/logout">
         <Button type="submit" variant="outline">Sign out</Button>

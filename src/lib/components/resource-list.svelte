@@ -4,7 +4,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Skeleton } from '$lib/components/ui/skeleton';
   import * as Table from '$lib/components/ui/table';
-  import { Plus, Trash2 } from '@lucide/svelte';
+  import { ExternalLink, Plus, Trash2 } from '@lucide/svelte';
   import PageHeader from './page-header.svelte';
 
   type Row = { id: string; name: string | null; desc?: string | null; createdAt?: string | Date };
@@ -16,7 +16,9 @@
     createHref,
     rowHref,
     emptyLabel = 'Nothing here yet.',
-    initialItems
+    initialItems,
+    limit,
+    viewHref
   }: {
     title: string;
     description?: string;
@@ -27,11 +29,16 @@
     // When provided (e.g. from an SSR +page.server.ts load), skip the client
     // fetch and render immediately.
     initialItems?: Row[];
+    // The most items the account can create; New is disabled at the limit.
+    limit?: number;
+    // A public URL of the item, opened in a new tab.
+    viewHref?: (item: Row) => string;
   } = $props();
 
   let items = $state<Row[]>(untrack(() => initialItems ?? []));
   let loading = $state(untrack(() => !initialItems));
   let error = $state<string | null>(null);
+  let full = $derived(limit !== undefined && items.length >= limit);
 
   async function load() {
     loading = true;
@@ -68,10 +75,20 @@
 
 <PageHeader {title} {description}>
   {#snippet actions()}
-    <Button href={createHref}>
-      <Plus class="size-4" />
-      New
-    </Button>
+    {#if limit !== undefined}
+      <span class="text-muted-foreground text-sm">{items.length} / {limit}</span>
+    {/if}
+    {#if full}
+      <Button disabled title={`Maximum of ${limit} reached`}>
+        <Plus class="size-4" />
+        New
+      </Button>
+    {:else}
+      <Button href={createHref}>
+        <Plus class="size-4" />
+        New
+      </Button>
+    {/if}
   {/snippet}
 </PageHeader>
 
@@ -98,7 +115,7 @@
         <Table.Row>
           <Table.Head>Name</Table.Head>
           <Table.Head>Description</Table.Head>
-          <Table.Head class="w-12"></Table.Head>
+          <Table.Head class={viewHref ? 'w-24' : 'w-12'}></Table.Head>
         </Table.Row>
       </Table.Header>
       <Table.Body>
@@ -108,7 +125,20 @@
               <a href={rowHref(item.id)} class="hover:underline">{item.name ?? '(unnamed)'}</a>
             </Table.Cell>
             <Table.Cell class="text-muted-foreground">{item.desc ?? '—'}</Table.Cell>
-            <Table.Cell>
+            <Table.Cell class="text-right">
+              {#if viewHref}
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  href={viewHref(item)}
+                  target="_blank"
+                  rel="noopener"
+                  aria-label="View"
+                  title="View"
+                >
+                  <ExternalLink class="size-4" />
+                </Button>
+              {/if}
               <Button
                 variant="ghost"
                 size="icon-sm"
