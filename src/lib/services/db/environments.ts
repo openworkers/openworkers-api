@@ -277,3 +277,34 @@ export async function deleteEnvironmentValuesByEnvId(userId: string, envId: stri
 
   return result.length;
 }
+
+export interface BindingUsage {
+  environmentId: string;
+  environmentName: string;
+  key: string;
+  workers: { id: string; name: string }[];
+}
+
+/** The environments that bind a resource, with the workers that use each. */
+export async function findBindingUsages(userId: string, resourceId: string): Promise<BindingUsage[]> {
+  const result = await sql<BindingUsage>`
+    SELECT
+      e.id as "environmentId",
+      e.name as "environmentName",
+      ev.key,
+      (
+        SELECT coalesce(json_agg(json_build_object('id', w.id, 'name', w.name) ORDER BY w.name), '[]'::json)
+        FROM workers w
+        WHERE w.environment_id = e.id
+          AND w.name IS NOT NULL
+      ) as workers
+    FROM environment_values ev
+    JOIN environments e ON e.id = ev.environment_id
+    WHERE ev.user_id = ${uuid(userId)}
+      AND ev.value = ${resourceId}
+      AND ev.type IN ('assets', 'storage', 'kv', 'database', 'worker')
+    ORDER BY e.name, ev.key
+  `.execute(kysely);
+
+  return result.rows;
+}

@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { kvService } from '$lib/services/kv';
+import { environmentsService } from '$lib/services/environments';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
@@ -9,5 +10,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
     throw error(404, 'Not found');
   }
 
-  return { item };
+  const usages = await environmentsService.findBindingUsages(locals.userId, item.id);
+
+  return { item, usages };
 };

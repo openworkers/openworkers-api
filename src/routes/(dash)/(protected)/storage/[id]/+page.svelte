@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import ResourceDetail from '$lib/components/resource-detail.svelte';
+  import ResourceUsages from '$lib/components/resource-usages.svelte';
   import StorageS3Settings from '$lib/components/storage-s3-settings.svelte';
   import { Badge } from '$lib/components/ui/badge';
 
@@ -31,6 +32,7 @@
       {#if s.provider === 's3'}
         <StorageS3Settings {id} config={s} />
       {/if}
+      <ResourceUsages usages={data.usages} />
     {/snippet}
   </ResourceDetail>
 {/key}

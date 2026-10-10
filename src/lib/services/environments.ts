@@ -17,6 +17,10 @@ export class EnvironmentsService {
     return db.findEnvironmentById(userId, id);
   }
 
+  async findBindingUsages(userId: string, resourceId: string): Promise<db.BindingUsage[]> {
+    return db.findBindingUsages(userId, resourceId);
+  }
+
   async findByName(userId: string, name: string): Promise<IEnvironment | null> {
     return db.findEnvironmentByName(userId, name);
   }
