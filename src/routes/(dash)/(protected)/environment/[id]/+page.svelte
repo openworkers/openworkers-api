@@ -2,6 +2,7 @@
   import { page } from '$app/state';
   import ResourceDetail from '$lib/components/resource-detail.svelte';
   import EnvironmentValues from '$lib/components/environment-values.svelte';
+  import * as Card from '$lib/components/ui/card';
 
   let { data } = $props();
   let id = $derived(page.params.id!);
@@ -18,6 +19,26 @@
         databases={data.databases}
         workers={data.workers}
       />
+
+      <Card.Root>
+        <Card.Header>
+          <Card.Title>Workers</Card.Title>
+          <Card.Description>The workers that use this environment.</Card.Description>
+        </Card.Header>
+        <Card.Content>
+          {#if data.item.workers?.length}
+            <ul class="flex flex-col gap-1">
+              {#each data.item.workers as worker (worker.id)}
+                <li><a href={`/worker/${worker.id}`} class="hover:underline">{worker.name}</a></li>
+              {/each}
+            </ul>
+          {:else}
+            <p class="text-muted-foreground text-sm">
+              No worker uses this environment. Choose it on the page of a worker.
+            </p>
+          {/if}
+        </Card.Content>
+      </Card.Root>
     {/snippet}
   </ResourceDetail>
 {/key}

@@ -3,11 +3,13 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import { api, ApiError } from '$lib/api';
+  import { confirmDialog } from '$lib/confirm.svelte';
   import type { IWorker } from '$lib/types';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { Textarea } from '$lib/components/ui/textarea';
+  import * as Select from '$lib/components/ui/select';
   import * as Card from '$lib/components/ui/card';
   import { Skeleton } from '$lib/components/ui/skeleton';
   import PageHeader from '$lib/components/page-header.svelte';
@@ -25,6 +27,11 @@
   let domainsText = $state(
     untrack(() => (data.worker.domains ?? []).map((d) => d.name).join('\n'))
   );
+  // '' is no environment
+  let environment = $state(untrack(() => data.worker.environment?.id ?? ''));
+  let environmentName = $derived(
+    data.environments.find((e) => e.id === environment)?.name ?? 'None'
+  );
   let loading = $state(false);
   let saving = $state(false);
   let error = $state<string | null>(null);
@@ -40,6 +47,7 @@
       name = w.name ?? '';
       desc = w.desc ?? '';
       domainsText = (w.domains ?? []).map((d) => d.name).join('\n');
+      environment = w.environment?.id ?? '';
       error = null;
     });
   });
@@ -55,7 +63,12 @@
       .filter(Boolean);
 
     try {
-      await api.patch(`/api/v1/workers/${id}`, { name, desc: desc || null, domains });
+      await api.patch(`/api/v1/workers/${id}`, {
+        name,
+        desc: desc || null,
+        domains,
+        environment: environment || null
+      });
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Failed to save';
     } finally {
@@ -64,7 +77,14 @@
   }
 
   async function remove() {
-    if (!confirm(`Delete worker "${worker?.name}"?`)) return;
+    const confirmed = await confirmDialog({
+      title: `Delete ${worker?.name ?? 'this worker'}`,
+      message: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true
+    });
+
+    if (!confirmed) return;
 
     try {
       await api.del(`/api/v1/workers/${id}`);
@@ -118,6 +138,23 @@
           <div class="flex flex-col gap-2">
             <Label for="desc">Description</Label>
             <Input id="desc" bind:value={desc} />
+          </div>
+          <div class="flex flex-col gap-2">
+            <Label for="environment">
+              Environment
+              {#if environment}
+                <a href={`/environment/${environment}`} class="text-muted-foreground font-normal hover:underline">(open)</a>
+              {/if}
+            </Label>
+            <Select.Root type="single" bind:value={environment}>
+              <Select.Trigger id="environment" class="w-full">{environmentName}</Select.Trigger>
+              <Select.Content>
+                <Select.Item value="" label="None">None</Select.Item>
+                {#each data.environments as env (env.id)}
+                  <Select.Item value={env.id} label={env.name ?? env.id}>{env.name ?? env.id}</Select.Item>
+                {/each}
+              </Select.Content>
+            </Select.Root>
           </div>
           <div class="flex flex-col gap-2">
             <Label for="domains">Domains <span class="text-muted-foreground">(one per line)</span></Label>

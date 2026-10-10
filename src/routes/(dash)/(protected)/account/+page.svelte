@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api, ApiError } from '$lib/api';
+  import { confirmDialog } from '$lib/confirm.svelte';
   import type { IApiKey, IApiKeyCreateResponse } from '$lib/types';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -46,7 +47,14 @@
   }
 
   async function removeKey(id: string, name: string) {
-    if (!confirm(`Revoke API key "${name}"?`)) return;
+    const confirmed = await confirmDialog({
+      title: `Revoke ${name}`,
+      message: 'A client that uses this API key can no longer authenticate.',
+      confirmLabel: 'Revoke',
+      destructive: true
+    });
+
+    if (!confirmed) return;
 
     try {
       await api.del(`/api/v1/api-keys/${id}`);

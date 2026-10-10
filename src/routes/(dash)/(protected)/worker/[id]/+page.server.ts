@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { workersService } from '$lib/services/workers';
+import { environmentsService } from '$lib/services/environments';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
@@ -9,5 +10,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
     throw error(404, 'Not found');
   }
 
-  return { worker };
+  const environments = await environmentsService.findAll(locals.userId);
+
+  return { worker, environments };
 };

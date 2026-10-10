@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
   import Logo from '$lib/components/logo.svelte';
+  import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
   import { theme, toggleTheme } from '$lib/theme.svelte';
   import {
     Boxes,
@@ -93,3 +94,5 @@
     {@render children?.()}
   </main>
 </div>
+
+<ConfirmDialog />

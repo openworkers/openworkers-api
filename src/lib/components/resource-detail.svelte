@@ -2,6 +2,7 @@
   import { onMount, untrack } from 'svelte';
   import { goto } from '$app/navigation';
   import { api, ApiError } from '$lib/api';
+  import { confirmDialog } from '$lib/confirm.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
@@ -61,7 +62,14 @@
   }
 
   async function remove() {
-    if (!confirm(`Delete "${item?.name}"? This cannot be undone.`)) return;
+    const confirmed = await confirmDialog({
+      title: `Delete ${item?.name ?? 'this resource'}`,
+      message: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true
+    });
+
+    if (!confirmed) return;
 
     try {
       await api.del(`/api/v1/${base}/${id}`);

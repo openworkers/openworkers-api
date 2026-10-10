@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
   import { api, ApiError } from '$lib/api';
+  import { confirmDialog } from '$lib/confirm.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Skeleton } from '$lib/components/ui/skeleton';
   import * as Table from '$lib/components/ui/table';
@@ -54,7 +55,14 @@
   }
 
   async function remove(id: string, name: string) {
-    if (!confirm(`Delete "${name}"? This cannot be undone.`)) {
+    const confirmed = await confirmDialog({
+      title: `Delete ${name}`,
+      message: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true
+    });
+
+    if (!confirmed) {
       return;
     }
 

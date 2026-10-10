@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { api, ApiError } from '$lib/api';
+  import { confirmDialog } from '$lib/confirm.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
@@ -76,6 +77,11 @@
     return keys.find((k, i) => k && keys.indexOf(k) !== i) ?? null;
   });
 
+  // A changed row needs a key, and a value or a resource
+  let incomplete = $derived(
+    rows.some((r) => !r.deleted && rowChanged(r) && (!r.key.trim() || !r.value))
+  );
+
   function addVariable() {
     rows = [
       ...rows,
@@ -87,8 +93,15 @@
     r.type = r.type === 'secret' ? 'var' : 'secret';
   }
 
-  function resetSecret(r: Row) {
-    if (!confirm('Reset this secret? Its value will be cleared.')) return;
+  async function resetSecret(r: Row) {
+    const confirmed = await confirmDialog({
+      title: `Reset ${r.key}`,
+      message: 'The value of this secret will be cleared.',
+      confirmLabel: 'Reset',
+      destructive: true
+    });
+
+    if (!confirmed) return;
     r.value = '';
     r.type = 'var';
   }
@@ -126,7 +139,7 @@
   }
 
   async function save() {
-    if (duplicateKey) return;
+    if (duplicateKey || incomplete) return;
     saving = true;
     error = null;
 
@@ -247,6 +260,8 @@
 
     {#if duplicateKey}
       <p class="text-destructive text-xs">Duplicate key: {duplicateKey}</p>
+    {:else if incomplete}
+      <p class="text-destructive text-xs">Each variable needs a key and a value.</p>
     {/if}
     {#if error}
       <p class="text-destructive text-sm">{error}</p>
@@ -274,7 +289,7 @@
       {#if dirty}
         <div class="flex gap-2">
           <Button variant="ghost" size="sm" onclick={reset}>Reset</Button>
-          <Button size="sm" onclick={save} disabled={saving || !!duplicateKey}>
+          <Button size="sm" onclick={save} disabled={saving || !!duplicateKey || incomplete}>
             {saving ? 'Saving…' : 'Save'}
           </Button>
         </div>
