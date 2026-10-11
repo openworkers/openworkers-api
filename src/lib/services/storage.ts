@@ -19,6 +19,11 @@ function getProvider(row: db.StorageConfigRow): 'platform' | 's3' {
   return row.endpoint === null || row.endpoint === getStorageConfig().endpoint ? 'platform' : 's3';
 }
 
+// Also true for a row with the shared key but another endpoint, in case the provider detection misses it
+function usesSharedStorage(row: db.StorageConfigRow): boolean {
+  return getProvider(row) === 'platform' || row.accessKeyId === getStorageConfig().accessKeyId;
+}
+
 function rowToStorageConfig(row: db.StorageConfigRow): IStorageConfig {
   const provider = getProvider(row);
 
@@ -136,7 +141,16 @@ export class StorageService {
   }
 
   async update(userId: string, id: string, input: IStorageConfigUpdateInput): Promise<IStorageConfig | null> {
-    const { name } = input;
+    const { name, desc: _desc, ...location } = input;
+
+    // A platform config holds the shared credentials, and its prefix is what isolates the tenants
+    if (Object.values(location).some((value) => value !== undefined)) {
+      const current = await db.findStorageConfigById(userId, id);
+
+      if (current && usesSharedStorage(current)) {
+        throw new ServiceError('A platform storage config accepts only a new name and description', 400);
+      }
+    }
 
     // If renaming, check if new name already exists
     if (name) {
