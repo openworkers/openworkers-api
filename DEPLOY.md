@@ -124,25 +124,7 @@ ow infra env set openworkers-api-env JWT_ACCESS_SECRET --secret
 
 Bindings (`DATABASE`, `ASSETS`) are set with `ow infra env bind` during the initial setup (see step 5 above). They connect the worker to its database and assets storage at runtime.
 
-In worker mode, the `DATABASE` binding provides direct database access — no Postgate HTTP proxy needed. `POSTGATE_URL` and `POSTGATE_TOKEN` are only required in Docker mode, where there are no runtime bindings.
-
-## Docker mode
-
-```bash
-docker build -t openworkers-api .
-docker run -p 7000:7000 --env-file .env openworkers-api
-```
-
-Or without Docker:
-
-```bash
-bun run build
-bun start
-```
-
-The server listens on `PORT` (default `7000`).
-
-In Docker mode, `POSTGATE_URL` and `POSTGATE_TOKEN` must be set in `.env` to connect to the Postgate HTTP proxy. All other environment variables from the README also apply (without the bindings).
+The `DATABASE` binding gives the worker direct database access, without the Postgate HTTP proxy. `POSTGATE_URL` and `POSTGATE_TOKEN` are only for `bun dev`, which has no bindings.
 
 ## Managing projects
 

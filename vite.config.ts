@@ -86,8 +86,6 @@ if (envPort !== undefined && !/^\d{1,5}$/.test(envPort)) {
   console.warn(`Warning: Invalid PORT environment variable "${envPort}", defaulting to 5173`);
 }
 
-const workerAdapter = adapter({ functions: false, debug: { prettier: false } });
-
 export default defineConfig({
   plugins: [
     cronerWasmInlinePlugin(),
@@ -95,13 +93,7 @@ export default defineConfig({
     tailwindcss(),
     sveltekit({
       inlineStyleThreshold: Number.POSITIVE_INFINITY,
-      adapter: {
-        ...workerAdapter,
-        async adapt(builder) {
-          await workerAdapter.adapt(builder);
-          builder.generateServerInstance('.svelte-kit/output/server/instance.js');
-        }
-      },
+      adapter: adapter({ functions: false, debug: { prettier: false } }),
       csrf: { trustedOrigins: ['*'] },
       prerender: { entries: [] }
     })
