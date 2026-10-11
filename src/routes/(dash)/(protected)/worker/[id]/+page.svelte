@@ -105,7 +105,7 @@
     {#if worker?.name}
       <Button
         variant="outline"
-        href={workerUrl(worker.name, page.url.host)}
+        href={workerUrl(worker.name, page.url.host, page.data.workerDomain)}
         target="_blank"
         rel="noopener"
       >

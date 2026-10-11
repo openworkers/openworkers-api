@@ -15,5 +15,5 @@
   emptyLabel="No workers yet."
   initialItems={data.workers}
   limit={data.profile.limits.workers}
-  viewHref={(worker) => workerUrl(worker.name ?? '', page.url.host)}
+  viewHref={(worker) => workerUrl(worker.name ?? '', page.url.host, page.data.workerDomain)}
 />

@@ -136,6 +136,7 @@ reaches the database through Postgate HTTP, with `POSTGATE_URL` and
 | `APP_URL`                          | var     | yes      | Dashboard URL (for OAuth redirects)      |
 | `JWT_ACCESS_SECRET`                | secret  | yes      | JWT signing secret (>= 32 chars)         |
 | `JWT_REFRESH_SECRET`               | secret  | yes      | JWT refresh token secret (>= 32 chars)   |
+| `WORKER_DOMAIN`                    | var     | no       | Domain of the worker links               |
 | `GITHUB_CLIENT_ID`                 | var     | no       | GitHub OAuth app client ID               |
 | `GITHUB_CLIENT_SECRET`             | secret  | no       | GitHub OAuth app client secret           |
 | `MISTRAL_API_KEY`                  | secret  | no       | Mistral AI API key (transcription)       |

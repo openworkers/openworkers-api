@@ -1,5 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { findUserById } from '#lib/services/db/index.ts';
+import { getEnv } from '#lib/config/env.ts';
 import type { LayoutServerLoad } from './$types';
 
 // Server-side auth guard for the whole dashboard. locals.userId is set by the
@@ -16,5 +17,5 @@ export const load: LayoutServerLoad = async ({ locals }) => {
     throw redirect(307, '/sign-in');
   }
 
-  return { profile };
+  return { profile, workerDomain: getEnv('WORKER_DOMAIN') ?? null };
 };
