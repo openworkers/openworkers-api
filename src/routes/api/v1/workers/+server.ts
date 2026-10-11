@@ -2,8 +2,7 @@ import type { RequestHandler } from './$types';
 import { workersService } from '#lib/services/workers.ts';
 import { WorkerCreateInputSchema, WorkerSchema } from '#lib/types/index.ts';
 import { jsonResponse, jsonArrayResponse, parseAndValidate } from '#lib/server/validate.ts';
-import defaultWorkerJs from '../../../../../examples/default-worker-js.txt?raw';
-import defaultWorkerTs from '../../../../../examples/default-worker-ts.txt?raw';
+import { defaultWorkerScript } from '#lib/server/default-worker.ts';
 
 // GET /api/v1/workers - List all workers for current user
 export const GET: RequestHandler = async ({ locals }) => {
@@ -24,8 +23,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
   const payload = await parseAndValidate(request, WorkerCreateInputSchema);
 
   try {
-    const defaultScript = payload.language === 'typescript' ? defaultWorkerTs : defaultWorkerJs;
-    const script = payload.script ?? defaultScript;
+    const script = payload.script ?? defaultWorkerScript(payload.language);
 
     const worker = await workersService.create(userId, {
       name: payload.name,

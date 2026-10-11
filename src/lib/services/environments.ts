@@ -7,6 +7,7 @@ import type {
   IEnvironmentValueUpdateInput
 } from '../types';
 import { isUuid } from '../utils/validation';
+import { ServiceError } from './errors';
 
 export class EnvironmentsService {
   async findAll(userId: string): Promise<IEnvironment[]> {
@@ -30,6 +31,10 @@ export class EnvironmentsService {
   }
 
   async create(userId: string, input: IEnvironmentCreateInput): Promise<IEnvironment> {
+    if (await db.findEnvironmentByName(userId, input.name)) {
+      throw new ServiceError(`Environment with name "${input.name}" already exists`);
+    }
+
     return db.createEnvironment(userId, input.name, input.desc);
   }
 

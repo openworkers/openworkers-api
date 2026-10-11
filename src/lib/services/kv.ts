@@ -3,6 +3,7 @@ import * as usersDb from './db/users';
 import type { IKvNamespace, IKvNamespaceCreateInput, IKvNamespaceUpdateInput } from '../types';
 import type { KvDataRow, KvDataListResult } from './db/kv';
 import { isUuid } from '../utils/validation';
+import { ServiceError } from './errors';
 
 export class KvService {
   async findAll(userId: string): Promise<IKvNamespace[]> {
@@ -66,14 +67,14 @@ export class KvService {
     const count = await db.countKvNamespaces(userId);
 
     if (count >= user.limits.kv) {
-      throw new Error(`KV namespace limit reached (${user.limits.kv})`);
+      throw new ServiceError(`KV namespace limit reached (${user.limits.kv})`);
     }
 
     // Check if name already exists
     const existing = await db.findKvNamespaceByName(userId, name);
 
     if (existing) {
-      throw new Error(`KV namespace with name "${name}" already exists`);
+      throw new ServiceError(`KV namespace with name "${name}" already exists`);
     }
 
     const row = await db.createKvNamespace(userId, name, desc);
@@ -95,7 +96,7 @@ export class KvService {
       const existing = await db.findKvNamespaceByName(userId, name);
 
       if (existing && existing.id !== id) {
-        throw new Error(`KV namespace with name "${name}" already exists`);
+        throw new ServiceError(`KV namespace with name "${name}" already exists`);
       }
     }
 

@@ -1,8 +1,9 @@
 import * as db from './db/storage';
 import * as usersDb from './db/users';
 import { getStorageConfig, sharedStorageConfigured } from '../config';
+import { ServiceError } from './errors';
 
-export class PlatformStorageUnavailable extends Error {
+export class PlatformStorageUnavailable extends ServiceError {
   constructor() {
     super('Shared storage is not configured on this platform');
   }
@@ -83,14 +84,14 @@ export class StorageService {
     const count = await db.countStorageConfigs(userId);
 
     if (count >= user.limits.storage) {
-      throw new Error(`Storage config limit reached (${user.limits.storage})`);
+      throw new ServiceError(`Storage config limit reached (${user.limits.storage})`);
     }
 
     // Check if name already exists
     const existing = await db.findStorageConfigByName(userId, name);
 
     if (existing) {
-      throw new Error(`Storage config with name "${name}" already exists`);
+      throw new ServiceError(`Storage config with name "${name}" already exists`);
     }
 
     let row: db.StorageConfigRow;
@@ -142,7 +143,7 @@ export class StorageService {
       const existing = await db.findStorageConfigByName(userId, name);
 
       if (existing && existing.id !== id) {
-        throw new Error(`Storage config with name "${name}" already exists`);
+        throw new ServiceError(`Storage config with name "${name}" already exists`);
       }
     }
 
