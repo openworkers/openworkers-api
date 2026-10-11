@@ -82,9 +82,14 @@ export const handle: Handle = async ({ event, resolve }) => {
   return response;
 };
 
-export const handleError: HandleServerError = ({ kind, error }) => {
+export const handleError: HandleServerError = ({ event, kind, error }) => {
   // A malformed id in the URL reaches PostgreSQL as an invalid uuid; it names no resource, so it is a 404.
   if (kind === 'unknown' && error instanceof Error && error.message.includes('invalid input syntax for type uuid')) {
     return { status: 404, message: 'Not Found' };
+  }
+
+  // A custom handleError replaces the default one, which logs the error
+  if (kind === 'unknown') {
+    console.error(`Unexpected error on ${event.request.method} ${event.url.pathname}:`, error);
   }
 };
