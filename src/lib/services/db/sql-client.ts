@@ -140,7 +140,6 @@ export const sql: PostgateSqlClient = async function sql<T = Record<string, unkn
   query: string,
   params?: unknown[] | NamedParams
 ): Promise<SqlResult<T>> {
-
   if (!defaultClient) {
     defaultClient = getDefaultSqlClient();
   }

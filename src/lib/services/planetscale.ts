@@ -183,29 +183,21 @@ async function createPassword(
 
   // Try Postgres roles endpoint first, fall back to Vitess passwords
   try {
-    const data = await apiRequest<PostgresRoleResponse>(
-      userId,
-      `${basePath}/roles`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          name: `ow-${crypto.randomUUID().slice(0, 8)}`,
-          inherited_roles: ['pg_read_all_data', 'pg_write_all_data']
-        })
-      }
-    );
+    const data = await apiRequest<PostgresRoleResponse>(userId, `${basePath}/roles`, {
+      method: 'POST',
+      body: JSON.stringify({
+        name: `ow-${crypto.randomUUID().slice(0, 8)}`,
+        inherited_roles: ['pg_read_all_data', 'pg_write_all_data']
+      })
+    });
 
     return `postgresql://${data.username}:${encodeURIComponent(data.password)}@${data.access_host_url}/${dbName}?sslmode=require`;
   } catch (err) {
     // If roles endpoint fails (Vitess DB), try passwords endpoint
-    const data = await apiRequest<VitessPasswordResponse>(
-      userId,
-      `${basePath}/passwords`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ role: 'readwriter' })
-      }
-    );
+    const data = await apiRequest<VitessPasswordResponse>(userId, `${basePath}/passwords`, {
+      method: 'POST',
+      body: JSON.stringify({ role: 'readwriter' })
+    });
 
     return `mysql://${data.username}:${encodeURIComponent(data.plain_text)}@${data.access_host_url}/${dbName}?ssl={"rejectUnauthorized":true}`;
   }

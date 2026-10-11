@@ -65,7 +65,11 @@ import {
   StorageConfigUpdateInputSchema
 } from '../src/lib/types/schemas/storage.schema';
 
-import { ApiKeySchema, ApiKeyCreateInputSchema, ApiKeyCreateResponseSchema } from '../src/lib/types/schemas/api-key.schema';
+import {
+  ApiKeySchema,
+  ApiKeyCreateInputSchema,
+  ApiKeyCreateResponseSchema
+} from '../src/lib/types/schemas/api-key.schema';
 
 // Schema definitions to generate
 const schemas = [
