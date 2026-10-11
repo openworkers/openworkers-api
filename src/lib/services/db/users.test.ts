@@ -88,7 +88,7 @@ describe('Users service - Kysely SQL generation', () => {
       .compile();
 
     expect(query.sql).toContain('insert into "external_users"');
-    expect(query.sql).toContain('values ($1, $2, $3::uuid)');
+    expect(query.sql).toContain('values ($1, $2::enum_external_users_provider, $3::uuid)');
     expect(query.parameters).toEqual([externalId, 'github', userId]);
   });
 });
