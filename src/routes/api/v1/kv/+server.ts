@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { kvService } from '$lib/services/kv';
-import { KvNamespaceSchema, KvNamespaceCreateInputSchema } from '$lib/types';
-import { jsonResponse, jsonArrayResponse, parseAndValidate } from '$lib/server/validate';
+import { kvService } from '#lib/services/kv.ts';
+import { KvNamespaceSchema, KvNamespaceCreateInputSchema } from '#lib/types/index.ts';
+import { jsonResponse, jsonArrayResponse, parseAndValidate } from '#lib/server/validate.ts';
 
 // GET /api/v1/kv - List all KV namespaces for current user
 export const GET: RequestHandler = async ({ locals }) => {

@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { environmentsService } from '$lib/services/environments';
-import { EnvironmentCreateInputSchema, EnvironmentSchema } from '$lib/types';
-import { jsonResponse, jsonArrayResponse, parseAndValidate } from '$lib/server/validate';
+import { environmentsService } from '#lib/services/environments.ts';
+import { EnvironmentCreateInputSchema, EnvironmentSchema } from '#lib/types/index.ts';
+import { jsonResponse, jsonArrayResponse, parseAndValidate } from '#lib/server/validate.ts';
 
 // GET /api/v1/environments - List all environments
 export const GET: RequestHandler = async ({ locals }) => {

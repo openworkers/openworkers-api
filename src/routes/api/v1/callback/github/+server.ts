@@ -3,10 +3,10 @@
 // server-side (see src/routes/(dash)/sign-in/**).
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { authService } from '$lib/services/auth';
-import { getGithubConfig } from '$lib/config';
-import { LoginResponseSchema } from '$lib/types';
-import { jsonResponse } from '$lib/server/validate';
+import { authService } from '#lib/services/auth.ts';
+import { getGithubConfig } from '#lib/config/index.ts';
+import { LoginResponseSchema } from '#lib/types/index.ts';
+import { jsonResponse } from '#lib/server/validate.ts';
 
 function setAccessTokenCookie(response: Response, token: string): Response {
   response.headers.append('Set-Cookie', `access_token=${token}; HttpOnly; Secure; SameSite=Strict; Path=/`);

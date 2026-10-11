@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ResourceList from '$lib/components/resource-list.svelte';
+  import ResourceList from '#lib/components/resource-list.svelte';
 
   let { data } = $props();
 </script>

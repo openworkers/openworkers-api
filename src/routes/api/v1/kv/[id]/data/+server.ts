@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { kvService } from '$lib/services/kv';
+import { kvService } from '#lib/services/kv.ts';
 
 // GET /api/v1/kv/:id/data - List keys with pagination and search
 export const GET: RequestHandler = async ({ locals, params, url }) => {

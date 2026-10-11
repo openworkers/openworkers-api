@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
-  import { api, ApiError } from '$lib/api';
-  import { confirmDialog } from '$lib/confirm.svelte';
-  import { Button } from '$lib/components/ui/button';
-  import { Skeleton } from '$lib/components/ui/skeleton';
-  import * as Table from '$lib/components/ui/table';
+  import { api, ApiError } from '#lib/api.ts';
+  import { confirmDialog } from '#lib/confirm.svelte.ts';
+  import { Button } from '#lib/components/ui/button/index.ts';
+  import { Skeleton } from '#lib/components/ui/skeleton/index.ts';
+  import * as Table from '#lib/components/ui/table/index.ts';
   import { ExternalLink, Plus, Trash2 } from '@lucide/svelte';
   import PageHeader from './page-header.svelte';
 

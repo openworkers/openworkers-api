@@ -1,14 +1,14 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { unzipSync, strFromU8 } from 'fflate';
-import { workersService } from '$lib/services/workers';
-import { findWorkerAssetsBinding } from '$lib/services/db/workers';
-import { sql } from '$lib/services/db/client';
-import { S3Client } from '$lib/utils/s3';
-import { base64Encode } from '$lib/utils/base64';
-import { hexDecode } from '$lib/utils/hex';
-import { sha256HexUint8 } from '$lib/utils/crypto';
-import { getStorageConfig } from '$lib/config';
+import { workersService } from '#lib/services/workers.ts';
+import { findWorkerAssetsBinding } from '#lib/services/db/workers.ts';
+import { sql } from '#lib/services/db/client.ts';
+import { S3Client } from '#lib/utils/s3.ts';
+import { base64Encode } from '#lib/utils/base64.ts';
+import { hexDecode } from '#lib/utils/hex.ts';
+import { sha256HexUint8 } from '#lib/utils/crypto.ts';
+import { getStorageConfig } from '#lib/config/index.ts';
 
 // POST /api/v1/workers/:id/upload - Upload zip with _worker.js and assets
 export const POST: RequestHandler = async ({ locals, params, request }) => {

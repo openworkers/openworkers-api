@@ -1,9 +1,9 @@
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { databasesService } from '$lib/services/databases';
-import { DatabaseSchema } from '$lib/types';
-import { jsonResponse, parseAndValidate } from '$lib/server/validate';
+import { databasesService } from '#lib/services/databases.ts';
+import { DatabaseSchema } from '#lib/types/index.ts';
+import { jsonResponse, parseAndValidate } from '#lib/server/validate.ts';
 
 // GET /api/v1/databases/:id - Get single database (accepts UUID or name)
 export const GET: RequestHandler = async ({ locals, params }) => {

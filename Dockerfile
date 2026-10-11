@@ -7,6 +7,7 @@ WORKDIR /build
 ## Copy package files
 COPY bun.lock /build/
 COPY package.json /build/
+COPY vendor /build/vendor
 
 ## Install dependencies
 RUN bun install --frozen-lockfile
@@ -18,7 +19,6 @@ FROM installer AS sources
 COPY src /build/src
 COPY static /build/static
 COPY examples /build/examples
-COPY svelte.config.ts /build/
 COPY vite.config.ts /build/
 COPY tsconfig.json /build/
 COPY server.ts /build/

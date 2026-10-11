@@ -1,10 +1,10 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { Button } from '$lib/components/ui/button';
-  import { Separator } from '$lib/components/ui/separator';
-  import Logo from '$lib/components/logo.svelte';
-  import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
-  import { theme, toggleTheme } from '$lib/theme.svelte';
+  import { Button } from '#lib/components/ui/button/index.ts';
+  import { Separator } from '#lib/components/ui/separator/index.ts';
+  import Logo from '#lib/components/logo.svelte';
+  import ConfirmDialog from '#lib/components/confirm-dialog.svelte';
+  import { theme, toggleTheme } from '#lib/theme.svelte.ts';
   import {
     Boxes,
     Database,

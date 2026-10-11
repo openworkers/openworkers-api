@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { tablesService } from '$lib/services/tables';
+import { tablesService } from '#lib/services/tables.ts';
 
 // DELETE /api/v1/databases/:id/tables/:tableName/columns/:columnName - Drop a column
 export const DELETE: RequestHandler = async ({ locals, params }) => {

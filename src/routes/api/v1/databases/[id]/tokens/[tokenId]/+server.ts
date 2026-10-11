@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { deleteDatabaseToken } from '$lib/services/db/database-tokens';
-import { findDatabaseById, findDatabaseByName } from '$lib/services/db/databases';
+import { deleteDatabaseToken } from '#lib/services/db/database-tokens.ts';
+import { findDatabaseById, findDatabaseByName } from '#lib/services/db/databases.ts';
 
 async function findDatabase(userId: string, idOrName: string) {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

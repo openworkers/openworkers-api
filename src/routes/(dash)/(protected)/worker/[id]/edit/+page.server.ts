@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
-import { workersService } from '$lib/services/workers';
-import { environmentsService } from '$lib/services/environments';
+import { workersService } from '#lib/services/workers.ts';
+import { environmentsService } from '#lib/services/environments.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, params }) => {

@@ -1,11 +1,11 @@
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { databasesService } from '$lib/services/databases';
-import { getSystemToken } from '$lib/services/db/database-tokens';
-import { PostgateClient } from '$lib/services/postgate';
-import { getPostgateConfig } from '$lib/config';
-import { parseAndValidate } from '$lib/server/validate';
+import { databasesService } from '#lib/services/databases.ts';
+import { getSystemToken } from '#lib/services/db/database-tokens.ts';
+import { PostgateClient } from '#lib/services/postgate.ts';
+import { getPostgateConfig } from '#lib/config/index.ts';
+import { parseAndValidate } from '#lib/server/validate.ts';
 
 const ExecSchema = z.object({
   sql: z.string().min(1),

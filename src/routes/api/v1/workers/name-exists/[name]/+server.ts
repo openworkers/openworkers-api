@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { checkWorkerNameExists } from '$lib/services/db/workers';
+import { checkWorkerNameExists } from '#lib/services/db/workers.ts';
 
 export const GET: RequestHandler = async ({ params }) => {
   const name = params.name;

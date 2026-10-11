@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import ResourceDetail from '$lib/components/resource-detail.svelte';
-  import ResourceUsages from '$lib/components/resource-usages.svelte';
-  import KvData from '$lib/components/kv-data.svelte';
+  import ResourceDetail from '#lib/components/resource-detail.svelte';
+  import ResourceUsages from '#lib/components/resource-usages.svelte';
+  import KvData from '#lib/components/kv-data.svelte';
 
   let { data } = $props();
   let id = $derived(page.params.id!);

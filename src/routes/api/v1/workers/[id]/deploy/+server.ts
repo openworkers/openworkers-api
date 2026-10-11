@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { workersService } from '$lib/services/workers';
-import { base64Encode, bytesToString, stringToBase64 } from '$lib/utils/base64';
+import { workersService } from '#lib/services/workers.ts';
+import { base64Encode, bytesToString, stringToBase64 } from '#lib/utils/base64.ts';
 
 // POST /api/v1/workers/:id/deploy - Deploy code to worker
 export const POST: RequestHandler = async ({ locals, params, request }) => {

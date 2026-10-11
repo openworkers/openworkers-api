@@ -1,4 +1,4 @@
-import { workersService } from '$lib/services/workers';
+import { workersService } from '#lib/services/workers.ts';
 import type { PageServerLoad } from './$types';
 
 // SSR loader: call the SAME service the REST endpoint uses, straight to the DB —

@@ -1,14 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { api, ApiError } from '$lib/api';
-  import { confirmDialog } from '$lib/confirm.svelte';
-  import type { IApiKey, IApiKeyCreateResponse } from '$lib/types';
-  import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
-  import * as Card from '$lib/components/ui/card';
-  import * as Table from '$lib/components/ui/table';
-  import PageHeader from '$lib/components/page-header.svelte';
+  import { api, ApiError } from '#lib/api.ts';
+  import { confirmDialog } from '#lib/confirm.svelte.ts';
+  import type { IApiKey, IApiKeyCreateResponse } from '#lib/types/index.ts';
+  import { Button } from '#lib/components/ui/button/index.ts';
+  import { Input } from '#lib/components/ui/input/index.ts';
+  import { Label } from '#lib/components/ui/label/index.ts';
+  import * as Card from '#lib/components/ui/card/index.ts';
+  import * as Table from '#lib/components/ui/table/index.ts';
+  import PageHeader from '#lib/components/page-header.svelte';
   import { Trash2 } from '@lucide/svelte';
 
   let { data } = $props();

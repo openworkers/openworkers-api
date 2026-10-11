@@ -3,11 +3,11 @@
 // server-side (see src/routes/(dash)/sign-in/+page.server.ts and hooks.server.ts).
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { verify } from '$lib/utils/jwt';
-import { authService } from '$lib/services/auth';
-import { getJwtConfig } from '$lib/config';
-import { LoginResponseSchema } from '$lib/types';
-import { jsonResponse } from '$lib/server/validate';
+import { verify } from '#lib/utils/jwt.ts';
+import { authService } from '#lib/services/auth.ts';
+import { getJwtConfig } from '#lib/config/index.ts';
+import { LoginResponseSchema } from '#lib/types/index.ts';
+import { jsonResponse } from '#lib/server/validate.ts';
 
 export const POST: RequestHandler = async ({ request }) => {
   const body = await request.json();

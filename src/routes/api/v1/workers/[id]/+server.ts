@@ -1,9 +1,9 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { workersService } from '$lib/services/workers';
-import * as projectsDb from '$lib/services/db/projects';
-import { WorkerUpdateInputSchema, WorkerSchema } from '$lib/types';
-import { jsonResponse, parseAndValidate } from '$lib/server/validate';
+import { workersService } from '#lib/services/workers.ts';
+import * as projectsDb from '#lib/services/db/projects.ts';
+import { WorkerUpdateInputSchema, WorkerSchema } from '#lib/types/index.ts';
+import { jsonResponse, parseAndValidate } from '#lib/server/validate.ts';
 
 // GET /api/v1/workers/:id - Get single worker (accepts UUID or name)
 export const GET: RequestHandler = async ({ locals, params, url }) => {

@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { environmentsService } from '$lib/services/environments';
-import { EnvironmentUpdateInputSchema, EnvironmentSchema } from '$lib/types';
-import { jsonResponse } from '$lib/server/validate';
+import { environmentsService } from '#lib/services/environments.ts';
+import { EnvironmentUpdateInputSchema, EnvironmentSchema } from '#lib/types/index.ts';
+import { jsonResponse } from '#lib/server/validate.ts';
 
 // GET /api/v1/environments/:id - Get environment by id or name
 export const GET: RequestHandler = async ({ locals, params }) => {

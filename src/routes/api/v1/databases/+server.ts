@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { databasesService } from '$lib/services/databases';
-import { DatabaseSchema, DatabaseCreateInputSchema } from '$lib/types';
-import { jsonResponse, jsonArrayResponse, parseAndValidate } from '$lib/server/validate';
+import { databasesService } from '#lib/services/databases.ts';
+import { DatabaseSchema, DatabaseCreateInputSchema } from '#lib/types/index.ts';
+import { jsonResponse, jsonArrayResponse, parseAndValidate } from '#lib/server/validate.ts';
 
 // GET /api/v1/databases - List all databases for current user
 export const GET: RequestHandler = async ({ locals }) => {

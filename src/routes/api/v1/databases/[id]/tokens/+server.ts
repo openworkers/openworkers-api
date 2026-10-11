@@ -1,10 +1,10 @@
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { createDatabaseToken, listDatabaseTokens } from '$lib/services/db/database-tokens';
-import { findDatabaseById, findDatabaseByName } from '$lib/services/db/databases';
-import { DatabaseOperations } from '$lib/types/schemas/database-token.schema';
-import { parseAndValidate } from '$lib/server/validate';
+import { createDatabaseToken, listDatabaseTokens } from '#lib/services/db/database-tokens.ts';
+import { findDatabaseById, findDatabaseByName } from '#lib/services/db/databases.ts';
+import { DatabaseOperations } from '#lib/types/schemas/database-token.schema.ts';
+import { parseAndValidate } from '#lib/server/validate.ts';
 
 const CreateTokenSchema = z.object({
   name: z.string().min(1).max(100),

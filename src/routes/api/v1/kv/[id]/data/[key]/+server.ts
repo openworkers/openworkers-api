@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { kvService } from '$lib/services/kv';
+import { kvService } from '#lib/services/kv.ts';
 
 // PUT /api/v1/kv/:id/data/:key - Create or update a key
 export const PUT: RequestHandler = async ({ locals, params, request }) => {

@@ -1,8 +1,4 @@
-import { Server } from './.svelte-kit/output/server/index.js';
-import { manifest } from './.svelte-kit/output/server/manifest.js';
-
-// @ts-expect-error generated manifest diverges from SSRManifest (missing matcher on RouteParam)
-const server = new Server(manifest);
+import { server } from './.svelte-kit/output/server/instance.js';
 
 await server.init({ env: process.env as Record<string, string> });
 

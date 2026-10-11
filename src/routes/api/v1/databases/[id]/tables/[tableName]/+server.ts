@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { tablesService } from '$lib/services/tables';
+import { tablesService } from '#lib/services/tables.ts';
 
 // GET /api/v1/databases/:id/tables/:tableName - Get table info
 export const GET: RequestHandler = async ({ locals, params }) => {

@@ -1,9 +1,9 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { workersService } from '$lib/services/workers';
-import { cronsService } from '$lib/services/crons';
-import { WorkerSchema } from '$lib/types';
-import { jsonResponse } from '$lib/server/validate';
+import { workersService } from '#lib/services/workers.ts';
+import { cronsService } from '#lib/services/crons.ts';
+import { WorkerSchema } from '#lib/types/index.ts';
+import { jsonResponse } from '#lib/server/validate.ts';
 
 // POST /api/v1/workers/:id/crons - Create cron for worker
 export const POST: RequestHandler = async ({ locals, params, request }) => {

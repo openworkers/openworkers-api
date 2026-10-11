@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import { z, ZodError } from 'zod';
-import { getNodeEnv } from '$lib/config';
+import { getNodeEnv } from '#lib/config/index.ts';
 
 /**
  * Parse and validate JSON body from a Request with Zod schema.

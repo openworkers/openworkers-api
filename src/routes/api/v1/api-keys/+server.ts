@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { createApiKey, listApiKeys } from '$lib/services/db/api-keys';
-import { parseAndValidate } from '$lib/server/validate';
+import { createApiKey, listApiKeys } from '#lib/services/db/api-keys.ts';
+import { parseAndValidate } from '#lib/server/validate.ts';
 
 const CreateApiKeySchema = z.object({
   name: z.string().min(1).max(100),

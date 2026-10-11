@@ -1,13 +1,13 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { api, ApiError } from '$lib/api';
-  import { confirmDialog } from '$lib/confirm.svelte';
-  import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
-  import * as Card from '$lib/components/ui/card';
-  import * as Dialog from '$lib/components/ui/dialog';
-  import * as Select from '$lib/components/ui/select';
+  import { api, ApiError } from '#lib/api.ts';
+  import { confirmDialog } from '#lib/confirm.svelte.ts';
+  import { Button } from '#lib/components/ui/button/index.ts';
+  import { Input } from '#lib/components/ui/input/index.ts';
+  import { Label } from '#lib/components/ui/label/index.ts';
+  import * as Card from '#lib/components/ui/card/index.ts';
+  import * as Dialog from '#lib/components/ui/dialog/index.ts';
+  import * as Select from '#lib/components/ui/select/index.ts';
   import { Box, Lock, LockOpen, Plus, RotateCcw, Trash2 } from '@lucide/svelte';
 
   type BindingType = 'var' | 'secret' | 'assets' | 'storage' | 'kv' | 'database' | 'worker';

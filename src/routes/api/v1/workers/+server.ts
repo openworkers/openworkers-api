@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { workersService } from '$lib/services/workers';
-import { WorkerCreateInputSchema, WorkerSchema } from '$lib/types';
-import { jsonResponse, jsonArrayResponse, parseAndValidate } from '$lib/server/validate';
+import { workersService } from '#lib/services/workers.ts';
+import { WorkerCreateInputSchema, WorkerSchema } from '#lib/types/index.ts';
+import { jsonResponse, jsonArrayResponse, parseAndValidate } from '#lib/server/validate.ts';
 import defaultWorkerJs from '../../../../../examples/default-worker-js.txt?raw';
 import defaultWorkerTs from '../../../../../examples/default-worker-ts.txt?raw';
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import ResourceList from '$lib/components/resource-list.svelte';
-  import { workerUrl } from '$lib/utils/worker-url';
+  import ResourceList from '#lib/components/resource-list.svelte';
+  import { workerUrl } from '#lib/utils/worker-url.ts';
 
   let { data } = $props();
 </script>

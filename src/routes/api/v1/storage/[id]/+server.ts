@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { storageService } from '$lib/services/storage';
-import { StorageConfigSchema, StorageConfigUpdateInputSchema } from '$lib/types';
-import { jsonResponse, parseAndValidate } from '$lib/server/validate';
+import { storageService } from '#lib/services/storage.ts';
+import { StorageConfigSchema, StorageConfigUpdateInputSchema } from '#lib/types/index.ts';
+import { jsonResponse, parseAndValidate } from '#lib/server/validate.ts';
 
 // GET /api/v1/storage/:id - Get single storage config (accepts UUID or name)
 export const GET: RequestHandler = async ({ locals, params }) => {

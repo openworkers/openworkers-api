@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { findUserById } from '$lib/services/db';
-import { SelfSchema } from '$lib/types';
-import { jsonResponse } from '$lib/server/validate';
+import { findUserById } from '#lib/services/db/index.ts';
+import { SelfSchema } from '#lib/types/index.ts';
+import { jsonResponse } from '#lib/server/validate.ts';
 
 export const GET: RequestHandler = async ({ locals }) => {
   const userId = locals.userId;

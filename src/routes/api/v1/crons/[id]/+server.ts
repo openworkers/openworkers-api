@@ -1,9 +1,9 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { cronsService } from '$lib/services/crons';
-import { workersService } from '$lib/services/workers';
-import { CronUpdateInputSchema, WorkerSchema } from '$lib/types';
-import { jsonResponse, parseAndValidate } from '$lib/server/validate';
+import { cronsService } from '#lib/services/crons.ts';
+import { workersService } from '#lib/services/workers.ts';
+import { CronUpdateInputSchema, WorkerSchema } from '#lib/types/index.ts';
+import { jsonResponse, parseAndValidate } from '#lib/server/validate.ts';
 
 // PATCH /api/v1/crons/:id - Update cron
 export const PATCH: RequestHandler = async ({ locals, params, request }) => {

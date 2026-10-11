@@ -12,7 +12,7 @@ import {
   CLAUDE_MODELS,
   DEFAULT_MODEL,
   type ChatRequest
-} from '$lib/server/ai';
+} from '#lib/server/ai.ts';
 
 // POST /api/v1/ai/chat - Chat with Claude (non-streaming)
 export const POST: RequestHandler = async ({ request }) => {

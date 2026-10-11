@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { authService } from '$lib/services/auth';
-import { ResendSetPasswordInputSchema } from '$lib/types';
-import { parseAndValidate } from '$lib/server/validate';
+import { authService } from '#lib/services/auth.ts';
+import { ResendSetPasswordInputSchema } from '#lib/types/index.ts';
+import { parseAndValidate } from '#lib/server/validate.ts';
 
 export const POST: RequestHandler = async ({ request }) => {
   try {

@@ -1,6 +1,6 @@
-import { verify } from '$lib/utils/jwt';
-import { getJwtConfig } from '$lib/config';
-import { findApiKeyByToken, updateApiKeyLastUsed } from '$lib/services/db/api-keys';
+import { verify } from '#lib/utils/jwt.ts';
+import { getJwtConfig } from '#lib/config/index.ts';
+import { findApiKeyByToken, updateApiKeyLastUsed } from '#lib/services/db/api-keys.ts';
 
 interface AuthResult {
   userId: string;

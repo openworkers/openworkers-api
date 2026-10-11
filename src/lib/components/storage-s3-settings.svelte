@@ -1,10 +1,10 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { api, ApiError } from '$lib/api';
-  import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
-  import * as Card from '$lib/components/ui/card';
+  import { api, ApiError } from '#lib/api.ts';
+  import { Button } from '#lib/components/ui/button/index.ts';
+  import { Input } from '#lib/components/ui/input/index.ts';
+  import { Label } from '#lib/components/ui/label/index.ts';
+  import * as Card from '#lib/components/ui/card/index.ts';
 
   const MASKED = '********';
 

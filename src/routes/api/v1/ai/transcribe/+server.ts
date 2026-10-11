@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getMistralConfig } from '$lib/config';
+import { getMistralConfig } from '#lib/config/index.ts';
 
 const VOXTRAL_API_URL = 'https://api.mistral.ai/v1/audio/transcriptions';
 const VOXTRAL_MODEL = 'voxtral-mini-2507';

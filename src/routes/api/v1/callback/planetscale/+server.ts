@@ -1,6 +1,6 @@
 import { json, redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getPlanetScaleConfig } from '$lib/config';
+import { getPlanetScaleConfig } from '#lib/config/index.ts';
 
 export const GET: RequestHandler = async ({ url }) => {
   const code = url.searchParams.get('code');
@@ -12,5 +12,5 @@ export const GET: RequestHandler = async ({ url }) => {
   const config = getPlanetScaleConfig();
   const dashboardUrl = `${config.appUrl}/database/connect/planetscale?code=${encodeURIComponent(code)}`;
 
-  return redirect(302, dashboardUrl);
+  return redirect(302, dashboardUrl, { external: true });
 };

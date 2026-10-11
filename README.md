@@ -2,6 +2,11 @@
 
 REST API for the OpenWorkers platform, built with SvelteKit and deployed as a worker on OpenWorkers itself.
 
+This branch uses SvelteKit 3 and a local adapter preview in
+`vendor/openworkers-adapter-sveltekit-0.5.9.tgz`. The archive contains the unpublished
+`feat/sveltekit-3` adapter build. Replace it with a registry dependency when that
+adapter is released. The application builds as one worker.
+
 ## Features
 
 - **SvelteKit** - File-based routing (`src/routes/api/...`)

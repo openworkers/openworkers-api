@@ -6,6 +6,7 @@ out
 dist
 build
 *.tgz
+!/vendor/openworkers-adapter-sveltekit-0.5.9.tgz
 
 # SvelteKit
 .svelte-kit

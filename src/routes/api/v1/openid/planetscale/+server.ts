@@ -1,6 +1,6 @@
 import { json, redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getPlanetScaleConfig } from '$lib/config';
+import { getPlanetScaleConfig } from '#lib/config/index.ts';
 
 export const POST: RequestHandler = async () => {
   const config = getPlanetScaleConfig();
@@ -15,5 +15,5 @@ export const POST: RequestHandler = async () => {
   authUrl.searchParams.set('response_type', 'code');
   authUrl.searchParams.set('state', crypto.randomUUID());
 
-  return redirect(302, authUrl.toString());
+  return redirect(302, authUrl.toString(), { external: true });
 };

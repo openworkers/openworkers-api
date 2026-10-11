@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { findUserById } from '$lib/services/db';
+import { findUserById } from '#lib/services/db/index.ts';
 import type { LayoutServerLoad } from './$types';
 
 // Server-side auth guard for the whole dashboard. locals.userId is set by the

@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { getGithubConfig } from '$lib/config';
-import { authService } from '$lib/services/auth';
-import { setSession } from '$lib/server/auth-cookies';
+import { getGithubConfig } from '#lib/config/index.ts';
+import { authService } from '#lib/services/auth.ts';
+import { setSession } from '#lib/server/auth-cookies.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 // Already signed in? Skip the login page.
@@ -55,6 +55,6 @@ export const actions: Actions = {
     const authUrl = new URL('https://github.com/login/oauth/authorize');
     authUrl.searchParams.set('client_id', github.clientId);
 
-    throw redirect(302, authUrl.toString());
+    throw redirect(302, authUrl.toString(), { external: true });
   }
 };

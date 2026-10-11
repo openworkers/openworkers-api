@@ -12,7 +12,7 @@ import {
   CLAUDE_MODELS,
   DEFAULT_MODEL,
   type ExtendedChatRequest
-} from '$lib/server/ai';
+} from '#lib/server/ai.ts';
 
 // POST /api/v1/ai/chat/stream - Stream chat with Claude (SSE)
 export const POST: RequestHandler = async ({ request }) => {

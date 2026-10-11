@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { deleteApiKey } from '$lib/services/db/api-keys';
+import { deleteApiKey } from '#lib/services/db/api-keys.ts';
 
 // DELETE /api/v1/api-keys/:id - Delete an API key
 export const DELETE: RequestHandler = async ({ locals, params }) => {

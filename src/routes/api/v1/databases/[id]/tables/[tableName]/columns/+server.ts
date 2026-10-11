@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { tablesService } from '$lib/services/tables';
-import { ColumnDefinitionSchema } from '$lib/types';
-import { parseAndValidate } from '$lib/server/validate';
+import { tablesService } from '#lib/services/tables.ts';
+import { ColumnDefinitionSchema } from '#lib/types/index.ts';
+import { parseAndValidate } from '#lib/server/validate.ts';
 
 // POST /api/v1/databases/:id/tables/:tableName/columns - Add a column
 export const POST: RequestHandler = async ({ locals, params, request }) => {

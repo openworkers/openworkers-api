@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { planetScaleService } from '$lib/services/planetscale';
+import { planetScaleService } from '#lib/services/planetscale.ts';
 
 export const POST: RequestHandler = async ({ locals, request }) => {
   const userId = locals.userId;

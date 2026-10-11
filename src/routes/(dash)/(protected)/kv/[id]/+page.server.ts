@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
-import { kvService } from '$lib/services/kv';
-import { environmentsService } from '$lib/services/environments';
+import { kvService } from '#lib/services/kv.ts';
+import { environmentsService } from '#lib/services/environments.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, params }) => {

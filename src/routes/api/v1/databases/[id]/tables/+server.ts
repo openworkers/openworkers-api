@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { tablesService } from '$lib/services/tables';
-import { CreateTableInputSchema, type IColumnDefinition } from '$lib/types';
-import { parseAndValidate } from '$lib/server/validate';
+import { tablesService } from '#lib/services/tables.ts';
+import { CreateTableInputSchema, type IColumnDefinition } from '#lib/types/index.ts';
+import { parseAndValidate } from '#lib/server/validate.ts';
 
 // GET /api/v1/databases/:id/tables - List all tables
 export const GET: RequestHandler = async ({ locals, params }) => {

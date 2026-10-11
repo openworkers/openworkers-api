@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import ResourceDetail from '$lib/components/resource-detail.svelte';
-  import ResourceUsages from '$lib/components/resource-usages.svelte';
-  import StorageS3Settings from '$lib/components/storage-s3-settings.svelte';
-  import { Badge } from '$lib/components/ui/badge';
+  import ResourceDetail from '#lib/components/resource-detail.svelte';
+  import ResourceUsages from '#lib/components/resource-usages.svelte';
+  import StorageS3Settings from '#lib/components/storage-s3-settings.svelte';
+  import { Badge } from '#lib/components/ui/badge/index.ts';
 
   let { data } = $props();
   let id = $derived(page.params.id!);

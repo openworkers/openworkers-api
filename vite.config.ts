@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import adapter from '@openworkers/adapter-sveltekit';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, type Plugin } from 'vite';
@@ -81,12 +82,30 @@ function zodLocalesPlugin(): Plugin {
 }
 
 const envPort = process.env.PORT;
-if (!/^\d{1,5}$/.test(envPort || '')) {
+if (envPort !== undefined && !/^\d{1,5}$/.test(envPort)) {
   console.warn(`Warning: Invalid PORT environment variable "${envPort}", defaulting to 5173`);
 }
 
+const workerAdapter = adapter({ functions: false, debug: { prettier: false } });
+
 export default defineConfig({
-  plugins: [cronerWasmInlinePlugin(), zodLocalesPlugin(), tailwindcss(), sveltekit()],
+  plugins: [
+    cronerWasmInlinePlugin(),
+    zodLocalesPlugin(),
+    tailwindcss(),
+    sveltekit({
+      inlineStyleThreshold: Number.POSITIVE_INFINITY,
+      adapter: {
+        ...workerAdapter,
+        async adapt(builder) {
+          await workerAdapter.adapt(builder);
+          builder.generateServerInstance('.svelte-kit/output/server/instance.js');
+        }
+      },
+      csrf: { trustedOrigins: ['*'] },
+      prerender: { entries: [] }
+    })
+  ],
   server: {
     port: parseInt(process.env.PORT || '5173', 10)
   }

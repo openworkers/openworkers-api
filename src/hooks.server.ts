@@ -1,9 +1,10 @@
-import { json, type Handle } from '@sveltejs/kit';
-import { authenticate } from '$lib/server/auth';
-import { setSession } from '$lib/server/auth-cookies';
-import { authService } from '$lib/services/auth';
-import { getJwtConfig } from '$lib/config';
-import { verify } from '$lib/utils/jwt';
+import { json } from '@sveltejs/kit';
+import type { Handle } from '@sveltejs/kit/hooks';
+import { authenticate } from '#lib/server/auth.ts';
+import { setSession } from '#lib/server/auth-cookies.ts';
+import { authService } from '#lib/services/auth.ts';
+import { getJwtConfig } from '#lib/config/index.ts';
+import { verify } from '#lib/utils/jwt.ts';
 
 /** Route prefixes that don't require authentication */
 const PUBLIC_PREFIXES = ['/api/health', '/api/domain/'];

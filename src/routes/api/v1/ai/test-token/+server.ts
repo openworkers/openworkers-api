@@ -7,7 +7,7 @@ import {
   CLAUDE_API_URL,
   CLAUDE_MODELS,
   DEFAULT_MODEL
-} from '$lib/server/ai';
+} from '#lib/server/ai.ts';
 
 // POST /api/v1/ai/test-token - Test if Claude token is valid
 export const POST: RequestHandler = async ({ request }) => {

@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { api, ApiError } from '$lib/api';
-  import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import * as Card from '$lib/components/ui/card';
-  import * as Table from '$lib/components/ui/table';
+  import { api, ApiError } from '#lib/api.ts';
+  import { Button } from '#lib/components/ui/button/index.ts';
+  import { Input } from '#lib/components/ui/input/index.ts';
+  import * as Card from '#lib/components/ui/card/index.ts';
+  import * as Table from '#lib/components/ui/table/index.ts';
   import { Trash2 } from '@lucide/svelte';
 
   let { id }: { id: string } = $props();

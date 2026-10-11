@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { domainsService } from '$lib/services/domains';
+import { domainsService } from '#lib/services/domains.ts';
 
 // DELETE /api/v1/domains/:name - Delete domain
 export const DELETE: RequestHandler = async ({ locals, params }) => {

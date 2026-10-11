@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { domainsService } from '$lib/services/domains';
-import { DomainSchema, DomainCreateInputSchema } from '$lib/types';
-import { jsonResponse, jsonArrayResponse, parseAndValidate } from '$lib/server/validate';
+import { domainsService } from '#lib/services/domains.ts';
+import { DomainSchema, DomainCreateInputSchema } from '#lib/types/index.ts';
+import { jsonResponse, jsonArrayResponse, parseAndValidate } from '#lib/server/validate.ts';
 
 // GET /api/v1/domains - List all domains
 export const GET: RequestHandler = async ({ locals }) => {
