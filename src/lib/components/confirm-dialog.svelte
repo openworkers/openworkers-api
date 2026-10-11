@@ -20,10 +20,7 @@
       </Dialog.Header>
       <Dialog.Footer>
         <Button variant="outline" onclick={() => settleConfirm(false)}>Cancel</Button>
-        <Button
-          variant={pending.destructive ? 'destructive' : 'default'}
-          onclick={() => settleConfirm(true)}
-        >
+        <Button variant={pending.destructive ? 'destructive' : 'default'} onclick={() => settleConfirm(true)}>
           {pending.confirmLabel ?? 'Confirm'}
         </Button>
       </Dialog.Footer>

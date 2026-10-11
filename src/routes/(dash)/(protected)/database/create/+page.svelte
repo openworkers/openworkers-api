@@ -60,9 +60,7 @@
               >
                 Postgres
               </Button>
-              <Button type="button" variant="outline" href="/database/connect/planetscale">
-                PlanetScale…
-              </Button>
+              <Button type="button" variant="outline" href="/database/connect/planetscale">PlanetScale…</Button>
             </div>
           </div>
 

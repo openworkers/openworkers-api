@@ -5,17 +5,7 @@
   import Logo from '#lib/components/logo.svelte';
   import ConfirmDialog from '#lib/components/confirm-dialog.svelte';
   import { theme, toggleTheme } from '#lib/theme.svelte.ts';
-  import {
-    Boxes,
-    Database,
-    HardDrive,
-    KeyRound,
-    LayoutGrid,
-    LogOut,
-    Moon,
-    Settings,
-    Sun
-  } from '@lucide/svelte';
+  import { Boxes, Database, HardDrive, KeyRound, LayoutGrid, LogOut, Moon, Settings, Sun } from '@lucide/svelte';
 
   let { data, children } = $props();
 
@@ -47,9 +37,7 @@
         <a
           href={item.href}
           aria-current={active(item) ? 'page' : undefined}
-          class="flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors {active(
-            item
-          )
+          class="flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors {active(item)
             ? 'bg-secondary text-secondary-foreground font-medium'
             : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
         >
@@ -69,12 +57,7 @@
         <Settings class="size-4" />
         {data.profile.username}
       </a>
-      <Button
-        variant="ghost"
-        size="sm"
-        class="w-full justify-start gap-2"
-        onclick={toggleTheme}
-      >
+      <Button variant="ghost" size="sm" class="w-full justify-start gap-2" onclick={toggleTheme}>
         {#if theme.value === 'dark'}
           <Sun class="size-4" />
           Light mode
@@ -94,7 +77,10 @@
 
   <main class="flex-1 overflow-auto">
     {#if updated.current}
-      <div class="bg-primary text-primary-foreground flex items-center justify-between gap-4 px-8 py-2 text-sm" role="status">
+      <div
+        class="bg-primary text-primary-foreground flex items-center justify-between gap-4 px-8 py-2 text-sm"
+        role="status"
+      >
         A new version of the dashboard is available.
         <Button size="sm" variant="secondary" onclick={() => location.reload()}>Reload</Button>
       </div>

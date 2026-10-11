@@ -78,9 +78,7 @@
   });
 
   // A changed row needs a key, and a value or a resource
-  let incomplete = $derived(
-    rows.some((r) => !r.deleted && rowChanged(r) && (!r.key.trim() || !r.value))
-  );
+  let incomplete = $derived(rows.some((r) => !r.deleted && rowChanged(r) && (!r.key.trim() || !r.value)));
 
   function addVariable() {
     rows = [
@@ -191,16 +189,23 @@
   }
 
   let dialogResources = $derived(dialogKind ? resourceList(dialogKind === 'storage' ? 'storage' : dialogKind) : []);
-  let selectedResourceName = $derived(
-    dialogResources.find((r) => r.id === bindingResource)?.name ?? 'Select…'
-  );
+  let selectedResourceName = $derived(dialogResources.find((r) => r.id === bindingResource)?.name ?? 'Select…');
 
   function confirmBinding() {
     if (!bindingKey || !bindingResource || !dialogKind) return;
     const type = (dialogKind === 'storage' ? storageType : dialogKind) as BindingType;
     rows = [
       ...rows,
-      { key: bindingKey, value: bindingResource, type, origKey: '', origValue: '', origType: 'var', deleted: false, isNew: true }
+      {
+        key: bindingKey,
+        value: bindingResource,
+        type,
+        origKey: '',
+        origValue: '',
+        origType: 'var',
+        deleted: false,
+        isNew: true
+      }
     ];
     dialogKind = null;
   }
@@ -298,7 +303,12 @@
   </Card.Content>
 </Card.Root>
 
-<Dialog.Root open={dialogKind !== null} onOpenChange={(o) => { if (!o) dialogKind = null; }}>
+<Dialog.Root
+  open={dialogKind !== null}
+  onOpenChange={(o) => {
+    if (!o) dialogKind = null;
+  }}
+>
   <Dialog.Content class="sm:max-w-md">
     {#if dialogKind}
       <Dialog.Header>

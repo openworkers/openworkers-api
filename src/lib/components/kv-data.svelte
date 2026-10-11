@@ -21,9 +21,7 @@
   function extractKeys(result: unknown): string[] {
     const arr = Array.isArray(result)
       ? result
-      : ((result as { keys?: unknown[]; items?: unknown[] })?.keys ??
-        (result as { items?: unknown[] })?.items ??
-        []);
+      : ((result as { keys?: unknown[]; items?: unknown[] })?.keys ?? (result as { items?: unknown[] })?.items ?? []);
 
     return (arr as unknown[]).map((entry) =>
       typeof entry === 'string' ? entry : ((entry as { key?: string })?.key ?? String(entry))

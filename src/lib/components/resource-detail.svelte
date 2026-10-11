@@ -75,7 +75,6 @@
       error = e instanceof ApiError ? e.message : 'Failed to delete';
     }
   }
-
 </script>
 
 <PageHeader title={item.name ?? '(unnamed)'}>

@@ -7,10 +7,7 @@
   import PageHeader from './page-header.svelte';
   import FieldIssues from './field-issues.svelte';
 
-  let {
-    title,
-    form
-  }: { title: string; form: RemoteForm<{ name: string; desc?: string }, unknown> } = $props();
+  let { title, form }: { title: string; form: RemoteForm<{ name: string; desc?: string }, unknown> } = $props();
 </script>
 
 <PageHeader {title} />

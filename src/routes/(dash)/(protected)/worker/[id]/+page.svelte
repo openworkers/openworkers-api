@@ -22,14 +22,10 @@
 
   let worker = $derived(data.worker);
   let settings = $derived(updateWorkerSettings.for(worker.id));
-  let domainsText = $state(
-    untrack(() => (data.worker.domains ?? []).map((d) => d.name).join('\n'))
-  );
+  let domainsText = $state(untrack(() => (data.worker.domains ?? []).map((d) => d.name).join('\n')));
   // '' is no environment
   let environment = $state(untrack(() => data.worker.environment?.id ?? ''));
-  let environmentName = $derived(
-    data.environments.find((e) => e.id === environment)?.name ?? 'None'
-  );
+  let environmentName = $derived(data.environments.find((e) => e.id === environment)?.name ?? 'None');
   let error = $state<string | null>(null);
 
   // SvelteKit reuses this component on param-only navigation between workers;
@@ -62,7 +58,6 @@
       error = e instanceof ApiError ? e.message : 'Failed to delete';
     }
   }
-
 </script>
 
 <PageHeader title={worker.name ?? '(unnamed)'}>

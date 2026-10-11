@@ -76,9 +76,7 @@
     const q = query.trim().toLowerCase();
     if (!filtered) return entries;
 
-    return entries.filter((e) =>
-      e.kind === 'system' ? !q : enabled[e.group] && (!q || e.search.includes(q))
-    );
+    return entries.filter((e) => (e.kind === 'system' ? !q : enabled[e.group] && (!q || e.search.includes(q))));
   });
 
   // Stick to the bottom while following; scrolling up stops following.
@@ -363,171 +361,170 @@
 </script>
 
 <div class="flex h-full min-h-[32rem] flex-col">
-<PageHeader title={worker.name ?? 'Worker'} description="Live logs" section="Logs">
-  {#snippet actions()}
-    <Button variant="outline" href={`/worker/${worker.id}`}>Back</Button>
-    <Button variant="outline" href={`/worker/${worker.id}/edit`}>
-      <Code class="size-4" />
-      Edit code
-    </Button>
-  {/snippet}
-</PageHeader>
-
-<div class="flex min-h-0 flex-1 flex-col gap-3 p-8">
-  <div class="flex flex-wrap items-center gap-2">
-    <div
-      class="flex h-8 items-center gap-2 rounded-md border px-3 text-sm"
-      title={closedReason ?? undefined}
-    >
-      <span class={cn('size-2 rounded-full', STATUS[status].dot)}></span>
-      {STATUS[status].label}
-    </div>
-
-    {#if status === 'closed'}
-      <Button variant="outline" size="sm" class="h-8" onclick={reconnect}>
-        <RotateCw class="size-3.5" />
-        Reconnect
+  <PageHeader title={worker.name ?? 'Worker'} description="Live logs" section="Logs">
+    {#snippet actions()}
+      <Button variant="outline" href={`/worker/${worker.id}`}>Back</Button>
+      <Button variant="outline" href={`/worker/${worker.id}/edit`}>
+        <Code class="size-4" />
+        Edit code
       </Button>
-    {/if}
+    {/snippet}
+  </PageHeader>
 
-    <div class="flex items-center gap-1" role="group" aria-label="Filter by level">
-      {#each LEVELS as level (level)}
-        <button
-          type="button"
-          class={cn(
-            'flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium capitalize transition-colors',
-            enabled[level]
-              ? 'bg-secondary text-secondary-foreground'
-              : 'text-muted-foreground border-dashed opacity-60 hover:opacity-100'
-          )}
-          aria-pressed={enabled[level]}
-          title="Click to toggle, double-click to show only this level"
-          onclick={() => toggleLevel(level)}
-          ondblclick={() => soloLevel(level)}
-        >
-          <span class={LEVEL_TEXT[level]}>{level}</span>
-          <span class="text-muted-foreground tabular-nums">{counts[level]}</span>
-        </button>
-      {/each}
-    </div>
-
-    <div class="ml-auto flex items-center gap-2">
-      <div class="relative">
-        <Search class="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
-        <Input bind:value={query} placeholder="Search logs" class="h-8 w-56 pl-8" aria-label="Search logs" />
+  <div class="flex min-h-0 flex-1 flex-col gap-3 p-8">
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="flex h-8 items-center gap-2 rounded-md border px-3 text-sm" title={closedReason ?? undefined}>
+        <span class={cn('size-2 rounded-full', STATUS[status].dot)}></span>
+        {STATUS[status].label}
       </div>
 
-      <Button variant="outline" size="sm" class="h-8" onclick={togglePause}>
-        {#if paused}
-          <Play class="size-3.5" />
-          Resume
-        {:else}
-          <Pause class="size-3.5" />
-          Pause
-        {/if}
-      </Button>
-
-      <Button
-        variant="outline"
-        size="icon-sm"
-        class="size-8"
-        onclick={download}
-        disabled={visible.length === 0}
-        aria-label="Download logs"
-        title="Download the lines shown"
-      >
-        <Download class="size-3.5" />
-      </Button>
-
-      <Button
-        variant="outline"
-        size="icon-sm"
-        class="size-8"
-        onclick={clear}
-        disabled={entries.length === 0 && held.length === 0}
-        aria-label="Clear logs"
-        title="Clear"
-      >
-        <Trash2 class="size-3.5" />
-      </Button>
-    </div>
-  </div>
-
-  <div class="bg-card relative min-h-0 flex-1 overflow-hidden rounded-lg border">
-    <div
-      bind:this={viewport}
-      onscroll={onScroll}
-      class="h-full overflow-y-auto py-2 font-mono text-xs leading-5"
-      role="log"
-      aria-live="off"
-    >
-      {#if trimmed}
-        <p class="text-muted-foreground px-4 pb-1 italic">
-          Older lines were dropped, only the latest {MAX_ENTRIES} are kept.
-        </p>
+      {#if status === 'closed'}
+        <Button variant="outline" size="sm" class="h-8" onclick={reconnect}>
+          <RotateCw class="size-3.5" />
+          Reconnect
+        </Button>
       {/if}
 
-      {#each visible as entry (entry.id)}
-        {#if entry.kind === 'system'}
-          <div class={cn('flex gap-3 px-4 italic', TONE_TEXT[entry.tone ?? 'ok'])}>
-            <time class="shrink-0 tabular-nums opacity-70" datetime={new Date(entry.date).toISOString()}>
-              {time(entry.date)}
-            </time>
-            <span class="w-12 shrink-0">--</span>
-            <span class="min-w-0 flex-1">{entry.text}</span>
-          </div>
-        {:else}
-          <div class={cn('hover:bg-muted/60 flex gap-3 px-4', LEVEL_ROW[entry.group])}>
-            <time
-              class="text-muted-foreground shrink-0 tabular-nums"
-              datetime={new Date(entry.date).toISOString()}
-              title={new Date(entry.date).toLocaleString()}
-            >
-              {time(entry.date)}
-            </time>
-            <span class={cn('w-12 shrink-0 truncate uppercase', LEVEL_TEXT[entry.group])}>{entry.level}</span>
-            <span class="min-w-0 flex-1 break-words whitespace-pre-wrap"
-              >{#each entry.segments as s, i (i)}<span style={segmentStyle(s)}>{s.text}</span>{/each}</span
-            >
-          </div>
-        {/if}
-      {:else}
-        <div
-          class="text-muted-foreground absolute inset-0 flex flex-col items-center justify-center gap-1 font-sans text-sm"
-        >
-          {#if entries.length > 0}
-            <p>No lines match the current filters.</p>
-          {:else if status === 'live'}
-            <p class="text-foreground">Waiting for logs…</p>
-            <p>Requests to this worker will show up here as they happen.</p>
-          {:else if status === 'closed'}
-            <p>{closedReason}</p>
-          {:else}
-            <p>Connecting to the log stream…</p>
-          {/if}
+      <div class="flex items-center gap-1" role="group" aria-label="Filter by level">
+        {#each LEVELS as level (level)}
+          <button
+            type="button"
+            class={cn(
+              'flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium capitalize transition-colors',
+              enabled[level]
+                ? 'bg-secondary text-secondary-foreground'
+                : 'text-muted-foreground border-dashed opacity-60 hover:opacity-100'
+            )}
+            aria-pressed={enabled[level]}
+            title="Click to toggle, double-click to show only this level"
+            onclick={() => toggleLevel(level)}
+            ondblclick={() => soloLevel(level)}
+          >
+            <span class={LEVEL_TEXT[level]}>{level}</span>
+            <span class="text-muted-foreground tabular-nums">{counts[level]}</span>
+          </button>
+        {/each}
+      </div>
+
+      <div class="ml-auto flex items-center gap-2">
+        <div class="relative">
+          <Search
+            class="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
+          />
+          <Input bind:value={query} placeholder="Search logs" class="h-8 w-56 pl-8" aria-label="Search logs" />
         </div>
-      {/each}
+
+        <Button variant="outline" size="sm" class="h-8" onclick={togglePause}>
+          {#if paused}
+            <Play class="size-3.5" />
+            Resume
+          {:else}
+            <Pause class="size-3.5" />
+            Pause
+          {/if}
+        </Button>
+
+        <Button
+          variant="outline"
+          size="icon-sm"
+          class="size-8"
+          onclick={download}
+          disabled={visible.length === 0}
+          aria-label="Download logs"
+          title="Download the lines shown"
+        >
+          <Download class="size-3.5" />
+        </Button>
+
+        <Button
+          variant="outline"
+          size="icon-sm"
+          class="size-8"
+          onclick={clear}
+          disabled={entries.length === 0 && held.length === 0}
+          aria-label="Clear logs"
+          title="Clear"
+        >
+          <Trash2 class="size-3.5" />
+        </Button>
+      </div>
     </div>
 
-    {#if paused && held.length > 0}
-      <button
-        type="button"
-        class="bg-primary text-primary-foreground absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium shadow-md"
-        onclick={togglePause}
+    <div class="bg-card relative min-h-0 flex-1 overflow-hidden rounded-lg border">
+      <div
+        bind:this={viewport}
+        onscroll={onScroll}
+        class="h-full overflow-y-auto py-2 font-mono text-xs leading-5"
+        role="log"
+        aria-live="off"
       >
-        <Play class="size-3.5" />
-        {held.length} new {held.length === 1 ? 'line' : 'lines'}, resume
-      </button>
-    {:else if !follow && visible.length > 0}
-      <button
-        type="button"
-        class="bg-primary text-primary-foreground absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium shadow-md"
-        onclick={jumpToLatest}
-      >
-        <ArrowDown class="size-3.5" />
-        Jump to latest
-      </button>
-    {/if}
+        {#if trimmed}
+          <p class="text-muted-foreground px-4 pb-1 italic">
+            Older lines were dropped, only the latest {MAX_ENTRIES} are kept.
+          </p>
+        {/if}
+
+        {#each visible as entry (entry.id)}
+          {#if entry.kind === 'system'}
+            <div class={cn('flex gap-3 px-4 italic', TONE_TEXT[entry.tone ?? 'ok'])}>
+              <time class="shrink-0 tabular-nums opacity-70" datetime={new Date(entry.date).toISOString()}>
+                {time(entry.date)}
+              </time>
+              <span class="w-12 shrink-0">--</span>
+              <span class="min-w-0 flex-1">{entry.text}</span>
+            </div>
+          {:else}
+            <div class={cn('hover:bg-muted/60 flex gap-3 px-4', LEVEL_ROW[entry.group])}>
+              <time
+                class="text-muted-foreground shrink-0 tabular-nums"
+                datetime={new Date(entry.date).toISOString()}
+                title={new Date(entry.date).toLocaleString()}
+              >
+                {time(entry.date)}
+              </time>
+              <span class={cn('w-12 shrink-0 truncate uppercase', LEVEL_TEXT[entry.group])}>{entry.level}</span>
+              <span class="min-w-0 flex-1 break-words whitespace-pre-wrap"
+                >{#each entry.segments as s, i (i)}<span style={segmentStyle(s)}>{s.text}</span>{/each}</span
+              >
+            </div>
+          {/if}
+        {:else}
+          <div
+            class="text-muted-foreground absolute inset-0 flex flex-col items-center justify-center gap-1 font-sans text-sm"
+          >
+            {#if entries.length > 0}
+              <p>No lines match the current filters.</p>
+            {:else if status === 'live'}
+              <p class="text-foreground">Waiting for logs…</p>
+              <p>Requests to this worker will show up here as they happen.</p>
+            {:else if status === 'closed'}
+              <p>{closedReason}</p>
+            {:else}
+              <p>Connecting to the log stream…</p>
+            {/if}
+          </div>
+        {/each}
+      </div>
+
+      {#if paused && held.length > 0}
+        <button
+          type="button"
+          class="bg-primary text-primary-foreground absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium shadow-md"
+          onclick={togglePause}
+        >
+          <Play class="size-3.5" />
+          {held.length} new {held.length === 1 ? 'line' : 'lines'}, resume
+        </button>
+      {:else if !follow && visible.length > 0}
+        <button
+          type="button"
+          class="bg-primary text-primary-foreground absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium shadow-md"
+          onclick={jumpToLatest}
+        >
+          <ArrowDown class="size-3.5" />
+          Jump to latest
+        </button>
+      {/if}
+    </div>
   </div>
-</div>
 </div>

@@ -58,22 +58,13 @@
         <form method="POST" action="?/login" use:enhance={submit} class="flex flex-col gap-4">
           <div class="flex flex-col gap-2">
             <Label for="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              value={form?.email ?? ''}
-              autocomplete="email"
-              required
-            />
+            <Input id="email" name="email" type="email" value={form?.email ?? ''} autocomplete="email" required />
           </div>
 
           <div class="flex flex-col gap-2">
             <div class="flex items-center justify-between">
               <Label for="password">Password</Label>
-              <a href="/sign-in/forgot-password" class="text-muted-foreground text-sm hover:underline">
-                Forgot?
-              </a>
+              <a href="/sign-in/forgot-password" class="text-muted-foreground text-sm hover:underline"> Forgot? </a>
             </div>
             <Input id="password" name="password" type="password" autocomplete="current-password" required />
           </div>
@@ -90,14 +81,7 @@
         <form method="POST" action="?/register" use:enhance={submit} class="flex flex-col gap-4">
           <div class="flex flex-col gap-2">
             <Label for="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              value={form?.email ?? ''}
-              autocomplete="email"
-              required
-            />
+            <Input id="email" name="email" type="email" value={form?.email ?? ''} autocomplete="email" required />
           </div>
 
           {#if form?.mode === 'register' && form?.error}

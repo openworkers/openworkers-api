@@ -32,9 +32,7 @@
 
     (async () => {
       // Monaco never enters the SSR graph — loaded only here, in the browser.
-      const { setupMonaco, setEnvironmentLibs, clearEnvironmentLibs } = await import(
-        '#lib/monaco-setup.ts'
-      );
+      const { setupMonaco, setEnvironmentLibs, clearEnvironmentLibs } = await import('#lib/monaco-setup.ts');
       const monaco = setupMonaco();
 
       if (cancelled) {

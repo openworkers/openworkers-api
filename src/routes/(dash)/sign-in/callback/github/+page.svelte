@@ -8,9 +8,7 @@
   {#if data.error}
     <div>
       <p class="text-destructive text-sm">{data.error}</p>
-      <a href="/sign-in" class="text-muted-foreground mt-2 inline-block text-sm hover:underline">
-        Back to sign in
-      </a>
+      <a href="/sign-in" class="text-muted-foreground mt-2 inline-block text-sm hover:underline"> Back to sign in </a>
     </div>
   {:else}
     <p class="text-muted-foreground text-sm">Completing GitHub sign-in…</p>

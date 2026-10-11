@@ -39,9 +39,7 @@
   <Card.Root>
     <Card.Header>
       <Card.Title>PlanetScale</Card.Title>
-      <Card.Description>
-        Authorize OpenWorkers to provision databases on your PlanetScale account.
-      </Card.Description>
+      <Card.Description>Authorize OpenWorkers to provision databases on your PlanetScale account.</Card.Description>
     </Card.Header>
     <Card.Content class="flex flex-col gap-4">
       {#if loading}
