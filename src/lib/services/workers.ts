@@ -1,4 +1,5 @@
 import * as db from './db';
+import * as projectsDb from './db/projects';
 import type { IWorker, IWorkerLanguage, IWorkerUpdateInput } from '../types';
 import { ServiceError } from './errors';
 
@@ -41,6 +42,11 @@ export class WorkersService {
   }
 
   async delete(userId: string, id: string): Promise<number> {
+    // Deleting the main worker of a project deletes the whole project
+    if (await projectsDb.isProjectMainWorker(userId, id)) {
+      return projectsDb.deleteProject(userId, id);
+    }
+
     return db.deleteWorker(userId, id);
   }
 }

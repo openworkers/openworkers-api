@@ -39,6 +39,14 @@ export class EnvironmentsService {
   }
 
   async update(userId: string, id: string, input: IEnvironmentUpdateInput): Promise<IEnvironment> {
+    if (input.name) {
+      const existing = await db.findEnvironmentByName(userId, input.name);
+
+      if (existing && existing.id !== id) {
+        throw new ServiceError(`Environment with name "${input.name}" already exists`, 409);
+      }
+    }
+
     const env = await db.updateEnvironment(userId, id, {
       name: input.name,
       desc: input.desc

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import ResourceDetail from '#lib/components/resource-detail.svelte';
+  import { deleteEnvironment, updateEnvironment } from '../environment.remote.ts';
   import EnvironmentValues from '#lib/components/environment-values.svelte';
   import * as Card from '#lib/components/ui/card/index.ts';
 
@@ -9,7 +10,7 @@
 </script>
 
 {#key id}
-  <ResourceDetail base="environments" {id} listHref="/environments" item={data.item}>
+  <ResourceDetail {id} update={updateEnvironment} remove={deleteEnvironment} listHref="/environments" item={data.item}>
     {#snippet extra()}
       <EnvironmentValues
         {id}

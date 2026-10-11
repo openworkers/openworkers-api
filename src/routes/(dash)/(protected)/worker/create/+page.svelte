@@ -6,7 +6,7 @@
   import PageHeader from '#lib/components/page-header.svelte';
   import FieldIssues from '#lib/components/field-issues.svelte';
   import ChoiceButton from '#lib/components/choice-button.svelte';
-  import { createWorker } from './create.remote.ts';
+  import { createWorker } from '../worker.remote.ts';
 
   const { fields } = createWorker;
 </script>

@@ -1,6 +1,5 @@
 import type { RequestHandler } from './$types';
 import { workersService } from '#lib/services/workers.ts';
-import * as projectsDb from '#lib/services/db/projects.ts';
 import { WorkerUpdateInputSchema, WorkerSchema } from '#lib/types/index.ts';
 import { jsonResponse, parseAndValidate } from '#lib/server/validate.ts';
 
@@ -65,15 +64,7 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
       return Response.json({ error: 'Worker not found' }, { status: 404 });
     }
 
-    const isProject = await projectsDb.isProjectMainWorker(userId, worker.id);
-
-    let deleted: number;
-
-    if (isProject) {
-      deleted = await projectsDb.deleteProject(userId, worker.id);
-    } else {
-      deleted = await workersService.delete(userId, worker.id);
-    }
+    const deleted = await workersService.delete(userId, worker.id);
 
     if (deleted === 0) {
       return Response.json({ error: 'Worker not found' }, { status: 404 });

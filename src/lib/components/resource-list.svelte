@@ -1,6 +1,7 @@
 <script lang="ts">
+  import type { RemoteCommand } from '$app/server';
   import { refreshAll } from '$app/navigation';
-  import { api, ApiError } from '#lib/api.ts';
+  import { remoteErrorMessage } from '#lib/remote-errors.ts';
   import { confirmDialog } from '#lib/confirm.svelte.ts';
   import { Button } from '#lib/components/ui/button/index.ts';
   import * as Table from '#lib/components/ui/table/index.ts';
@@ -12,7 +13,7 @@
   let {
     title,
     description,
-    base,
+    remove,
     createHref,
     rowHref,
     emptyLabel = 'Nothing here yet.',
@@ -22,7 +23,7 @@
   }: {
     title: string;
     description?: string;
-    base: string;
+    remove: RemoteCommand<string, void>;
     createHref: string;
     rowHref: (id: string) => string;
     emptyLabel?: string;
@@ -36,7 +37,7 @@
   let error = $state<string | null>(null);
   let full = $derived(limit !== undefined && items.length >= limit);
 
-  async function remove(id: string, name: string) {
+  async function confirmRemove(id: string, name: string) {
     const confirmed = await confirmDialog({
       title: `Delete ${name}`,
       message: 'This cannot be undone.',
@@ -51,9 +52,9 @@
     error = null;
 
     try {
-      await api.del(`/api/v1/${base}/${id}`);
+      await remove(id);
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Failed to delete';
+      error = remoteErrorMessage(e, 'Failed to delete');
     }
 
     await refreshAll();
@@ -125,7 +126,7 @@
               <Button
                 variant="ghost"
                 size="icon-sm"
-                onclick={() => remove(item.id, item.name ?? '')}
+                onclick={() => confirmRemove(item.id, item.name ?? '')}
                 aria-label="Delete"
               >
                 <Trash2 class="size-4" />

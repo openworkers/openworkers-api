@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import ResourceDetail from '#lib/components/resource-detail.svelte';
+  import { deleteStorageConfig, updateStorageConfig } from '../storage.remote.ts';
   import ResourceUsages from '#lib/components/resource-usages.svelte';
   import StorageS3Settings from '#lib/components/storage-s3-settings.svelte';
   import { Badge } from '#lib/components/ui/badge/index.ts';
@@ -21,7 +22,13 @@
 </script>
 
 {#key id}
-  <ResourceDetail base="storage" {id} listHref="/storage-configs" item={data.item}>
+  <ResourceDetail
+    {id}
+    update={updateStorageConfig}
+    remove={deleteStorageConfig}
+    listHref="/storage-configs"
+    item={data.item}
+  >
     {#snippet extra(item)}
       {@const s = item as Storage}
       <div class="flex items-center gap-2">

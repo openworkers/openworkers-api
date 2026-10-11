@@ -2,8 +2,8 @@
   import { untrack } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { api, ApiError } from '#lib/api.ts';
   import { confirmDialog } from '#lib/confirm.svelte.ts';
+  import { remoteErrorMessage } from '#lib/remote-errors.ts';
   import { Button } from '#lib/components/ui/button/index.ts';
   import { Input } from '#lib/components/ui/input/index.ts';
   import { Label } from '#lib/components/ui/label/index.ts';
@@ -15,7 +15,7 @@
   import { ArrowRight, Code, ExternalLink, ScrollText, Trash2 } from '@lucide/svelte';
   import { workerUrl } from '#lib/utils/worker-url.ts';
   import { hydration } from '#lib/hydration.svelte.ts';
-  import { updateWorkerSettings } from './worker.remote.ts';
+  import { deleteWorker, updateWorkerSettings } from '../worker.remote.ts';
 
   let { data } = $props();
   let id = $derived(page.params.id!);
@@ -52,10 +52,10 @@
     if (!confirmed) return;
 
     try {
-      await api.del(`/api/v1/workers/${id}`);
+      await deleteWorker(worker.id);
       await goto('/workers');
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Failed to delete';
+      error = remoteErrorMessage(e, 'Failed to delete');
     }
   }
 </script>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import ResourceDetail from '#lib/components/resource-detail.svelte';
+  import { deleteDatabase, updateDatabase } from '../database.remote.ts';
   import ResourceUsages from '#lib/components/resource-usages.svelte';
 
   let { data } = $props();
@@ -8,7 +9,7 @@
 </script>
 
 {#key id}
-  <ResourceDetail base="databases" {id} listHref="/databases" item={data.item}>
+  <ResourceDetail {id} update={updateDatabase} remove={deleteDatabase} listHref="/databases" item={data.item}>
     {#snippet extra()}
       <ResourceUsages usages={data.usages} />
     {/snippet}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import ResourceList from '#lib/components/resource-list.svelte';
+  import { deleteWorker } from '../worker/worker.remote.ts';
   import { workerUrl } from '#lib/utils/worker-url.ts';
 
   let { data } = $props();
@@ -9,7 +10,7 @@
 <ResourceList
   title="Workers"
   description="Your deployed workers."
-  base="workers"
+  remove={deleteWorker}
   createHref="/worker/create"
   rowHref={(id) => `/worker/${id}`}
   emptyLabel="No workers yet."

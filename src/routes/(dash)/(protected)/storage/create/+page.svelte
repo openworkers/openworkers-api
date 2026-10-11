@@ -6,7 +6,7 @@
   import PageHeader from '#lib/components/page-header.svelte';
   import FieldIssues from '#lib/components/field-issues.svelte';
   import ChoiceButton from '#lib/components/choice-button.svelte';
-  import { createStorageConfig } from './create.remote.ts';
+  import { createStorageConfig } from '../storage.remote.ts';
 
   let { data } = $props();
 

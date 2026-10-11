@@ -1,4 +1,4 @@
-import { invalid, redirect } from '@sveltejs/kit';
+import { error, invalid, redirect } from '@sveltejs/kit';
 import { getRequestEvent } from '$app/server';
 import { ServiceError } from '#lib/services/errors.ts';
 
@@ -8,6 +8,17 @@ export function requireUserId(): string {
 
   if (!locals.userId) {
     redirect(303, '/sign-in');
+  }
+
+  return locals.userId;
+}
+
+// Commands cannot redirect
+export function requireUserIdInCommand(): string {
+  const { locals } = getRequestEvent();
+
+  if (!locals.userId) {
+    error(401, 'Your session has expired. Sign in again.');
   }
 
   return locals.userId;
