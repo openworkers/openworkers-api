@@ -13,8 +13,6 @@ function printNode(node: ts.Node): string {
 // Import all schemas
 import { ResourceSchema, TimestampsSchema } from '../src/lib/types/schemas/base.schema';
 
-import { LoginResponseSchema } from '../src/lib/types/schemas/auth.schema';
-
 import { SelfSchema, ResourceLimitsSchema } from '../src/lib/types/schemas/user.schema';
 
 import {
@@ -78,7 +76,6 @@ const schemas = [
   { schema: TimestampsSchema, name: 'Timestamps' },
 
   // Auth
-  { schema: LoginResponseSchema, name: 'LoginResponse' },
 
   // User
   { schema: SelfSchema, name: 'Self' },
