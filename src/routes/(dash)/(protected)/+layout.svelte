@@ -5,19 +5,32 @@
   import Logo from '#lib/components/logo.svelte';
   import ConfirmDialog from '#lib/components/confirm-dialog.svelte';
   import { theme, toggleTheme } from '#lib/theme.svelte.ts';
-  import { Boxes, Database, HardDrive, KeyRound, LayoutGrid, LogOut, Moon, Settings, Sun } from '@lucide/svelte';
+  import {
+    Boxes,
+    Database,
+    DatabaseZap,
+    HardDrive,
+    KeyRound,
+    LayoutGrid,
+    LogOut,
+    Moon,
+    Settings,
+    Sun
+  } from '@lucide/svelte';
   import { signOut } from '../auth.remote.ts';
 
   let { data, children } = $props();
 
   // `detail` is the path prefix of the section's detail and create pages.
-  const nav = [
+  const nav = $derived([
     { href: '/workers', detail: '/worker/', label: 'Workers', icon: LayoutGrid },
     { href: '/environments', detail: '/environment/', label: 'Environments', icon: Boxes },
     { href: '/databases', detail: '/database/', label: 'Databases', icon: Database },
+    // D1 is off until the account limit allows a database
+    ...(data.profile.limits.d1 > 0 ? [{ href: '/d1-databases', detail: '/d1/', label: 'D1', icon: DatabaseZap }] : []),
     { href: '/kv-namespaces', detail: '/kv/', label: 'KV', icon: KeyRound },
     { href: '/storage-configs', detail: '/storage/', label: 'Storage', icon: HardDrive }
-  ];
+  ]);
 
   function active(item: (typeof nav)[number]): boolean {
     return page.url.pathname === item.href || page.url.pathname.startsWith(item.detail);
