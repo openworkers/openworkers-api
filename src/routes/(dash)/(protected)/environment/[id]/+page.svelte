@@ -2,7 +2,7 @@
   import { page } from '$app/state';
   import ResourceDetail from '#lib/components/resource-detail.svelte';
   import { deleteEnvironment, updateEnvironment } from '../environment.remote.ts';
-  import EnvironmentValues from '#lib/components/environment-values.svelte';
+  import EnvironmentValues from './environment-values.svelte';
   import * as Card from '#lib/components/ui/card/index.ts';
 
   let { data } = $props();

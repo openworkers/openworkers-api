@@ -36,3 +36,16 @@ export async function issueOnServiceError<T>(promise: Promise<T>): Promise<T> {
     throw error;
   }
 }
+
+// The command version: a refused request becomes an error with the service status and message
+export async function errorOnServiceError<T>(promise: Promise<T>): Promise<T> {
+  try {
+    return await promise;
+  } catch (e) {
+    if (e instanceof ServiceError) {
+      error(e.status, e.message);
+    }
+
+    throw e;
+  }
+}

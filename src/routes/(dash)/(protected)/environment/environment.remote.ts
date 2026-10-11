@@ -2,9 +2,15 @@ import { error, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { command, form } from '$app/server';
 import { environmentsService } from '#lib/services/environments.ts';
-import { issueOnServiceError, requireUserId, requireUserIdInCommand } from '#lib/server/remote-guards.ts';
+import {
+  errorOnServiceError,
+  issueOnServiceError,
+  requireUserId,
+  requireUserIdInCommand
+} from '#lib/server/remote-guards.ts';
 import { ResourceSettingsSchema } from '#lib/server/remote-schemas.ts';
 import { ResourceCreateInputSchema } from '#lib/types/schemas/base.schema.ts';
+import { EnvironmentValueUpdateInputSchema } from '#lib/types/schemas/environment.schema.ts';
 
 export const createEnvironment = form(ResourceCreateInputSchema, async (input) => {
   const userId = requireUserId();
@@ -35,3 +41,18 @@ export const deleteEnvironment = command(z.uuid(), async (id) => {
     error(404, 'Environment not found');
   }
 });
+
+export const saveEnvironmentValues = command(
+  z.object({ id: z.uuid(), values: z.array(EnvironmentValueUpdateInputSchema) }),
+  async ({ id, values }) => {
+    const userId = requireUserIdInCommand();
+
+    if (!(await environmentsService.findById(userId, id))) {
+      error(404, 'Environment not found');
+    }
+
+    await errorOnServiceError(environmentsService.updateValues(userId, id, values));
+
+    return (await environmentsService.findById(userId, id))?.values ?? [];
+  }
+);

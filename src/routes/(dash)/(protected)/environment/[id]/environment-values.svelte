@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { api, ApiError } from '#lib/api.ts';
+  import { remoteErrorMessage } from '#lib/remote-errors.ts';
+  import { saveEnvironmentValues } from '../environment.remote.ts';
   import { confirmDialog } from '#lib/confirm.svelte.ts';
   import { Button } from '#lib/components/ui/button/index.ts';
   import { Input } from '#lib/components/ui/input/index.ts';
@@ -143,9 +144,9 @@
 
     const payload = rows.filter(rowChanged).map((r) => {
       if (r.isNew) return { key: r.key, value: r.value, type: r.type };
-      if (r.deleted) return { id: r.id, value: null };
+      if (r.deleted) return { id: r.id!, value: null };
       return {
-        id: r.id,
+        id: r.id!,
         ...(r.key !== r.origKey ? { key: r.key } : null),
         ...(r.value !== r.origValue ? { value: r.value } : null),
         ...(r.type !== r.origType ? { type: r.type } : null)
@@ -153,10 +154,9 @@
     });
 
     try {
-      const updated = await api.patch<{ values?: Value[] }>(`/api/v1/environments/${id}`, { id, values: payload });
-      rows = (updated.values ?? []).map(toRow);
+      rows = (await saveEnvironmentValues({ id, values: payload })).map(toRow);
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Failed to save';
+      error = remoteErrorMessage(e, 'Failed to save');
     } finally {
       saving = false;
     }
