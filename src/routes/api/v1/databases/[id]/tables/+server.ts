@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { tablesService } from '#lib/services/tables.ts';
 import { CreateTableInputSchema, type IColumnDefinition } from '#lib/types/index.ts';
@@ -11,15 +10,15 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 
   try {
     const tableList = await tablesService.listTables(userId, databaseId);
-    return json(tableList);
+    return Response.json(tableList);
   } catch (error) {
     console.error('Failed to list tables:', error);
 
     if (error instanceof Error && error.message === 'Database not found') {
-      return json({ error: 'Database not found' }, { status: 404 });
+      return Response.json({ error: 'Database not found' }, { status: 404 });
     }
 
-    return json(
+    return Response.json(
       { error: 'Failed to list tables', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
@@ -35,15 +34,15 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
   try {
     await tablesService.createTable(userId, databaseId, name, columns as IColumnDefinition[]);
 
-    return json({ created: true, name }, { status: 201 });
+    return Response.json({ created: true, name }, { status: 201 });
   } catch (error) {
     console.error('Failed to create table:', error);
 
     if (error instanceof Error && error.message === 'Database not found') {
-      return json({ error: 'Database not found' }, { status: 404 });
+      return Response.json({ error: 'Database not found' }, { status: 404 });
     }
 
-    return json(
+    return Response.json(
       { error: 'Failed to create table', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );

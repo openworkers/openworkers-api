@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { kvService } from '#lib/services/kv.ts';
 import { KvNamespaceSchema, KvNamespaceCreateInputSchema } from '#lib/types/index.ts';
@@ -13,7 +12,7 @@ export const GET: RequestHandler = async ({ locals }) => {
     return jsonArrayResponse(KvNamespaceSchema, namespaces);
   } catch (error) {
     console.error('Failed to fetch KV namespaces:', error);
-    return json({ error: 'Failed to fetch KV namespaces' }, { status: 500 });
+    return Response.json({ error: 'Failed to fetch KV namespaces' }, { status: 500 });
   }
 };
 
@@ -27,7 +26,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     return jsonResponse(KvNamespaceSchema, namespace, 201);
   } catch (error) {
     console.error('Failed to create KV namespace:', error);
-    return json(
+    return Response.json(
       { error: 'Failed to create KV namespace', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: error instanceof Error && error.message.includes('limit') ? 403 : 500 }
     );

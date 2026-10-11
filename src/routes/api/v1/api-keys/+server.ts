@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
 import { createApiKey, listApiKeys } from '#lib/services/db/api-keys.ts';
@@ -18,7 +17,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     const expiresAt = input.expiresAt ? new Date(input.expiresAt) : undefined;
     const { apiKey, token } = await createApiKey(userId, input.name, expiresAt);
 
-    return json(
+    return Response.json(
       {
         id: apiKey.id,
         name: apiKey.name,
@@ -31,7 +30,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     );
   } catch (error) {
     console.error('Failed to create API key:', error);
-    return json({ error: 'Failed to create API key' }, { status: 500 });
+    return Response.json({ error: 'Failed to create API key' }, { status: 500 });
   }
 };
 
@@ -41,7 +40,7 @@ export const GET: RequestHandler = async ({ locals }) => {
     const userId = locals.userId;
     const keys = await listApiKeys(userId);
 
-    return json(
+    return Response.json(
       keys.map((key) => ({
         id: key.id,
         name: key.name,
@@ -53,6 +52,6 @@ export const GET: RequestHandler = async ({ locals }) => {
     );
   } catch (error) {
     console.error('Failed to list API keys:', error);
-    return json({ error: 'Failed to list API keys' }, { status: 500 });
+    return Response.json({ error: 'Failed to list API keys' }, { status: 500 });
   }
 };

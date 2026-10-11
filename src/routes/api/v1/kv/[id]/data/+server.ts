@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { kvService } from '#lib/services/kv.ts';
 
@@ -14,7 +13,7 @@ export const GET: RequestHandler = async ({ locals, params, url }) => {
     const namespace = await kvService.findByIdOrName(userId, idOrName);
 
     if (!namespace) {
-      return json({ error: 'KV namespace not found' }, { status: 404 });
+      return Response.json({ error: 'KV namespace not found' }, { status: 404 });
     }
 
     const result = await kvService.listData(namespace.id, {
@@ -23,9 +22,9 @@ export const GET: RequestHandler = async ({ locals, params, url }) => {
       limit: limit ? parseInt(limit, 10) : undefined
     });
 
-    return json(result);
+    return Response.json(result);
   } catch (error) {
     console.error('Failed to list KV data:', error);
-    return json({ error: 'Failed to list KV data' }, { status: 500 });
+    return Response.json({ error: 'Failed to list KV data' }, { status: 500 });
   }
 };

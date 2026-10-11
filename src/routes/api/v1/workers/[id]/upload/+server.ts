@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { unzipSync, strFromU8 } from 'fflate';
 import { workersService } from '#lib/services/workers.ts';
@@ -21,22 +20,22 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
     const worker = await workersService.findByIdOrName(userId, idOrName);
 
     if (!worker) {
-      return json({ error: 'Worker not found' }, { status: 404 });
+      return Response.json({ error: 'Worker not found' }, { status: 404 });
     }
 
     const formData = await request.formData();
     const file = formData.get('file');
 
     if (!file || !(file instanceof File)) {
-      return json({ error: 'Missing file in form data' }, { status: 400 });
+      return Response.json({ error: 'Missing file in form data' }, { status: 400 });
     }
 
     if (!file.name.endsWith('.zip')) {
-      return json({ error: 'File must be a .zip archive' }, { status: 400 });
+      return Response.json({ error: 'File must be a .zip archive' }, { status: 400 });
     }
 
     if (file.size > 50 * 1024 * 1024) {
-      return json({ error: 'File too large. Maximum size is 50MB.' }, { status: 413 });
+      return Response.json({ error: 'File too large. Maximum size is 50MB.' }, { status: 413 });
     }
 
     const assetsManifest = formData.get('assets');
@@ -51,7 +50,7 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
       assetsBinding = await findWorkerAssetsBinding(userId, worker.id);
 
       if (!assetsBinding) {
-        return json(
+        return Response.json(
           { error: 'Worker has no ASSETS binding. Add an assets binding to the worker environment first.' },
           { status: 400 }
         );
@@ -98,7 +97,7 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
     );
 
     if (!workerScript) {
-      return json({ error: 'No worker.js or worker.ts found in zip archive' }, { status: 400 });
+      return Response.json({ error: 'No worker.js or worker.ts found in zip archive' }, { status: 400 });
     }
 
     const hash = await sha256HexUint8(workerScript);
@@ -110,7 +109,7 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
       const endpoint = assetsBinding.endpoint ?? getStorageConfig().endpoint;
 
       if (!endpoint) {
-        return json({ error: 'Storage endpoint not configured' }, { status: 500 });
+        return Response.json({ error: 'Storage endpoint not configured' }, { status: 500 });
       }
 
       const s3Client = new S3Client({
@@ -194,7 +193,7 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
     const workerDomain = updatedWorker?.domains?.[0]?.name;
     const workerUrl = workerDomain ? `https://${workerDomain}` : worker.name;
 
-    return json({
+    return Response.json({
       success: true,
       worker: {
         id: worker.id,
@@ -211,7 +210,7 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
     });
   } catch (error) {
     console.error('Failed to upload worker:', error);
-    return json(
+    return Response.json(
       { error: 'Failed to upload worker', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );

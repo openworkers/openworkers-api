@@ -1,4 +1,4 @@
-import { json, error } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 import { z, ZodError } from 'zod';
 import { getNodeEnv } from '#lib/config/index.ts';
 
@@ -44,13 +44,13 @@ export function jsonResponse<T extends z.ZodTypeAny>(schema: T, data: unknown, s
     console.error('Invalid data:', JSON.stringify(data, null, 2));
 
     if (getNodeEnv() === 'production') {
-      return json({ error: 'Internal server error' }, { status: 500 });
+      return Response.json({ error: 'Internal server error' }, { status: 500 });
     } else {
-      return json({ error: 'Response validation failed', issues: result.error.issues, data }, { status: 500 });
+      return Response.json({ error: 'Response validation failed', issues: result.error.issues, data }, { status: 500 });
     }
   }
 
-  return json(result.data, { status });
+  return Response.json(result.data, { status });
 }
 
 /**

@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { domainsService } from '#lib/services/domains.ts';
 import { DomainSchema, DomainCreateInputSchema } from '#lib/types/index.ts';
@@ -12,7 +11,7 @@ export const GET: RequestHandler = async ({ locals }) => {
     return jsonArrayResponse(DomainSchema, domains);
   } catch (error) {
     console.error('Failed to fetch domains:', error);
-    return json({ error: 'Failed to fetch domains' }, { status: 500 });
+    return Response.json({ error: 'Failed to fetch domains' }, { status: 500 });
   }
 };
 
@@ -26,7 +25,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     return jsonResponse(DomainSchema, domain, 201);
   } catch (error) {
     console.error('Failed to create domain:', error);
-    return json(
+    return Response.json(
       { error: 'Failed to create domain', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );

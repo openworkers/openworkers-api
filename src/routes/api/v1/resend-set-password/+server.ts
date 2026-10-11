@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { authService } from '#lib/services/auth.ts';
 import { ResendSetPasswordInputSchema } from '#lib/types/index.ts';
@@ -10,12 +9,12 @@ export const POST: RequestHandler = async ({ request }) => {
 
     await authService.resendSetPasswordEmail(input.email);
 
-    return json({
+    return Response.json({
       message: 'If a pending account exists with this email, a new link has been sent.'
     });
   } catch (error) {
     console.error('Resend set-password error:', error);
-    return json({
+    return Response.json({
       message: 'If a pending account exists with this email, a new link has been sent.'
     });
   }

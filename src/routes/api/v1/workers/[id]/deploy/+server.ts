@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { workersService } from '#lib/services/workers.ts';
 import { base64Encode, bytesToString, stringToBase64 } from '#lib/utils/base64.ts';
@@ -11,17 +10,17 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
 
   try {
     if (!body.code) {
-      return json({ error: 'Missing required field: code' }, { status: 400 });
+      return Response.json({ error: 'Missing required field: code' }, { status: 400 });
     }
 
     if (!body.codeType) {
-      return json({ error: 'Missing required field: codeType' }, { status: 400 });
+      return Response.json({ error: 'Missing required field: codeType' }, { status: 400 });
     }
 
     const worker = await workersService.findByIdOrName(userId, idOrName);
 
     if (!worker) {
-      return json({ error: 'Worker not found' }, { status: 404 });
+      return Response.json({ error: 'Worker not found' }, { status: 404 });
     }
 
     // Binary code (wasm) stays base64 end to end; the deployments table
@@ -31,7 +30,7 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
 
     if (body.codeType === 'wasm') {
       if (!Array.isArray(body.code)) {
-        return json({ error: 'wasm code must be sent as a byte array' }, { status: 400 });
+        return Response.json({ error: 'wasm code must be sent as a byte array' }, { status: 400 });
       }
 
       const scriptBase64 = base64Encode(Uint8Array.from(body.code));
@@ -49,10 +48,10 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
     const updatedWorker = await workersService.update(userId, worker.id, update);
 
     if (!updatedWorker) {
-      return json({ error: 'Worker not found' }, { status: 404 });
+      return Response.json({ error: 'Worker not found' }, { status: 404 });
     }
 
-    return json({
+    return Response.json({
       workerId: updatedWorker.id,
       version: updatedWorker.currentVersion,
       hash,
@@ -62,7 +61,7 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
     });
   } catch (error) {
     console.error('Failed to deploy worker:', error);
-    return json(
+    return Response.json(
       { error: 'Failed to deploy worker', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );

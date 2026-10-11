@@ -1,4 +1,4 @@
-import { json, redirect } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getPlanetScaleConfig } from '#lib/config/index.ts';
 
@@ -6,7 +6,7 @@ export const POST: RequestHandler = async () => {
   const config = getPlanetScaleConfig();
 
   if (!config.clientId) {
-    return json({ error: 'PlanetScale OAuth not configured' }, { status: 500 });
+    return Response.json({ error: 'PlanetScale OAuth not configured' }, { status: 500 });
   }
 
   const authUrl = new URL('https://app.planetscale.com/oauth/authorize');

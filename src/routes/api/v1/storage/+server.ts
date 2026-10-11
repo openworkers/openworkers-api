@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { storageService } from '#lib/services/storage.ts';
 import { StorageConfigSchema, StorageConfigCreateInputSchema } from '#lib/types/index.ts';
@@ -13,7 +12,7 @@ export const GET: RequestHandler = async ({ locals }) => {
     return jsonArrayResponse(StorageConfigSchema, configs);
   } catch (error) {
     console.error('Failed to fetch storage configs:', error);
-    return json({ error: 'Failed to fetch storage configs' }, { status: 500 });
+    return Response.json({ error: 'Failed to fetch storage configs' }, { status: 500 });
   }
 };
 
@@ -27,7 +26,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     return jsonResponse(StorageConfigSchema, config, 201);
   } catch (error) {
     console.error('Failed to create storage config:', error);
-    return json(
+    return Response.json(
       { error: 'Failed to create storage config', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: error instanceof Error && error.message.includes('limit') ? 403 : 500 }
     );

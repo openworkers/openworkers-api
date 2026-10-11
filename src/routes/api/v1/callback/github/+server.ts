@@ -1,7 +1,6 @@
 // @deprecated — kept for the legacy Angular dashboard. The new UI BFFs this
 // flow as a SvelteKit form action/load; tokens are set as HttpOnly cookies
 // server-side (see src/routes/(dash)/sign-in/**).
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { authService } from '#lib/services/auth.ts';
 import { getGithubConfig } from '#lib/config/index.ts';
@@ -17,13 +16,13 @@ export const GET: RequestHandler = async ({ url }) => {
   const code = url.searchParams.get('code');
 
   if (!code) {
-    return json({ error: 'Missing code parameter' }, { status: 400 });
+    return Response.json({ error: 'Missing code parameter' }, { status: 400 });
   }
 
   const githubConfig = getGithubConfig();
 
   if (!githubConfig.clientId || !githubConfig.clientSecret) {
-    return json({ error: 'GitHub OAuth not configured' }, { status: 500 });
+    return Response.json({ error: 'GitHub OAuth not configured' }, { status: 500 });
   }
 
   try {
@@ -46,7 +45,7 @@ export const GET: RequestHandler = async ({ url }) => {
     };
 
     if (!tokenData.access_token) {
-      return json({ error: 'Failed to get GitHub access token', details: tokenData.error }, { status: 401 });
+      return Response.json({ error: 'Failed to get GitHub access token', details: tokenData.error }, { status: 401 });
     }
 
     const userResponse = await fetch('https://api.github.com/user', {
@@ -58,7 +57,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
     const contentType = userResponse.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
-      return json(
+      return Response.json(
         { error: 'Unexpected response from GitHub user API', details: await userResponse.text() },
         { status: 500 }
       );
@@ -77,7 +76,7 @@ export const GET: RequestHandler = async ({ url }) => {
     return setAccessTokenCookie(response, tokens.accessToken);
   } catch (error) {
     console.error('GitHub OAuth error:', error);
-    return json(
+    return Response.json(
       { error: 'Authentication failed', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );

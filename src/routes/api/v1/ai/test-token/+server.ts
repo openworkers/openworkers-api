@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import {
   getClaudeToken,
@@ -14,7 +13,7 @@ export const POST: RequestHandler = async ({ request }) => {
   const rawToken = getClaudeToken(request);
 
   if (!rawToken) {
-    return json({ valid: false, error: 'No token provided' }, { status: 400 });
+    return Response.json({ valid: false, error: 'No token provided' }, { status: 400 });
   }
 
   try {
@@ -32,13 +31,13 @@ export const POST: RequestHandler = async ({ request }) => {
     });
 
     if (response.ok) {
-      return json({ valid: true });
+      return Response.json({ valid: true });
     }
 
     const error = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
-    return json({ valid: false, error: error.error?.message || 'Invalid token' }, { status: 401 });
+    return Response.json({ valid: false, error: error.error?.message || 'Invalid token' }, { status: 401 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Connection failed';
-    return json({ valid: false, error: message }, { status: 500 });
+    return Response.json({ valid: false, error: message }, { status: 500 });
   }
 };

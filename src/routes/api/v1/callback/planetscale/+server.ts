@@ -1,4 +1,4 @@
-import { json, redirect } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getPlanetScaleConfig } from '#lib/config/index.ts';
 
@@ -6,7 +6,7 @@ export const GET: RequestHandler = async ({ url }) => {
   const code = url.searchParams.get('code');
 
   if (!code) {
-    return json({ error: 'Missing code parameter' }, { status: 400 });
+    return Response.json({ error: 'Missing code parameter' }, { status: 400 });
   }
 
   const config = getPlanetScaleConfig();

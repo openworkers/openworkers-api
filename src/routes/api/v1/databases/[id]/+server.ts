@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
 import { databasesService } from '#lib/services/databases.ts';
@@ -14,13 +13,13 @@ export const GET: RequestHandler = async ({ locals, params }) => {
     const db = await databasesService.findByIdOrName(userId, idOrName);
 
     if (!db) {
-      return json({ error: 'Database not found' }, { status: 404 });
+      return Response.json({ error: 'Database not found' }, { status: 404 });
     }
 
     return jsonResponse(DatabaseSchema, db);
   } catch (error) {
     console.error('Failed to fetch database:', error);
-    return json({ error: 'Failed to fetch database' }, { status: 500 });
+    return Response.json({ error: 'Failed to fetch database' }, { status: 500 });
   }
 };
 
@@ -41,19 +40,19 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
     const existing = await databasesService.findByIdOrName(userId, idOrName);
 
     if (!existing) {
-      return json({ error: 'Database not found' }, { status: 404 });
+      return Response.json({ error: 'Database not found' }, { status: 404 });
     }
 
     const db = await databasesService.update(userId, existing.id, payload);
 
     if (!db) {
-      return json({ error: 'Database not found' }, { status: 404 });
+      return Response.json({ error: 'Database not found' }, { status: 404 });
     }
 
     return jsonResponse(DatabaseSchema, db);
   } catch (error) {
     console.error('Failed to update database:', error);
-    return json({ error: 'Failed to update database' }, { status: 500 });
+    return Response.json({ error: 'Failed to update database' }, { status: 500 });
   }
 };
 
@@ -66,18 +65,18 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
     const existing = await databasesService.findByIdOrName(userId, idOrName);
 
     if (!existing) {
-      return json({ error: 'Database not found' }, { status: 404 });
+      return Response.json({ error: 'Database not found' }, { status: 404 });
     }
 
     const deleted = await databasesService.delete(userId, existing.id);
 
     if (!deleted) {
-      return json({ error: 'Database not found' }, { status: 404 });
+      return Response.json({ error: 'Database not found' }, { status: 404 });
     }
 
-    return json({ deleted: true });
+    return Response.json({ deleted: true });
   } catch (error) {
     console.error('Failed to delete database:', error);
-    return json({ error: 'Failed to delete database' }, { status: 500 });
+    return Response.json({ error: 'Failed to delete database' }, { status: 500 });
   }
 };

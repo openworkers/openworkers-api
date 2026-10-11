@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { planetScaleService } from '#lib/services/planetscale.ts';
 
@@ -7,10 +6,10 @@ export const GET: RequestHandler = async ({ locals }) => {
 
   try {
     const organizations = await planetScaleService.listOrganizations(userId);
-    return json(organizations);
+    return Response.json(organizations);
   } catch (error) {
     console.error('Failed to list PlanetScale organizations:', error);
-    return json(
+    return Response.json(
       { error: 'Failed to list organizations', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
