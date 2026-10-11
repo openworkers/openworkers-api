@@ -1,4 +1,4 @@
-import type { Handle } from '@sveltejs/kit/hooks';
+import type { Handle, HandleServerError } from '@sveltejs/kit/hooks';
 import { authenticate } from '#lib/server/auth.ts';
 import { setSession } from '#lib/server/auth-cookies.ts';
 import { authService } from '#lib/services/auth.ts';
@@ -80,4 +80,11 @@ export const handle: Handle = async ({ event, resolve }) => {
   const ms = (performance.now() - start).toFixed(0);
   console.log(`--> ${method} ${requestId} ${path} ${response.status} ${ms}ms`);
   return response;
+};
+
+export const handleError: HandleServerError = ({ kind, error }) => {
+  // A malformed id in the URL reaches PostgreSQL as an invalid uuid; it names no resource, so it is a 404.
+  if (kind === 'unknown' && error instanceof Error && error.message.includes('invalid input syntax for type uuid')) {
+    return { status: 404, message: 'Not Found' };
+  }
 };
