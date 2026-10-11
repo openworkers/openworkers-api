@@ -1,6 +1,7 @@
 import * as db from './db/storage';
 import { getStorageConfig, sharedStorageConfigured } from '../config';
 import { ServiceError } from './errors';
+import { S3Client } from '../utils/s3';
 import { refuseIfBound } from './binding-usages';
 import { refuseOverLimit } from './limits';
 
@@ -172,6 +173,25 @@ export class StorageService {
    */
   async getConfigWithCredentials(userId: string, id: string): Promise<db.StorageConfigRow | null> {
     return db.findStorageConfigById(userId, id);
+  }
+
+  // The client of a config, with its credentials and prefix; null when no endpoint is known
+  async s3Client(userId: string, id: string): Promise<S3Client | null> {
+    const row = await db.findStorageConfigById(userId, id);
+    const endpoint = row?.endpoint ?? getStorageConfig().endpoint;
+
+    if (!row || !endpoint) {
+      return null;
+    }
+
+    return new S3Client({
+      bucket: row.bucket,
+      endpoint,
+      accessKeyId: row.accessKeyId,
+      secretAccessKey: row.secretAccessKey,
+      region: row.region,
+      prefix: row.prefix
+    });
   }
 
   /**

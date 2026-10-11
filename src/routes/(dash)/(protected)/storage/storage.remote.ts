@@ -9,6 +9,7 @@ import {
   requireUserIdInCommand
 } from '#lib/server/remote-guards.ts';
 import { ResourceSettingsSchema } from '#lib/server/remote-schemas.ts';
+import { isSafeKey } from '#lib/utils/s3.ts';
 import {
   MASKED_SECRET,
   StorageConfigCreatePlatformInputSchema,
@@ -108,3 +109,48 @@ export const updateStorageS3Settings = form(S3SettingsSchema, async (input) => {
 
   return { saved: true };
 });
+
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+
+const FileKeySchema = z.string().min(1).max(1024).refine(isSafeKey, 'Invalid file name');
+
+async function requireS3Client(userId: string, id: string) {
+  const client = await storageService.s3Client(userId, id);
+
+  if (!client) {
+    error(404, 'Storage config not found');
+  }
+
+  return client;
+}
+
+export const deleteStorageFile = command(z.object({ id: z.uuid(), key: FileKeySchema }), async ({ id, key }) => {
+  const userId = requireUserIdInCommand();
+  const client = await requireS3Client(userId, id);
+
+  const deleted = await client.delete(key).catch((e) => {
+    console.error('Failed to delete a storage file:', e);
+    return false;
+  });
+
+  if (!deleted) {
+    error(502, 'The storage did not delete the file');
+  }
+});
+
+// The browser sends the file straight to the storage; the checksum makes the storage refuse other content
+export const presignStorageUpload = command(
+  z.object({
+    id: z.uuid(),
+    key: FileKeySchema,
+    size: z.number().int().min(0).max(MAX_UPLOAD_BYTES, 'The file is larger than 100 MB'),
+    type: z.string().min(1).max(255),
+    checksum: z.base64()
+  }),
+  async ({ id, key, size, type, checksum }) => {
+    const userId = requireUserIdInCommand();
+    const client = await requireS3Client(userId, id);
+
+    return client.presignPut(key, { contentType: type, contentLength: size, checksumBase64: checksum });
+  }
+);

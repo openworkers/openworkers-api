@@ -4,6 +4,7 @@
   import { deleteStorageConfig, updateStorageConfig } from '../storage.remote.ts';
   import ResourceUsages from '#lib/components/resource-usages.svelte';
   import StorageS3Settings from './storage-s3-settings.svelte';
+  import StorageFiles from './storage-files.svelte';
   import { Badge } from '#lib/components/ui/badge/index.ts';
 
   let { data } = $props();
@@ -40,6 +41,7 @@
         <StorageS3Settings {id} config={s} />
       {/if}
       <ResourceUsages usages={data.usages} />
+      <StorageFiles {id} prefix={data.prefix} files={data.files} cursor={data.cursor} filesError={data.filesError} />
     {/snippet}
   </ResourceDetail>
 {/key}
