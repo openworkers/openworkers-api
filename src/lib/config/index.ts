@@ -7,7 +7,7 @@ export { getPostgateConfig } from './postgate';
 export type { PostgateConfig } from './postgate';
 export { getGithubConfig } from './github';
 export type { GithubConfig } from './github';
-export { getStorageConfig } from './storage';
+export { getStorageConfig, sharedStorageConfigured } from './storage';
 export type { StorageConfig } from './storage';
 export { getMistralConfig } from './mistral';
 export type { MistralConfig } from './mistral';

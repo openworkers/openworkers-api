@@ -1,6 +1,12 @@
 import * as db from './db/storage';
 import * as usersDb from './db/users';
-import { getStorageConfig } from '../config';
+import { getStorageConfig, sharedStorageConfigured } from '../config';
+
+export class PlatformStorageUnavailable extends Error {
+  constructor() {
+    super('Shared storage is not configured on this platform');
+  }
+}
 import { MASKED_SECRET } from '../types';
 import type { IStorageConfig, IStorageConfigCreateInput, IStorageConfigUpdateInput } from '../types';
 import { isUuid } from '../utils/validation';
@@ -93,8 +99,8 @@ export class StorageService {
       // Platform provider: use shared R2 credentials with user-specific prefix
       const sharedStorage = getStorageConfig();
 
-      if (!sharedStorage.bucket || !sharedStorage.accessKeyId || !sharedStorage.secretAccessKey) {
-        throw new Error('Shared storage is not configured on this platform');
+      if (!sharedStorageConfigured(sharedStorage)) {
+        throw new PlatformStorageUnavailable();
       }
 
       row = await db.createStorageConfig(

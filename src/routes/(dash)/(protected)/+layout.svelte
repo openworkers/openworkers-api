@@ -19,16 +19,17 @@
 
   let { data, children } = $props();
 
+  // `detail` is the path prefix of the section's detail and create pages.
   const nav = [
-    { href: '/workers', label: 'Workers', icon: LayoutGrid },
-    { href: '/environments', label: 'Environments', icon: Boxes },
-    { href: '/databases', label: 'Databases', icon: Database },
-    { href: '/kv-namespaces', label: 'KV', icon: KeyRound },
-    { href: '/storage-configs', label: 'Storage', icon: HardDrive }
+    { href: '/workers', detail: '/worker/', label: 'Workers', icon: LayoutGrid },
+    { href: '/environments', detail: '/environment/', label: 'Environments', icon: Boxes },
+    { href: '/databases', detail: '/database/', label: 'Databases', icon: Database },
+    { href: '/kv-namespaces', detail: '/kv/', label: 'KV', icon: KeyRound },
+    { href: '/storage-configs', detail: '/storage/', label: 'Storage', icon: HardDrive }
   ];
 
-  function active(href: string): boolean {
-    return page.url.pathname === href || page.url.pathname.startsWith(href.replace(/s$/, '') + '/');
+  function active(item: (typeof nav)[number]): boolean {
+    return page.url.pathname === item.href || page.url.pathname.startsWith(item.detail);
   }
 </script>
 
@@ -45,8 +46,9 @@
       {#each nav as item (item.href)}
         <a
           href={item.href}
+          aria-current={active(item) ? 'page' : undefined}
           class="flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors {active(
-            item.href
+            item
           )
             ? 'bg-secondary text-secondary-foreground font-medium'
             : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"

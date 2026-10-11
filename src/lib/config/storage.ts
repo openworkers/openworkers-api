@@ -25,3 +25,10 @@ export function getStorageConfig(): StorageConfig {
   });
   return cached;
 }
+
+export type SharedStorageConfig = StorageConfig & { bucket: string; accessKeyId: string; secretAccessKey: string };
+
+/** Platform storage needs the shared bucket and its credentials. */
+export function sharedStorageConfigured(config = getStorageConfig()): config is SharedStorageConfig {
+  return Boolean(config.bucket && config.accessKeyId && config.secretAccessKey);
+}

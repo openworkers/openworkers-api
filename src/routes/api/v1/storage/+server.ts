@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import { storageService } from '#lib/services/storage.ts';
+import { PlatformStorageUnavailable, storageService } from '#lib/services/storage.ts';
 import { StorageConfigSchema, StorageConfigCreateInputSchema } from '#lib/types/index.ts';
 import { jsonResponse, jsonArrayResponse, parseAndValidate } from '#lib/server/validate.ts';
 
@@ -25,6 +25,10 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     const config = await storageService.create(userId, payload);
     return jsonResponse(StorageConfigSchema, config, 201);
   } catch (error) {
+    if (error instanceof PlatformStorageUnavailable) {
+      return Response.json({ error: 'Failed to create storage config', message: error.message }, { status: 503 });
+    }
+
     console.error('Failed to create storage config:', error);
     return Response.json(
       { error: 'Failed to create storage config', message: error instanceof Error ? error.message : 'Unknown error' },

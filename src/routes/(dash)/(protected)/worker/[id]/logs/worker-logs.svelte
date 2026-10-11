@@ -363,7 +363,7 @@
 </script>
 
 <div class="flex h-full min-h-[32rem] flex-col">
-<PageHeader title={worker.name ?? 'Worker'} description="Live logs">
+<PageHeader title={worker.name ?? 'Worker'} description="Live logs" section="Logs">
   {#snippet actions()}
     <Button variant="outline" href={`/worker/${worker.id}`}>Back</Button>
     <Button variant="outline" href={`/worker/${worker.id}/edit`}>

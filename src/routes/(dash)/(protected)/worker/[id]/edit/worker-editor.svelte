@@ -44,7 +44,7 @@
   }
 </script>
 
-<PageHeader title={worker.name ?? 'Edit code'}>
+<PageHeader title={worker.name ?? 'Edit code'} section="Code">
   {#snippet actions()}
     <Button variant="outline" href={`/worker/${worker.id}`}>Back</Button>
     <Button onclick={deploy} disabled={saving || !dirty}>

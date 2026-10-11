@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { goto } from '$app/navigation';
   import { api, ApiError } from '#lib/api.ts';
   import { Button } from '#lib/components/ui/button/index.ts';
@@ -8,7 +9,9 @@
   import PageHeader from '#lib/components/page-header.svelte';
   import { hydration } from '#lib/hydration.svelte.ts';
 
-  let provider = $state<'platform' | 's3'>('platform');
+  let { data } = $props();
+
+  let provider = $state<'platform' | 's3'>(untrack(() => (data.platformStorage ? 'platform' : 's3')));
   let name = $state('');
   let desc = $state('');
   // S3 fields
@@ -67,6 +70,7 @@
               <Button
                 type="button"
                 variant={provider === 'platform' ? 'default' : 'outline'}
+                disabled={!data.platformStorage}
                 onclick={() => (provider = 'platform')}
               >
                 Platform
@@ -79,6 +83,9 @@
                 S3-compatible
               </Button>
             </div>
+            {#if !data.platformStorage}
+              <p class="text-muted-foreground text-sm">Platform storage is not configured on this platform.</p>
+            {/if}
           </div>
 
           <div class="flex flex-col gap-2">
