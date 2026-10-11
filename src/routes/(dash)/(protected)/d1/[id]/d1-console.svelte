@@ -11,6 +11,13 @@
   let run = $derived(runD1Statement.for(id));
   let result = $derived(run.result);
 
+  // The prefix a worker sees for this error kind (openworkers-core docs/d1.md, "Errors")
+  function errorPrefix(kind: string): string {
+    if (kind === 'type') return 'D1_TYPE_ERROR';
+    if (kind === 'range') return 'D1_RANGE_ERROR';
+    return 'D1_ERROR';
+  }
+
   function cell(value: unknown): string {
     if (value === null) return 'NULL';
     if (typeof value === 'object') return JSON.stringify(value);
@@ -40,7 +47,7 @@
     </form>
 
     {#if result?.type === 'error' && 'message' in result}
-      <p class="text-destructive font-mono text-sm">{result.message}</p>
+      <p class="text-destructive font-mono text-sm">{errorPrefix(result.kind)}: {result.message}</p>
     {:else if result?.type === 'query' && 'rows' in result}
       {#if result.columns.length > 0}
         <div class="overflow-x-auto rounded-md border">
