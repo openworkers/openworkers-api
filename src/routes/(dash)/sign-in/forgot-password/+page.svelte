@@ -1,31 +1,12 @@
 <script lang="ts">
-  import { api, ApiError } from '#lib/api.ts';
   import { Button } from '#lib/components/ui/button/index.ts';
   import { Input } from '#lib/components/ui/input/index.ts';
   import { Label } from '#lib/components/ui/label/index.ts';
   import * as Card from '#lib/components/ui/card/index.ts';
-  import { hydration } from '#lib/hydration.svelte.ts';
+  import FieldIssues from '#lib/components/field-issues.svelte';
+  import { requestPasswordReset } from './forgot-password.remote.ts';
 
-  let email = $state('');
-  let loading = $state(false);
-  let error = $state<string | null>(null);
-  let success = $state<string | null>(null);
-
-  async function submit(event: SubmitEvent) {
-    event.preventDefault();
-    loading = true;
-    error = null;
-    success = null;
-
-    try {
-      const res = await api.post<{ message: string }>('/api/v1/forgot-password', { email });
-      success = res.message ?? 'Check your email for a reset link.';
-    } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Request failed';
-    } finally {
-      loading = false;
-    }
-  }
+  const { fields } = requestPasswordReset;
 </script>
 
 <svelte:head><title>Forgot password · OpenWorkers</title></svelte:head>
@@ -37,18 +18,20 @@
       <Card.Description>We'll email you a reset link.</Card.Description>
     </Card.Header>
     <Card.Content>
-      <form class="flex flex-col gap-4" onsubmit={submit}>
-        <fieldset class="contents" disabled={!hydration.done}>
-          <div class="flex flex-col gap-2">
-            <Label for="email">Email</Label>
-            <Input id="email" type="email" bind:value={email} autocomplete="email" required />
-          </div>
+      <form class="flex flex-col gap-4" {...requestPasswordReset}>
+        <div class="flex flex-col gap-2">
+          <Label for="email">Email</Label>
+          <Input id="email" {...fields.email.as('email')} autocomplete="email" required />
+          <FieldIssues issues={fields.email.issues()} />
+        </div>
 
-          {#if error}<p class="text-destructive text-sm">{error}</p>{/if}
-          {#if success}<p class="text-sm text-green-500">{success}</p>{/if}
+        {#if requestPasswordReset.result}
+          <p class="text-sm text-green-500">{requestPasswordReset.result.message}</p>
+        {/if}
 
-          <Button type="submit" disabled={loading}>{loading ? 'Sending…' : 'Send reset link'}</Button>
-        </fieldset>
+        <Button type="submit" disabled={!!requestPasswordReset.pending}>
+          {requestPasswordReset.pending ? 'Sending…' : 'Send reset link'}
+        </Button>
       </form>
     </Card.Content>
     <Card.Footer class="justify-center">
