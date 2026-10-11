@@ -14,7 +14,6 @@
   import WorkerCrons from './worker-crons.svelte';
   import { ArrowRight, Code, ExternalLink, ScrollText, Trash2 } from '@lucide/svelte';
   import { workerUrl } from '#lib/utils/worker-url.ts';
-  import { hydration } from '#lib/hydration.svelte.ts';
   import { deleteWorker, updateWorkerSettings } from '../worker.remote.ts';
 
   let { data } = $props();
@@ -22,7 +21,6 @@
 
   let worker = $derived(data.worker);
   let settings = $derived(updateWorkerSettings.for(worker.id));
-  let domainsText = $state(untrack(() => (data.worker.domains ?? []).map((d) => d.name).join('\n')));
   // '' is no environment
   let environment = $state(untrack(() => data.worker.environment?.id ?? ''));
   let environmentName = $derived(data.environments.find((e) => e.id === environment)?.name ?? 'None');
@@ -35,7 +33,6 @@
     const w = data.worker;
 
     untrack(() => {
-      domainsText = (w.domains ?? []).map((d) => d.name).join('\n');
       environment = w.environment?.id ?? '';
       error = null;
     });
@@ -92,63 +89,65 @@
     <Card.Header><Card.Title>Settings</Card.Title></Card.Header>
     <Card.Content>
       <form class="flex flex-col gap-4" {...settings}>
-        <fieldset class="contents" disabled={!hydration.done}>
-          <input {...settings.fields.id.as('hidden', worker.id)} />
-          <input {...settings.fields.environment.as('hidden', environment)} />
-          <input {...settings.fields.domains.as('hidden', domainsText)} />
-          <div class="flex flex-col gap-2">
-            <Label for="name">Name</Label>
-            <Input id="name" {...settings.fields.name.as('text', worker.name ?? '')} required />
+        <input {...settings.fields.id.as('hidden', worker.id)} />
+        <input {...settings.fields.environment.as('hidden', environment)} />
+        <div class="flex flex-col gap-2">
+          <Label for="name">Name</Label>
+          <Input id="name" {...settings.fields.name.as('text', worker.name ?? '')} required />
+        </div>
+        <div class="flex flex-col gap-2">
+          <Label for="desc">Description</Label>
+          <Input id="desc" {...settings.fields.desc.as('text', worker.desc ?? '')} />
+        </div>
+        <div class="flex flex-col gap-2">
+          <Label for="environment">Environment</Label>
+          <div class="flex gap-2">
+            <Select.Root type="single" bind:value={environment}>
+              <Select.Trigger id="environment" class="flex-1">{environmentName}</Select.Trigger>
+              <Select.Content>
+                <Select.Item value="" label="None">None</Select.Item>
+                {#each data.environments as env (env.id)}
+                  <Select.Item value={env.id} label={env.name ?? env.id}>{env.name ?? env.id}</Select.Item>
+                {/each}
+              </Select.Content>
+            </Select.Root>
+            {#if environment}
+              <Button
+                variant="outline"
+                size="icon"
+                href={`/environment/${environment}`}
+                aria-label="Open the environment"
+                title="Open the environment"
+              >
+                <ArrowRight class="size-4" />
+              </Button>
+            {:else}
+              <Button variant="outline" size="icon" disabled aria-label="No environment">
+                <ArrowRight class="size-4" />
+              </Button>
+            {/if}
           </div>
-          <div class="flex flex-col gap-2">
-            <Label for="desc">Description</Label>
-            <Input id="desc" {...settings.fields.desc.as('text', worker.desc ?? '')} />
-          </div>
-          <div class="flex flex-col gap-2">
-            <Label for="environment">Environment</Label>
-            <div class="flex gap-2">
-              <Select.Root type="single" bind:value={environment}>
-                <Select.Trigger id="environment" class="flex-1">{environmentName}</Select.Trigger>
-                <Select.Content>
-                  <Select.Item value="" label="None">None</Select.Item>
-                  {#each data.environments as env (env.id)}
-                    <Select.Item value={env.id} label={env.name ?? env.id}>{env.name ?? env.id}</Select.Item>
-                  {/each}
-                </Select.Content>
-              </Select.Root>
-              {#if environment}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  href={`/environment/${environment}`}
-                  aria-label="Open the environment"
-                  title="Open the environment"
-                >
-                  <ArrowRight class="size-4" />
-                </Button>
-              {:else}
-                <Button variant="outline" size="icon" disabled aria-label="No environment">
-                  <ArrowRight class="size-4" />
-                </Button>
-              {/if}
-            </div>
-          </div>
-          <div class="flex flex-col gap-2">
-            <Label for="domains">Domains <span class="text-muted-foreground">(one per line)</span></Label>
-            <Textarea id="domains" bind:value={domainsText} rows={3} class="font-mono" />
-          </div>
+        </div>
+        <div class="flex flex-col gap-2">
+          <Label for="domains">Domains <span class="text-muted-foreground">(one per line)</span></Label>
+          <Textarea
+            id="domains"
+            {...settings.fields.domains.as('text', (worker.domains ?? []).map((d) => d.name).join('\n'))}
+            rows={3}
+            class="font-mono"
+          />
+        </div>
 
-          {#each settings.fields.allIssues() ?? [] as issue (issue.message)}
-            <p class="text-destructive text-sm">{issue.message}</p>
-          {/each}
-          {#if error}<p class="text-destructive text-sm">{error}</p>{/if}
+        {#each settings.fields.allIssues() ?? [] as issue (issue.message)}
+          <p class="text-destructive text-sm">{issue.message}</p>
+        {/each}
+        {#if error}<p class="text-destructive text-sm">{error}</p>{/if}
 
-          <div class="flex justify-end">
-            <Button type="submit" disabled={settings.pending > 0}>
-              {settings.pending > 0 ? 'Saving…' : 'Save'}
-            </Button>
-          </div>
-        </fieldset>
+        <div class="flex justify-end">
+          <Button type="submit" disabled={settings.pending > 0}>
+            {settings.pending > 0 ? 'Saving…' : 'Save'}
+          </Button>
+        </div>
       </form>
     </Card.Content>
   </Card.Root>
