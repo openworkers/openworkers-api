@@ -11,10 +11,10 @@
   import * as Select from '#lib/components/ui/select/index.ts';
   import { Box, Lock, LockOpen, Plus, RotateCcw, Trash2 } from '@lucide/svelte';
 
-  type BindingType = 'var' | 'secret' | 'assets' | 'storage' | 'kv' | 'database' | 'worker';
+  type BindingType = 'var' | 'secret' | 'assets' | 'storage' | 'kv' | 'database' | 'worker' | 'd1';
   type Value = { id: string; key: string; value: string; type: BindingType };
   type Resource = { id: string; name: string | null };
-  type Kind = 'storage' | 'kv' | 'database' | 'worker';
+  type Kind = 'storage' | 'kv' | 'database' | 'worker' | 'd1';
 
   let {
     id,
@@ -22,7 +22,9 @@
     storage = [],
     kv = [],
     databases = [],
-    workers = []
+    workers = [],
+    d1 = [],
+    d1Enabled = false
   }: {
     id: string;
     values?: Value[];
@@ -30,9 +32,12 @@
     kv?: Resource[];
     databases?: Resource[];
     workers?: Resource[];
+    d1?: Resource[];
+    // D1 is off until the account limit allows a database
+    d1Enabled?: boolean;
   } = $props();
 
-  const RESOURCE_TYPES: BindingType[] = ['assets', 'storage', 'kv', 'database', 'worker'];
+  const RESOURCE_TYPES: BindingType[] = ['assets', 'storage', 'kv', 'database', 'worker', 'd1'];
 
   type Row = {
     id?: string;
@@ -122,6 +127,7 @@
     if (type === 'kv') return kv;
     if (type === 'database') return databases;
     if (type === 'worker') return workers;
+    if (type === 'd1') return d1;
     return storage;
   }
 
@@ -134,6 +140,7 @@
     if (type === 'kv') return `/kv/${value}`;
     if (type === 'database') return `/database/${value}`;
     if (type === 'worker') return `/worker/${value}`;
+    if (type === 'd1') return `/d1/${value}`;
     return `/storage/${value}`;
   }
 
@@ -172,12 +179,14 @@
     storage: 'Storage',
     kv: 'KV',
     database: 'Database',
+    d1: 'D1',
     worker: 'Worker'
   };
   const KIND_CREATE: Record<Kind, string> = {
     storage: '/storage/create',
     kv: '/kv/create',
     database: '/database/create',
+    d1: '/d1/create',
     worker: '/worker/create'
   };
 
@@ -289,6 +298,11 @@
         <Button variant="outline" size="sm" onclick={() => openDialog('worker')}>
           <Plus class="size-4" /> Worker
         </Button>
+        {#if d1Enabled}
+          <Button variant="outline" size="sm" onclick={() => openDialog('d1')}>
+            <Plus class="size-4" /> D1
+          </Button>
+        {/if}
       </div>
 
       {#if dirty}

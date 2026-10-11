@@ -12,6 +12,7 @@ const userSelect = [
   'users.limitDatabases',
   'users.limitKv',
   'users.limitStorage',
+  'users.limitD1',
   'users.secondPrecision'
 ] as const;
 
@@ -30,6 +31,7 @@ export async function findUserById(userId: string): Promise<ISelf | null> {
       databases: user.limitDatabases,
       kv: user.limitKv,
       storage: user.limitStorage,
+      d1: user.limitD1,
       secondPrecision: user.secondPrecision
     }
   };
@@ -56,6 +58,7 @@ export async function findUserByGitHub(externalId: string): Promise<ISelf | null
       databases: user.limitDatabases,
       kv: user.limitKv,
       storage: user.limitStorage,
+      d1: user.limitD1,
       secondPrecision: user.secondPrecision
     }
   };
@@ -79,6 +82,7 @@ export async function createUserWithGitHub(externalId: string, username: string,
       databases: newUser.limitDatabases,
       kv: newUser.limitKv,
       storage: newUser.limitStorage,
+      d1: newUser.limitD1,
       secondPrecision: newUser.secondPrecision
     }
   };
@@ -114,6 +118,7 @@ export async function findUserByEmail(email: string): Promise<ISelf | null> {
       databases: user.limitDatabases,
       kv: user.limitKv,
       storage: user.limitStorage,
+      d1: user.limitD1,
       secondPrecision: user.secondPrecision
     }
   };
@@ -155,6 +160,7 @@ export async function createUserWithEmail(email: string): Promise<ISelf> {
       databases: user.limitDatabases,
       kv: user.limitKv,
       storage: user.limitStorage,
+      d1: user.limitD1,
       secondPrecision: user.secondPrecision
     }
   };

@@ -29,7 +29,7 @@ import bindingsDts from '@openworkers/workers-types/types/bindings.d.ts?raw';
 
 export type EnvValue = {
   key: string;
-  type: 'var' | 'secret' | 'assets' | 'storage' | 'kv' | 'database' | 'worker';
+  type: 'var' | 'secret' | 'assets' | 'storage' | 'kv' | 'database' | 'worker' | 'd1';
 };
 
 const WORKERS_TYPES_LIB = [
@@ -103,6 +103,8 @@ export function createEnvironmentLib(values: EnvValue[]): string {
         return `readonly ${v.key}: BindingDatabase`;
       case 'worker':
         return `readonly ${v.key}: BindingWorker`;
+      case 'd1':
+        return `readonly ${v.key}: BindingD1`;
       default:
         return `readonly ${v.key}: string`;
     }
@@ -133,6 +135,8 @@ export function createEnvType(values: EnvValue[]): string {
         return `readonly ${v.key}: BindingDatabase`;
       case 'worker':
         return `readonly ${v.key}: BindingWorker`;
+      case 'd1':
+        return `readonly ${v.key}: BindingD1`;
       default:
         return `readonly ${v.key}: string`;
     }

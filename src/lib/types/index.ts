@@ -89,6 +89,14 @@ export { KvNamespaceSchema, KvNamespaceCreateInputSchema, KvNamespaceUpdateInput
 export type { IKvNamespace, IKvNamespaceCreateInput, IKvNamespaceUpdateInput } from './schemas/kv.schema';
 
 export {
+  D1DatabaseSchema,
+  D1DatabaseCreateInputSchema,
+  D1DatabaseUpdateInputSchema,
+  D1RequestSchema
+} from './schemas/d1.schema';
+export type { ID1Database, ID1DatabaseCreateInput, ID1DatabaseUpdateInput, ID1Request } from './schemas/d1.schema';
+
+export {
   StorageConfigSchema,
   StorageConfigCreateInputSchema,
   StorageConfigUpdateInputSchema,

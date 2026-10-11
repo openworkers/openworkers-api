@@ -6,7 +6,8 @@ const LABELS = {
   environments: 'Environment',
   databases: 'Database',
   kv: 'KV namespace',
-  storage: 'Storage config'
+  storage: 'Storage config',
+  d1: 'D1 database'
 };
 
 // The count must match what the list page counts, so the server and the New button agree

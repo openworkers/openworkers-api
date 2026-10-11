@@ -7,6 +7,8 @@ export const ResourceLimitsSchema = z.object({
   databases: z.number().int().min(0).default(3),
   kv: z.number().int().min(0).default(3),
   storage: z.number().int().min(0).default(3),
+  // 0 turns D1 off for the account
+  d1: z.number().int().min(0).default(0),
   secondPrecision: z.boolean().default(false)
 });
 

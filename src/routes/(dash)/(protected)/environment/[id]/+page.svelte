@@ -19,6 +19,8 @@
         kv={data.kv}
         databases={data.databases}
         workers={data.workers}
+        d1={data.d1}
+        d1Enabled={data.profile.limits.d1 > 0 || data.d1.length > 0}
       />
 
       <Card.Root>

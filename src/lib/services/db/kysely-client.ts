@@ -20,6 +20,7 @@ export interface Database {
     limitDatabases: Generated<number>;
     limitKv: Generated<number>;
     limitStorage: Generated<number>;
+    limitD1: Generated<number>;
     secondPrecision: Generated<boolean>;
     createdAt: Generated<Date>;
     updatedAt: Generated<Date>;
@@ -39,6 +40,23 @@ export interface Database {
     desc: string | null;
     createdAt: Generated<Date>;
     updatedAt: Generated<Date>;
+  };
+  d1Databases: {
+    id: Generated<string>;
+    userId: string;
+    name: string;
+    desc: string | null;
+    createdAt: Generated<Date>;
+    updatedAt: Generated<Date>;
+    deletedAt: Date | null;
+  };
+  d1Requests: {
+    id: Generated<string>;
+    databaseId: string;
+    request: unknown; // JSONB
+    result: Generated<unknown>; // JSONB, null until the runner answers
+    createdAt: Generated<Date>;
+    finishedAt: Date | null;
   };
   kvData: {
     namespaceId: string;
@@ -120,7 +138,7 @@ export interface Database {
     id: Generated<string>;
     key: string;
     value: string;
-    type: 'var' | 'secret' | 'assets' | 'storage' | 'kv' | 'database' | 'worker';
+    type: 'var' | 'secret' | 'assets' | 'storage' | 'kv' | 'database' | 'worker' | 'd1';
     environmentId: string;
     userId: string;
     createdAt: Generated<Date>;

@@ -38,7 +38,7 @@
   "devDependencies": {
     "@internationalized/date": "^3.12.0",
     "@openworkers/adapter-sveltekit": "^0.6.1",
-    "@openworkers/workers-types": "^0.1.12",
+    "@openworkers/workers-types": "file:../workers-types",
     "@sveltejs/kit": "^3.0.0",
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
     "@tailwindcss/vite": "^4.3.0",

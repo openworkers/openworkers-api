@@ -302,7 +302,7 @@ export async function findBindingUsages(userId: string, resourceId: string): Pro
     JOIN environments e ON e.id = ev.environment_id
     WHERE ev.user_id = ${uuid(userId)}
       AND ev.value = ${resourceId}
-      AND ev.type IN ('assets', 'storage', 'kv', 'database', 'worker')
+      AND ev.type IN ('assets', 'storage', 'kv', 'database', 'worker', 'd1')
     ORDER BY e.name, ev.key
   `.execute(kysely);
 

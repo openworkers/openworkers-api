@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ResourceSchema } from './base.schema';
 
 // Environment Value
-export const BindingTypeSchema = z.enum(['var', 'secret', 'assets', 'storage', 'kv', 'database', 'worker']);
+export const BindingTypeSchema = z.enum(['var', 'secret', 'assets', 'storage', 'kv', 'database', 'worker', 'd1']);
 
 export const EnvironmentValueSchema = z.object({
   id: z.uuid(),
