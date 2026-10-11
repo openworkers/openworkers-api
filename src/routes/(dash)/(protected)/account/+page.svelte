@@ -10,6 +10,7 @@
   import * as Table from '#lib/components/ui/table/index.ts';
   import PageHeader from '#lib/components/page-header.svelte';
   import { Trash2 } from '@lucide/svelte';
+  import { hydration } from '#lib/hydration.svelte.ts';
 
   let { data } = $props();
 
@@ -113,11 +114,13 @@
       {/if}
 
       <form class="flex items-end gap-2" onsubmit={createKey}>
-        <div class="flex flex-1 flex-col gap-2">
-          <Label for="keyname">New key name</Label>
-          <Input id="keyname" bind:value={newKeyName} placeholder="ci-deploy" />
-        </div>
-        <Button type="submit" disabled={creating}>Create</Button>
+        <fieldset class="contents" disabled={!hydration.done}>
+          <div class="flex flex-1 flex-col gap-2">
+            <Label for="keyname">New key name</Label>
+            <Input id="keyname" bind:value={newKeyName} placeholder="ci-deploy" />
+          </div>
+          <Button type="submit" disabled={creating}>Create</Button>
+        </fieldset>
       </form>
 
       {#if error}

@@ -6,6 +6,7 @@
   import { Label } from '#lib/components/ui/label/index.ts';
   import * as Card from '#lib/components/ui/card/index.ts';
   import PageHeader from '#lib/components/page-header.svelte';
+  import { hydration } from '#lib/hydration.svelte.ts';
 
   let provider = $state<'platform' | 's3'>('platform');
   let name = $state('');
@@ -59,76 +60,78 @@
   <Card.Root>
     <Card.Content class="pt-6">
       <form class="flex flex-col gap-4" onsubmit={submit}>
-        <div class="flex flex-col gap-2">
-          <Label>Provider</Label>
-          <div class="flex gap-2">
-            <Button
-              type="button"
-              variant={provider === 'platform' ? 'default' : 'outline'}
-              onclick={() => (provider = 'platform')}
-            >
-              Platform
-            </Button>
-            <Button
-              type="button"
-              variant={provider === 's3' ? 'default' : 'outline'}
-              onclick={() => (provider = 's3')}
-            >
-              S3-compatible
-            </Button>
-          </div>
-        </div>
-
-        <div class="flex flex-col gap-2">
-          <Label for="name">Name</Label>
-          <Input id="name" bind:value={name} required />
-        </div>
-
-        <div class="flex flex-col gap-2">
-          <Label for="desc">Description <span class="text-muted-foreground">(optional)</span></Label>
-          <Input id="desc" bind:value={desc} />
-        </div>
-
-        {#if provider === 's3'}
+        <fieldset class="contents" disabled={!hydration.done}>
           <div class="flex flex-col gap-2">
-            <Label for="bucket">Bucket</Label>
-            <Input id="bucket" bind:value={bucket} required />
-          </div>
-          <div class="flex flex-col gap-2">
-            <Label for="accessKeyId">Access key ID</Label>
-            <Input id="accessKeyId" bind:value={accessKeyId} required />
-          </div>
-          <div class="flex flex-col gap-2">
-            <Label for="secretAccessKey">Secret access key</Label>
-            <Input id="secretAccessKey" type="password" bind:value={secretAccessKey} required />
-          </div>
-          <div class="flex flex-col gap-2">
-            <Label for="endpoint">Endpoint <span class="text-muted-foreground">(optional)</span></Label>
-            <Input id="endpoint" bind:value={endpoint} placeholder="https://…" />
-          </div>
-          <div class="flex gap-2">
-            <div class="flex flex-1 flex-col gap-2">
-              <Label for="region">Region</Label>
-              <Input id="region" bind:value={region} />
-            </div>
-            <div class="flex flex-1 flex-col gap-2">
-              <Label for="prefix">Prefix</Label>
-              <Input id="prefix" bind:value={prefix} />
+            <Label>Provider</Label>
+            <div class="flex gap-2">
+              <Button
+                type="button"
+                variant={provider === 'platform' ? 'default' : 'outline'}
+                onclick={() => (provider = 'platform')}
+              >
+                Platform
+              </Button>
+              <Button
+                type="button"
+                variant={provider === 's3' ? 'default' : 'outline'}
+                onclick={() => (provider = 's3')}
+              >
+                S3-compatible
+              </Button>
             </div>
           </div>
+
           <div class="flex flex-col gap-2">
-            <Label for="publicUrl">Public URL <span class="text-muted-foreground">(optional)</span></Label>
-            <Input id="publicUrl" bind:value={publicUrl} />
+            <Label for="name">Name</Label>
+            <Input id="name" bind:value={name} required />
           </div>
-        {/if}
 
-        {#if error}
-          <p class="text-destructive text-sm">{error}</p>
-        {/if}
+          <div class="flex flex-col gap-2">
+            <Label for="desc">Description <span class="text-muted-foreground">(optional)</span></Label>
+            <Input id="desc" bind:value={desc} />
+          </div>
 
-        <div class="flex justify-end">
-          <Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create'}</Button>
-        </div>
+          {#if provider === 's3'}
+            <div class="flex flex-col gap-2">
+              <Label for="bucket">Bucket</Label>
+              <Input id="bucket" bind:value={bucket} required />
+            </div>
+            <div class="flex flex-col gap-2">
+              <Label for="accessKeyId">Access key ID</Label>
+              <Input id="accessKeyId" bind:value={accessKeyId} required />
+            </div>
+            <div class="flex flex-col gap-2">
+              <Label for="secretAccessKey">Secret access key</Label>
+              <Input id="secretAccessKey" type="password" bind:value={secretAccessKey} required />
+            </div>
+            <div class="flex flex-col gap-2">
+              <Label for="endpoint">Endpoint <span class="text-muted-foreground">(optional)</span></Label>
+              <Input id="endpoint" bind:value={endpoint} placeholder="https://…" />
+            </div>
+            <div class="flex gap-2">
+              <div class="flex flex-1 flex-col gap-2">
+                <Label for="region">Region</Label>
+                <Input id="region" bind:value={region} />
+              </div>
+              <div class="flex flex-1 flex-col gap-2">
+                <Label for="prefix">Prefix</Label>
+                <Input id="prefix" bind:value={prefix} />
+              </div>
+            </div>
+            <div class="flex flex-col gap-2">
+              <Label for="publicUrl">Public URL <span class="text-muted-foreground">(optional)</span></Label>
+              <Input id="publicUrl" bind:value={publicUrl} />
+            </div>
+          {/if}
+
+          {#if error}
+            <p class="text-destructive text-sm">{error}</p>
+          {/if}
+
+          <div class="flex justify-end">
+            <Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create'}</Button>
+          </div>
+        </fieldset>
       </form>
     </Card.Content>
   </Card.Root>

@@ -5,6 +5,7 @@
   import { Input } from '#lib/components/ui/input/index.ts';
   import * as Card from '#lib/components/ui/card/index.ts';
   import { Trash2 } from '@lucide/svelte';
+  import { hydration } from '#lib/hydration.svelte.ts';
 
   type Cron = { id: string; value: string; nextRun?: string | Date | null };
 
@@ -58,8 +59,10 @@
     {/each}
 
     <form class="flex items-center gap-2" onsubmit={add}>
-      <Input class="flex-1 font-mono" placeholder="*/5 * * * *" bind:value={expression} />
-      <Button type="submit" disabled={busy}>Add</Button>
+      <fieldset class="contents" disabled={!hydration.done}>
+        <Input class="flex-1 font-mono" placeholder="*/5 * * * *" bind:value={expression} />
+        <Button type="submit" disabled={busy}>Add</Button>
+      </fieldset>
     </form>
 
     {#if error}

@@ -14,6 +14,7 @@
   import WorkerCrons from '#lib/components/worker-crons.svelte';
   import { ArrowRight, Code, ExternalLink, ScrollText, Trash2 } from '@lucide/svelte';
   import { workerUrl } from '#lib/utils/worker-url.ts';
+  import { hydration } from '#lib/hydration.svelte.ts';
 
   let { data } = $props();
   let id = $derived(page.params.id!);
@@ -124,53 +125,55 @@
     <Card.Header><Card.Title>Settings</Card.Title></Card.Header>
     <Card.Content>
       <form class="flex flex-col gap-4" onsubmit={saveSettings}>
-        <div class="flex flex-col gap-2">
-          <Label for="name">Name</Label>
-          <Input id="name" bind:value={name} required />
-        </div>
-        <div class="flex flex-col gap-2">
-          <Label for="desc">Description</Label>
-          <Input id="desc" bind:value={desc} />
-        </div>
-        <div class="flex flex-col gap-2">
-          <Label for="environment">Environment</Label>
-          <div class="flex gap-2">
-            <Select.Root type="single" bind:value={environment}>
-              <Select.Trigger id="environment" class="flex-1">{environmentName}</Select.Trigger>
-              <Select.Content>
-                <Select.Item value="" label="None">None</Select.Item>
-                {#each data.environments as env (env.id)}
-                  <Select.Item value={env.id} label={env.name ?? env.id}>{env.name ?? env.id}</Select.Item>
-                {/each}
-              </Select.Content>
-            </Select.Root>
-            {#if environment}
-              <Button
-                variant="outline"
-                size="icon"
-                href={`/environment/${environment}`}
-                aria-label="Open the environment"
-                title="Open the environment"
-              >
-                <ArrowRight class="size-4" />
-              </Button>
-            {:else}
-              <Button variant="outline" size="icon" disabled aria-label="No environment">
-                <ArrowRight class="size-4" />
-              </Button>
-            {/if}
+        <fieldset class="contents" disabled={!hydration.done}>
+          <div class="flex flex-col gap-2">
+            <Label for="name">Name</Label>
+            <Input id="name" bind:value={name} required />
           </div>
-        </div>
-        <div class="flex flex-col gap-2">
-          <Label for="domains">Domains <span class="text-muted-foreground">(one per line)</span></Label>
-          <Textarea id="domains" bind:value={domainsText} rows={3} class="font-mono" />
-        </div>
+          <div class="flex flex-col gap-2">
+            <Label for="desc">Description</Label>
+            <Input id="desc" bind:value={desc} />
+          </div>
+          <div class="flex flex-col gap-2">
+            <Label for="environment">Environment</Label>
+            <div class="flex gap-2">
+              <Select.Root type="single" bind:value={environment}>
+                <Select.Trigger id="environment" class="flex-1">{environmentName}</Select.Trigger>
+                <Select.Content>
+                  <Select.Item value="" label="None">None</Select.Item>
+                  {#each data.environments as env (env.id)}
+                    <Select.Item value={env.id} label={env.name ?? env.id}>{env.name ?? env.id}</Select.Item>
+                  {/each}
+                </Select.Content>
+              </Select.Root>
+              {#if environment}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  href={`/environment/${environment}`}
+                  aria-label="Open the environment"
+                  title="Open the environment"
+                >
+                  <ArrowRight class="size-4" />
+                </Button>
+              {:else}
+                <Button variant="outline" size="icon" disabled aria-label="No environment">
+                  <ArrowRight class="size-4" />
+                </Button>
+              {/if}
+            </div>
+          </div>
+          <div class="flex flex-col gap-2">
+            <Label for="domains">Domains <span class="text-muted-foreground">(one per line)</span></Label>
+            <Textarea id="domains" bind:value={domainsText} rows={3} class="font-mono" />
+          </div>
 
-        {#if error}<p class="text-destructive text-sm">{error}</p>{/if}
+          {#if error}<p class="text-destructive text-sm">{error}</p>{/if}
 
-        <div class="flex justify-end">
-          <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
-        </div>
+          <div class="flex justify-end">
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+          </div>
+        </fieldset>
       </form>
     </Card.Content>
   </Card.Root>

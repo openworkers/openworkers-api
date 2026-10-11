@@ -9,6 +9,7 @@
   import * as Card from '#lib/components/ui/card/index.ts';
   import PageHeader from './page-header.svelte';
   import type { Snippet } from 'svelte';
+  import { hydration } from '#lib/hydration.svelte.ts';
 
   type Resource = { id: string; name: string | null; desc?: string | null };
 
@@ -91,23 +92,25 @@
     </Card.Header>
     <Card.Content>
       <form class="flex flex-col gap-4" onsubmit={save}>
-        <div class="flex flex-col gap-2">
-          <Label for="name">Name</Label>
-          <Input id="name" bind:value={name} required />
-        </div>
+        <fieldset class="contents" disabled={!hydration.done}>
+          <div class="flex flex-col gap-2">
+            <Label for="name">Name</Label>
+            <Input id="name" bind:value={name} required />
+          </div>
 
-        <div class="flex flex-col gap-2">
-          <Label for="desc">Description</Label>
-          <Input id="desc" bind:value={desc} />
-        </div>
+          <div class="flex flex-col gap-2">
+            <Label for="desc">Description</Label>
+            <Input id="desc" bind:value={desc} />
+          </div>
 
-        {#if error}
-          <p class="text-destructive text-sm">{error}</p>
-        {/if}
+          {#if error}
+            <p class="text-destructive text-sm">{error}</p>
+          {/if}
 
-        <div class="flex justify-end">
-          <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
-        </div>
+          <div class="flex justify-end">
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+          </div>
+        </fieldset>
       </form>
     </Card.Content>
   </Card.Root>
