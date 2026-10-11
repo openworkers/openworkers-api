@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { z } from 'zod';
-import { form, getRequestEvent } from '$app/server';
+import { form } from '$app/server';
+import { requireUserId } from '#lib/server/remote-guards.ts';
 import { workersService } from '#lib/services/workers.ts';
 import { ResourceUpdateInputSchema } from '#lib/types/schemas/base.schema.ts';
 
@@ -17,9 +18,9 @@ const SettingsSchema = z.object({
 });
 
 export const updateWorkerSettings = form(SettingsSchema, async (input) => {
-  const { locals } = getRequestEvent();
+  const userId = requireUserId();
 
-  const worker = await workersService.update(locals.userId, input.id, {
+  const worker = await workersService.update(userId, input.id, {
     name: input.name,
     desc: input.desc || null,
     environment: input.environment || null,
