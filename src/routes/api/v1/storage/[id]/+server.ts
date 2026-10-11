@@ -1,7 +1,8 @@
 import type { RequestHandler } from './$types';
 import { storageService } from '#lib/services/storage.ts';
 import { StorageConfigSchema, StorageConfigUpdateInputSchema } from '#lib/types/index.ts';
-import { jsonResponse, parseAndValidate } from '#lib/server/validate.ts';
+import { jsonResponse, parseAndValidate, serviceErrorResponse } from '#lib/server/validate.ts';
+import { ServiceError } from '#lib/services/errors.ts';
 
 // GET /api/v1/storage/:id - Get single storage config (accepts UUID or name)
 export const GET: RequestHandler = async ({ locals, params }) => {
@@ -43,6 +44,10 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 
     return jsonResponse(StorageConfigSchema, config);
   } catch (error) {
+    if (error instanceof ServiceError) {
+      return serviceErrorResponse(error, 'Failed to update storage config');
+    }
+
     console.error('Failed to update storage config:', error);
     return Response.json(
       { error: 'Failed to update storage config', message: error instanceof Error ? error.message : 'Unknown error' },

@@ -22,7 +22,7 @@ export class WorkersService {
   async create(userId: string, input: db.CreateWorkerInput): Promise<IWorker> {
     // Worker names are global: they are subdomains
     if (input.name !== null && (await db.checkWorkerNameExists(input.name))) {
-      throw new ServiceError(`Worker name "${input.name}" is already taken`);
+      throw new ServiceError(`Worker name "${input.name}" is already taken`, 409);
     }
 
     return db.createWorker(userId, input);

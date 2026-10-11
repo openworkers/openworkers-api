@@ -32,7 +32,7 @@ export class EnvironmentsService {
 
   async create(userId: string, input: IEnvironmentCreateInput): Promise<IEnvironment> {
     if (await db.findEnvironmentByName(userId, input.name)) {
-      throw new ServiceError(`Environment with name "${input.name}" already exists`);
+      throw new ServiceError(`Environment with name "${input.name}" already exists`, 409);
     }
 
     return db.createEnvironment(userId, input.name, input.desc);

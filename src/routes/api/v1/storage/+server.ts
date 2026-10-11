@@ -1,7 +1,8 @@
 import type { RequestHandler } from './$types';
-import { PlatformStorageUnavailable, storageService } from '#lib/services/storage.ts';
+import { storageService } from '#lib/services/storage.ts';
 import { StorageConfigSchema, StorageConfigCreateInputSchema } from '#lib/types/index.ts';
-import { jsonResponse, jsonArrayResponse, parseAndValidate } from '#lib/server/validate.ts';
+import { jsonResponse, jsonArrayResponse, parseAndValidate, serviceErrorResponse } from '#lib/server/validate.ts';
+import { ServiceError } from '#lib/services/errors.ts';
 
 // GET /api/v1/storage - List all storage configs for current user
 export const GET: RequestHandler = async ({ locals }) => {
@@ -25,14 +26,14 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     const config = await storageService.create(userId, payload);
     return jsonResponse(StorageConfigSchema, config, 201);
   } catch (error) {
-    if (error instanceof PlatformStorageUnavailable) {
-      return Response.json({ error: 'Failed to create storage config', message: error.message }, { status: 503 });
+    if (error instanceof ServiceError) {
+      return serviceErrorResponse(error, 'Failed to create storage config');
     }
 
     console.error('Failed to create storage config:', error);
     return Response.json(
       { error: 'Failed to create storage config', message: error instanceof Error ? error.message : 'Unknown error' },
-      { status: error instanceof Error && error.message.includes('limit') ? 403 : 500 }
+      { status: 500 }
     );
   }
 };

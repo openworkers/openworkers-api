@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { z, ZodError } from 'zod';
 import { getNodeEnv } from '#lib/config/index.ts';
+import type { ServiceError } from '#lib/services/errors.ts';
 
 /**
  * Parse and validate JSON body from a Request with Zod schema.
@@ -58,4 +59,11 @@ export function jsonResponse<T extends z.ZodTypeAny>(schema: T, data: unknown, s
  */
 export function jsonArrayResponse<T extends z.ZodTypeAny>(schema: T, data: unknown[], status: number = 200): Response {
   return jsonResponse(z.array(schema), data, status);
+}
+
+/**
+ * Returns the response for a request the service refused (limit reached, name taken).
+ */
+export function serviceErrorResponse(error: ServiceError, label: string): Response {
+  return Response.json({ error: label, message: error.message }, { status: error.status });
 }

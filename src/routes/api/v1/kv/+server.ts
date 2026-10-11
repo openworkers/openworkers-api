@@ -1,7 +1,8 @@
 import type { RequestHandler } from './$types';
 import { kvService } from '#lib/services/kv.ts';
 import { KvNamespaceSchema, KvNamespaceCreateInputSchema } from '#lib/types/index.ts';
-import { jsonResponse, jsonArrayResponse, parseAndValidate } from '#lib/server/validate.ts';
+import { jsonResponse, jsonArrayResponse, parseAndValidate, serviceErrorResponse } from '#lib/server/validate.ts';
+import { ServiceError } from '#lib/services/errors.ts';
 
 // GET /api/v1/kv - List all KV namespaces for current user
 export const GET: RequestHandler = async ({ locals }) => {
@@ -25,10 +26,14 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     const namespace = await kvService.create(userId, payload);
     return jsonResponse(KvNamespaceSchema, namespace, 201);
   } catch (error) {
+    if (error instanceof ServiceError) {
+      return serviceErrorResponse(error, 'Failed to create KV namespace');
+    }
+
     console.error('Failed to create KV namespace:', error);
     return Response.json(
       { error: 'Failed to create KV namespace', message: error instanceof Error ? error.message : 'Unknown error' },
-      { status: error instanceof Error && error.message.includes('limit') ? 403 : 500 }
+      { status: 500 }
     );
   }
 };

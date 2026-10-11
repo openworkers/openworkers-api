@@ -1,7 +1,8 @@
 import type { RequestHandler } from './$types';
 import { kvService } from '#lib/services/kv.ts';
 import { KvNamespaceSchema, KvNamespaceUpdateInputSchema } from '#lib/types/index.ts';
-import { jsonResponse, parseAndValidate } from '#lib/server/validate.ts';
+import { jsonResponse, parseAndValidate, serviceErrorResponse } from '#lib/server/validate.ts';
+import { ServiceError } from '#lib/services/errors.ts';
 
 // GET /api/v1/kv/:id - Get single KV namespace (accepts UUID or name)
 export const GET: RequestHandler = async ({ locals, params }) => {
@@ -43,6 +44,10 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 
     return jsonResponse(KvNamespaceSchema, namespace);
   } catch (error) {
+    if (error instanceof ServiceError) {
+      return serviceErrorResponse(error, 'Failed to update KV namespace');
+    }
+
     console.error('Failed to update KV namespace:', error);
     return Response.json(
       { error: 'Failed to update KV namespace', message: error instanceof Error ? error.message : 'Unknown error' },

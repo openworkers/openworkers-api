@@ -1,7 +1,8 @@
 import type { RequestHandler } from './$types';
 import { workersService } from '#lib/services/workers.ts';
 import { WorkerCreateInputSchema, WorkerSchema } from '#lib/types/index.ts';
-import { jsonResponse, jsonArrayResponse, parseAndValidate } from '#lib/server/validate.ts';
+import { jsonResponse, jsonArrayResponse, parseAndValidate, serviceErrorResponse } from '#lib/server/validate.ts';
+import { ServiceError } from '#lib/services/errors.ts';
 import { defaultWorkerScript } from '#lib/server/default-worker.ts';
 
 // GET /api/v1/workers - List all workers for current user
@@ -34,6 +35,10 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
     return jsonResponse(WorkerSchema, worker, 201);
   } catch (error) {
+    if (error instanceof ServiceError) {
+      return serviceErrorResponse(error, 'Failed to create worker');
+    }
+
     console.error('Failed to create worker:', error);
     return Response.json(
       { error: 'Failed to create worker', message: error instanceof Error ? error.message : 'Unknown error' },

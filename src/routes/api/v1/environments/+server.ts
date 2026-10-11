@@ -1,7 +1,8 @@
 import type { RequestHandler } from './$types';
 import { environmentsService } from '#lib/services/environments.ts';
 import { EnvironmentCreateInputSchema, EnvironmentSchema } from '#lib/types/index.ts';
-import { jsonResponse, jsonArrayResponse, parseAndValidate } from '#lib/server/validate.ts';
+import { jsonResponse, jsonArrayResponse, parseAndValidate, serviceErrorResponse } from '#lib/server/validate.ts';
+import { ServiceError } from '#lib/services/errors.ts';
 
 // GET /api/v1/environments - List all environments
 export const GET: RequestHandler = async ({ locals }) => {
@@ -24,6 +25,10 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     const env = await environmentsService.create(userId, payload);
     return jsonResponse(EnvironmentSchema, env, 201);
   } catch (error) {
+    if (error instanceof ServiceError) {
+      return serviceErrorResponse(error, 'Failed to create environment');
+    }
+
     console.error('Failed to create environment:', error);
     return Response.json({ error: 'Failed to create environment' }, { status: 500 });
   }
