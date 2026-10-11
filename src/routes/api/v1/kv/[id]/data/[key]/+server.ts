@@ -1,5 +1,7 @@
 import type { RequestHandler } from './$types';
 import { kvService } from '#lib/services/kv.ts';
+import { serviceErrorResponse } from '#lib/server/validate.ts';
+import { ServiceError } from '#lib/services/errors.ts';
 
 // PUT /api/v1/kv/:id/data/:key - Create or update a key
 export const PUT: RequestHandler = async ({ locals, params, request }) => {
@@ -21,19 +23,13 @@ export const PUT: RequestHandler = async ({ locals, params, request }) => {
       return Response.json({ error: 'Value is required' }, { status: 400 });
     }
 
-    const valueSize = JSON.stringify(value).length;
-    const MAX_VALUE_SIZE = 100 * 1024;
-
-    if (valueSize > MAX_VALUE_SIZE) {
-      return Response.json(
-        { error: `Value too large: ${valueSize} bytes (max ${MAX_VALUE_SIZE} bytes)` },
-        { status: 400 }
-      );
-    }
-
     const result = await kvService.putData(namespace.id, key, value, expiresIn);
     return Response.json(result);
   } catch (error) {
+    if (error instanceof ServiceError) {
+      return serviceErrorResponse(error, 'Failed to put KV data');
+    }
+
     console.error('Failed to put KV data:', error);
     return Response.json({ error: 'Failed to put KV data' }, { status: 500 });
   }

@@ -10,7 +10,10 @@ export const load: PageServerLoad = async ({ locals, params }) => {
     throw error(404, 'Not found');
   }
 
-  const usages = await environmentsService.findBindingUsages(locals.userId, item.id);
+  const [usages, data] = await Promise.all([
+    environmentsService.findBindingUsages(locals.userId, item.id),
+    kvService.listData(item.id, { limit: 100 })
+  ]);
 
-  return { item, usages };
+  return { item, usages, keys: data.items.map((entry) => entry.key) };
 };

@@ -5,6 +5,8 @@ import type { KvDataRow, KvDataListResult } from './db/kv';
 import { isUuid } from '../utils/validation';
 import { ServiceError } from './errors';
 
+const MAX_VALUE_SIZE = 100 * 1024;
+
 export class KvService {
   async findAll(userId: string): Promise<IKvNamespace[]> {
     const rows = await db.findAllKvNamespaces(userId);
@@ -130,6 +132,12 @@ export class KvService {
   }
 
   async putData(namespaceId: string, key: string, value: unknown, expiresIn?: number): Promise<KvDataRow> {
+    const valueSize = JSON.stringify(value).length;
+
+    if (valueSize > MAX_VALUE_SIZE) {
+      throw new ServiceError(`Value too large: ${valueSize} bytes (max ${MAX_VALUE_SIZE} bytes)`, 400);
+    }
+
     return db.putKvData(namespaceId, key, value, expiresIn);
   }
 
