@@ -29,6 +29,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
     const worker = await workersService.create(userId, {
       name: payload.name,
+      desc: payload.desc,
       script,
       language: payload.language
     });

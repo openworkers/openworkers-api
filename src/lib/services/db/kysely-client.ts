@@ -100,6 +100,7 @@ export interface Database {
   workers: {
     id: Generated<string>;
     name: string | null;
+    desc: string | null;
     userId: string;
     environmentId: string | null;
     projectId: string | null;

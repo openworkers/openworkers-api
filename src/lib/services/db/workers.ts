@@ -13,6 +13,7 @@ interface IFullWorker extends IWorker {
 
 // Union type: named worker OR anonymous worker with required projectId
 export type CreateWorkerInput = {
+  desc?: string | null;
   script: string;
   language: IWorkerLanguage;
   environmentId?: string;
@@ -27,6 +28,7 @@ export async function findAllWorkers(userId: string): Promise<IWorker[]> {
     .select([
       'w.id',
       'w.name',
+      'w.desc',
       'w.userId',
       'w.environmentId',
       'w.currentVersion',
@@ -72,6 +74,7 @@ export async function findWorker(
     .select([
       'w.id',
       'w.name',
+      'w.desc',
       'w.userId',
       'w.environmentId',
       'w.currentVersion',
@@ -145,12 +148,13 @@ export async function createWorker(userId: string, input: CreateWorkerInput): Pr
     .insertInto('workers')
     .values({
       name: input.name ?? null,
+      desc: input.desc ?? null,
       userId: uuid(userId),
       environmentId: uuidOrNull(input.environmentId),
       projectId: uuidOrNull(input.projectId),
       currentVersion: 1
     })
-    .returning(['id', 'name', 'userId', 'environmentId', 'createdAt', 'updatedAt'])
+    .returning(['id', 'name', 'desc', 'userId', 'environmentId', 'createdAt', 'updatedAt'])
     .executeTakeFirstOrThrow();
 
   // Create initial deployment
@@ -186,6 +190,7 @@ export async function updateWorker(
   workerId: string,
   updates: {
     name?: string;
+    desc?: string | null;
     script?: string;
     /** Binary worker code (wasm), already base64-encoded */
     scriptBase64?: string;
@@ -207,6 +212,7 @@ export async function updateWorker(
     .updateTable('workers')
     .set({
       name: updates.name ?? current.name,
+      desc: updates.desc === undefined ? current.desc : updates.desc,
       environmentId: uuidOrNull(envId)
     })
     .where('id', '=', uuid(workerId))

@@ -25,6 +25,7 @@ export class WorkersService {
   async update(userId: string, id: string, input: IWorkerUpdateInput): Promise<IWorker | null> {
     return db.updateWorker(userId, id, {
       name: input.name,
+      desc: input.desc,
       script: input.script,
       scriptBase64: input.scriptBase64,
       language: input.language,
