@@ -9,23 +9,19 @@ export type { IResource } from './schemas/base.schema';
 export type { ITimestamps } from './schemas/base.schema';
 
 export {
-  LoginResponseSchema,
   RegisterInputSchema,
   SetPasswordInputSchema,
   LoginInputSchema,
   ForgotPasswordInputSchema,
-  ResetPasswordInputSchema,
-  ResendSetPasswordInputSchema
+  ResetPasswordInputSchema
 } from './schemas/auth.schema';
 
 export type {
-  ILoginResponse,
   IRegisterInput,
   ISetPasswordInput,
   ILoginInput,
   IForgotPasswordInput,
-  IResetPasswordInput,
-  IResendSetPasswordInput
+  IResetPasswordInput
 } from './schemas/auth.schema';
 
 export { SelfSchema, ResourceLimitsSchema } from './schemas/user.schema';

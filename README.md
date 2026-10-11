@@ -32,12 +32,6 @@ nor dynamic `import()`.
 
 ## API Endpoints
 
-### Auth (Public)
-
-- `POST /api/v1/openid/github` - Initiate GitHub OAuth flow
-- `GET /api/v1/callback/github` - GitHub OAuth callback (creates JWT)
-- `POST /api/v1/refresh` - Refresh access token using refresh token
-
 ### Users (Protected)
 
 - `GET /api/v1/profile` - Get current user profile
@@ -74,20 +68,15 @@ nor dynamic `import()`.
 
 ### Authentication
 
-All `/api/v1/*` endpoints (except auth endpoints) require JWT Bearer token in `Authorization` header:
+All `/api/v1/*` endpoints except `/api/v1/version` need an API key in the `Authorization` header. Create one on the
+Account page of the dashboard:
 
 ```
-Authorization: Bearer <token>
+Authorization: Bearer ow_...
 ```
 
-OAuth flow:
-
-1. User initiates login → `POST /api/v1/openid/github`
-2. GitHub redirects to → `GET /api/v1/callback/github?code=...`
-3. Server exchanges code for user profile
-4. Creates/finds user in DB
-5. Issues JWT tokens (access + refresh)
-6. Returns tokens in response body + sets cookie
+The dashboard does not use these endpoints for its session: sign-in, registration, passwords and GitHub sign-in are
+remote forms (`src/routes/(dash)/auth.remote.ts`) that keep the session in HttpOnly cookies.
 
 ## Database Access via Postgate
 

@@ -9,19 +9,7 @@ import { verify } from '#lib/utils/jwt.ts';
 const PUBLIC_PREFIXES = ['/api/health', '/api/domain/'];
 
 /** Routes that don't require authentication */
-const PUBLIC_ROUTES = new Set([
-  '/api/v1/version',
-  '/api/v1/openid/github',
-  '/api/v1/callback/github',
-  '/api/v1/register',
-  '/api/v1/set-password',
-  '/api/v1/login',
-  '/api/v1/forgot-password',
-  '/api/v1/reset-password',
-  '/api/v1/resend-set-password',
-  '/api/v1/refresh',
-  '/api/v1/callback/planetscale'
-]);
+const PUBLIC_ROUTES = new Set(['/api/v1/version', '/api/v1/callback/planetscale']);
 
 export const handle: Handle = async ({ event, resolve }) => {
   const path = event.url.pathname;

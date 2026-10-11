@@ -1,8 +1,6 @@
 // Runtime validators exports (includes Zod, for backend validation)
 export { TimestampsSchema, ResourceSchema } from './schemas/base.schema';
 
-export { LoginResponseSchema } from './schemas/auth.schema';
-
 export { SelfSchema, ResourceLimitsSchema } from './schemas/user.schema';
 
 export { LogSchema } from './schemas/log.schema';

@@ -289,31 +289,6 @@ export class AuthService {
 
     return user;
   }
-
-  /**
-   * Resend set-password email for users who registered but didn't set password
-   */
-  async resendSetPasswordEmail(email: string): Promise<void> {
-    const user = await findUserByEmail(email);
-
-    if (!user) {
-      return;
-    }
-
-    // Check if user already has a password
-    const hasPassword = await getPasswordHash(email);
-
-    if (hasPassword) {
-      return;
-    }
-
-    // Delete existing tokens
-    await deleteUserTokens(user.id, 'set_password');
-
-    // Create new token and send email
-    const token = await createAuthToken(user.id, 'set_password', TOKEN_EXPIRY.SET_PASSWORD);
-    await sendSetPasswordEmail(email, token);
-  }
 }
 
 export const authService = new AuthService();
