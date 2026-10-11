@@ -308,3 +308,13 @@ export async function findBindingUsages(userId: string, resourceId: string): Pro
 
   return result.rows;
 }
+
+export async function countEnvironments(userId: string): Promise<number> {
+  const result = await kysely
+    .selectFrom('environments')
+    .select(sql<string>`COUNT(*)::text`.as('count'))
+    .where('userId', '=', uuid(userId))
+    .executeTakeFirst();
+
+  return parseInt(result?.count ?? '0', 10);
+}

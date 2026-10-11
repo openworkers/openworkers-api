@@ -9,6 +9,7 @@ import type {
 import { isUuid } from '../utils/validation';
 import { ServiceError } from './errors';
 import { ownsBindingTarget } from './binding-owner';
+import { refuseOverLimit } from './limits';
 
 export class EnvironmentsService {
   async findAll(userId: string): Promise<IEnvironment[]> {
@@ -32,6 +33,8 @@ export class EnvironmentsService {
   }
 
   async create(userId: string, input: IEnvironmentCreateInput): Promise<IEnvironment> {
+    await refuseOverLimit(userId, 'environments', await db.countEnvironments(userId));
+
     if (await db.findEnvironmentByName(userId, input.name)) {
       throw new ServiceError(`Environment with name "${input.name}" already exists`, 409);
     }

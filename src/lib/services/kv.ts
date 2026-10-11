@@ -1,10 +1,10 @@
 import * as db from './db/kv';
-import * as usersDb from './db/users';
 import type { IKvNamespace, IKvNamespaceCreateInput, IKvNamespaceUpdateInput } from '../types';
 import type { KvDataRow, KvDataListResult } from './db/kv';
 import { isUuid } from '../utils/validation';
 import { ServiceError } from './errors';
 import { refuseIfBound } from './binding-usages';
+import { refuseOverLimit } from './limits';
 
 const MAX_VALUE_SIZE = 100 * 1024;
 
@@ -60,18 +60,7 @@ export class KvService {
   async create(userId: string, input: IKvNamespaceCreateInput): Promise<IKvNamespace> {
     const { name, desc } = input;
 
-    // Check limit
-    const user = await usersDb.findUserById(userId);
-
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    const count = await db.countKvNamespaces(userId);
-
-    if (count >= user.limits.kv) {
-      throw new ServiceError(`KV namespace limit reached (${user.limits.kv})`, 403);
-    }
+    await refuseOverLimit(userId, 'kv', await db.countKvNamespaces(userId));
 
     // Check if name already exists
     const existing = await db.findKvNamespaceByName(userId, name);

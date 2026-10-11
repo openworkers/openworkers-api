@@ -3,6 +3,7 @@ import * as projectsDb from './db/projects';
 import type { IWorker, IWorkerLanguage, IWorkerUpdateInput } from '../types';
 import { ServiceError } from './errors';
 import { refuseIfBound } from './binding-usages';
+import { refuseOverLimit } from './limits';
 
 interface FindWorkerOptions {
   includeScript?: boolean;
@@ -22,6 +23,10 @@ export class WorkersService {
   }
 
   async create(userId: string, input: db.CreateWorkerInput): Promise<IWorker> {
+    if (input.name !== null) {
+      await refuseOverLimit(userId, 'workers', await db.countNamedWorkers(userId));
+    }
+
     // Worker names are global: they are subdomains
     if (input.name !== null && (await db.checkWorkerNameExists(input.name))) {
       throw new ServiceError(`Worker name "${input.name}" is already taken`, 409);

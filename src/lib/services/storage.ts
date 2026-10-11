@@ -1,8 +1,8 @@
 import * as db from './db/storage';
-import * as usersDb from './db/users';
 import { getStorageConfig, sharedStorageConfigured } from '../config';
 import { ServiceError } from './errors';
 import { refuseIfBound } from './binding-usages';
+import { refuseOverLimit } from './limits';
 
 export class PlatformStorageUnavailable extends ServiceError {
   constructor() {
@@ -80,18 +80,7 @@ export class StorageService {
   async create(userId: string, input: IStorageConfigCreateInput): Promise<IStorageConfig> {
     const { name, desc, provider } = input;
 
-    // Check limit
-    const user = await usersDb.findUserById(userId);
-
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    const count = await db.countStorageConfigs(userId);
-
-    if (count >= user.limits.storage) {
-      throw new ServiceError(`Storage config limit reached (${user.limits.storage})`, 403);
-    }
+    await refuseOverLimit(userId, 'storage', await db.countStorageConfigs(userId));
 
     // Check if name already exists
     const existing = await db.findStorageConfigByName(userId, name);

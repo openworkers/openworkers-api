@@ -4,6 +4,7 @@ import { planetScaleService } from './planetscale';
 import type { IDatabase, IDatabaseCreateInput } from '../types';
 import { isUuid } from '../utils/validation';
 import { refuseIfBound } from './binding-usages';
+import { refuseOverLimit } from './limits';
 
 /**
  * Generate a unique schema name for platform provider
@@ -46,6 +47,8 @@ export class DatabasesService {
    * - planetscale provider: creates password via PlanetScale API, stores connection string
    */
   async create(userId: string, input: IDatabaseCreateInput): Promise<IDatabase> {
+    await refuseOverLimit(userId, 'databases', await db.countDatabases(userId));
+
     if (input.provider === 'platform') {
       // Generate unique schema name
       const schemaName = generateSchemaName();

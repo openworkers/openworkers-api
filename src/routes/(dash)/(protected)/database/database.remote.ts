@@ -2,7 +2,12 @@ import { error, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { command, form } from '$app/server';
 import { databasesService } from '#lib/services/databases.ts';
-import { errorOnServiceError, requireUserId, requireUserIdInCommand } from '#lib/server/remote-guards.ts';
+import {
+  errorOnServiceError,
+  requireUserId,
+  requireUserIdInCommand,
+  issueOnServiceError
+} from '#lib/server/remote-guards.ts';
 import { ResourceSettingsSchema } from '#lib/server/remote-schemas.ts';
 import {
   DatabaseCreatePlatformInputSchema,
@@ -22,11 +27,13 @@ export const createDatabase = form(CreateDatabaseSchema, async (input) => {
   const { name, maxRows, timeoutSeconds } = input;
   const desc = input.desc || undefined;
 
-  const database = await databasesService.create(
-    userId,
-    input.provider === 'platform'
-      ? { provider: 'platform', name, desc, maxRows, timeoutSeconds }
-      : { provider: 'postgres', name, desc, maxRows, timeoutSeconds, connectionString: input._connectionString }
+  const database = await issueOnServiceError(
+    databasesService.create(
+      userId,
+      input.provider === 'platform'
+        ? { provider: 'platform', name, desc, maxRows, timeoutSeconds }
+        : { provider: 'postgres', name, desc, maxRows, timeoutSeconds, connectionString: input._connectionString }
+    )
   );
 
   redirect(303, `/database/${database.id}`);

@@ -1,7 +1,8 @@
 import type { RequestHandler } from './$types';
 import { databasesService } from '#lib/services/databases.ts';
 import { DatabaseSchema, DatabaseCreateInputSchema } from '#lib/types/index.ts';
-import { jsonResponse, jsonArrayResponse, parseAndValidate } from '#lib/server/validate.ts';
+import { jsonResponse, jsonArrayResponse, parseAndValidate, serviceErrorResponse } from '#lib/server/validate.ts';
+import { ServiceError } from '#lib/services/errors.ts';
 
 // GET /api/v1/databases - List all databases for current user
 export const GET: RequestHandler = async ({ locals }) => {
@@ -25,6 +26,10 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     const db = await databasesService.create(userId, payload);
     return jsonResponse(DatabaseSchema, db, 201);
   } catch (error) {
+    if (error instanceof ServiceError) {
+      return serviceErrorResponse(error, 'Failed to create database');
+    }
+
     console.error('Failed to create database:', error);
     return Response.json(
       { error: 'Failed to create database', message: error instanceof Error ? error.message : 'Unknown error' },

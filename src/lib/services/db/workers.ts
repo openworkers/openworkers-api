@@ -42,6 +42,18 @@ export async function findAllWorkers(userId: string): Promise<IWorker[]> {
     .execute();
 }
 
+// Named workers only, like the workers page: the function workers of a project have no name
+export async function countNamedWorkers(userId: string): Promise<number> {
+  const result = await kysely
+    .selectFrom('workers')
+    .select(sql<string>`COUNT(*)::text`.as('count'))
+    .where('userId', '=', uuid(userId))
+    .where('name', 'is not', null)
+    .executeTakeFirst();
+
+  return parseInt(result?.count ?? '0', 10);
+}
+
 export async function checkWorkerNameExists(name: string): Promise<boolean> {
   const worker = await kysely.selectFrom('workers').select('id').where('name', '=', name).executeTakeFirst();
 

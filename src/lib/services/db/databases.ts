@@ -1,5 +1,6 @@
 import { kysely } from './kysely-client';
 import { uuid, now, enumCast, enumToText } from './kysely-helpers';
+import { sql } from 'kysely';
 import type { DatabaseProvider } from '../../types';
 
 interface DatabaseConfigRow {
@@ -179,4 +180,14 @@ export async function updateDatabase(
     .executeTakeFirst();
 
   return row ?? null;
+}
+
+export async function countDatabases(userId: string): Promise<number> {
+  const result = await kysely
+    .selectFrom('databaseConfigs')
+    .select(sql<string>`COUNT(*)::text`.as('count'))
+    .where('userId', '=', uuid(userId))
+    .executeTakeFirst();
+
+  return parseInt(result?.count ?? '0', 10);
 }
