@@ -1,51 +1,20 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { api, ApiError } from '#lib/api.ts';
+  import { refreshAll } from '$app/navigation';
   import { confirmDialog } from '#lib/confirm.svelte.ts';
-  import type { IApiKey, IApiKeyCreateResponse } from '#lib/types/index.ts';
+  import { remoteErrorMessage } from '#lib/remote-errors.ts';
   import { Button } from '#lib/components/ui/button/index.ts';
   import { Input } from '#lib/components/ui/input/index.ts';
   import { Label } from '#lib/components/ui/label/index.ts';
   import * as Card from '#lib/components/ui/card/index.ts';
   import * as Table from '#lib/components/ui/table/index.ts';
   import PageHeader from '#lib/components/page-header.svelte';
+  import FieldIssues from '#lib/components/field-issues.svelte';
   import { Trash2 } from '@lucide/svelte';
-  import { hydration } from '#lib/hydration.svelte.ts';
+  import { createAccountApiKey, revokeAccountApiKey } from './account.remote.ts';
 
   let { data } = $props();
 
-  let keys = $state<IApiKey[]>([]);
-  let newKeyName = $state('');
-  let createdToken = $state<string | null>(null);
   let error = $state<string | null>(null);
-  let creating = $state(false);
-
-  async function loadKeys() {
-    try {
-      keys = await api.get<IApiKey[]>('/api/v1/api-keys');
-    } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Failed to load API keys';
-    }
-  }
-
-  async function createKey(event: SubmitEvent) {
-    event.preventDefault();
-    if (!newKeyName.trim()) return;
-
-    creating = true;
-    error = null;
-
-    try {
-      const res = await api.post<IApiKeyCreateResponse>('/api/v1/api-keys', { name: newKeyName });
-      createdToken = res.token;
-      newKeyName = '';
-      await loadKeys();
-    } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Failed to create key';
-    } finally {
-      creating = false;
-    }
-  }
 
   async function removeKey(id: string, name: string) {
     const confirmed = await confirmDialog({
@@ -57,15 +26,15 @@
 
     if (!confirmed) return;
 
+    error = null;
+
     try {
-      await api.del(`/api/v1/api-keys/${id}`);
-      keys = keys.filter((k) => k.id !== id);
+      await revokeAccountApiKey(id);
+      await refreshAll();
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Failed to revoke key';
+      error = remoteErrorMessage(e, 'Failed to revoke key');
     }
   }
-
-  onMount(loadKeys);
 </script>
 
 <PageHeader title="Account" description="Your profile and API keys." />
@@ -106,28 +75,28 @@
       <Card.Description>Use these to authenticate the CLI and CI.</Card.Description>
     </Card.Header>
     <Card.Content class="flex flex-col gap-4">
-      {#if createdToken}
+      {#if createAccountApiKey.result}
         <div class="bg-muted rounded-md border p-3">
           <p class="text-sm font-medium">Copy your new token now — it won't be shown again:</p>
-          <code class="mt-2 block break-all text-xs">{createdToken}</code>
+          <code class="mt-2 block break-all text-xs">{createAccountApiKey.result.token}</code>
         </div>
       {/if}
 
-      <form class="flex items-end gap-2" onsubmit={createKey}>
-        <fieldset class="contents" disabled={!hydration.done}>
-          <div class="flex flex-1 flex-col gap-2">
-            <Label for="keyname">New key name</Label>
-            <Input id="keyname" bind:value={newKeyName} placeholder="ci-deploy" />
-          </div>
-          <Button type="submit" disabled={creating}>Create</Button>
-        </fieldset>
+      <form class="flex items-end gap-2" {...createAccountApiKey}>
+        <div class="flex flex-1 flex-col gap-2">
+          <Label for="keyname">New key name</Label>
+          <Input id="keyname" {...createAccountApiKey.fields.name.as('text')} placeholder="ci-deploy" required />
+        </div>
+        <Button type="submit" disabled={!!createAccountApiKey.pending}>Create</Button>
       </form>
+
+      <FieldIssues issues={createAccountApiKey.fields.allIssues()} />
 
       {#if error}
         <p class="text-destructive text-sm">{error}</p>
       {/if}
 
-      {#if keys.length > 0}
+      {#if data.keys.length > 0}
         <Table.Root>
           <Table.Header>
             <Table.Row>
@@ -137,7 +106,7 @@
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {#each keys as key (key.id)}
+            {#each data.keys as key (key.id)}
               <Table.Row>
                 <Table.Cell class="font-medium">{key.name}</Table.Cell>
                 <Table.Cell class="text-muted-foreground font-mono text-xs">
