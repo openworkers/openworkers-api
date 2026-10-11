@@ -3,7 +3,7 @@ import { unzipSync, strFromU8 } from 'fflate';
 import { workersService } from '#lib/services/workers.ts';
 import { findWorkerAssetsBinding } from '#lib/services/db/workers.ts';
 import { sql } from '#lib/services/db/client.ts';
-import { S3Client } from '#lib/utils/s3.ts';
+import { S3Client, isSafeKey } from '#lib/utils/s3.ts';
 import { base64Encode } from '#lib/utils/base64.ts';
 import { hexDecode } from '#lib/utils/hex.ts';
 import { sha256HexUint8 } from '#lib/utils/crypto.ts';
@@ -104,6 +104,12 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
     const scriptBase64 = base64Encode(workerScript);
 
     let presignedAssets: Array<{ path: string; headUrl: string; putUrl: string }> = [];
+
+    const unsafeAsset = assetEntries.find((asset) => !isSafeKey(asset.path));
+
+    if (unsafeAsset) {
+      return Response.json({ error: `Invalid asset path: ${unsafeAsset.path}` }, { status: 400 });
+    }
 
     if (assetEntries.length > 0 && assetsBinding) {
       const endpoint = assetsBinding.endpoint ?? getStorageConfig().endpoint;

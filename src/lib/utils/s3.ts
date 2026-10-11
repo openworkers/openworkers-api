@@ -20,6 +20,11 @@ export interface S3ListResult {
   cursor: string | null;
 }
 
+// URLs drop "." and ".." segments, so a key with one could leave the prefix of the account
+export function isSafeKey(key: string): boolean {
+  return key.length > 0 && key.split('/').every((segment) => segment !== '.' && segment !== '..');
+}
+
 /**
  * S3-compatible storage client.
  * Handles prefix automatically for all operations.
@@ -46,6 +51,10 @@ export class S3Client {
    * Build the full key with prefix.
    */
   private fullKey(key: string): string {
+    if (!isSafeKey(key)) {
+      throw new Error('Invalid file key');
+    }
+
     return this.prefix ? `${this.prefix}/${key}` : key;
   }
 
