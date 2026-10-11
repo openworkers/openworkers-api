@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { goto, refreshAll } from '$app/navigation';
+  import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import { api, ApiError } from '#lib/api.ts';
   import { confirmDialog } from '#lib/confirm.svelte.ts';
@@ -15,13 +15,13 @@
   import { ArrowRight, Code, ExternalLink, ScrollText, Trash2 } from '@lucide/svelte';
   import { workerUrl } from '#lib/utils/worker-url.ts';
   import { hydration } from '#lib/hydration.svelte.ts';
+  import { updateWorkerSettings } from './worker.remote.ts';
 
   let { data } = $props();
   let id = $derived(page.params.id!);
 
   let worker = $derived(data.worker);
-  let name = $state(untrack(() => data.worker.name ?? ''));
-  let desc = $state(untrack(() => data.worker.desc ?? ''));
+  let settings = $derived(updateWorkerSettings.for(worker.id));
   let domainsText = $state(
     untrack(() => (data.worker.domains ?? []).map((d) => d.name).join('\n'))
   );
@@ -30,7 +30,6 @@
   let environmentName = $derived(
     data.environments.find((e) => e.id === environment)?.name ?? 'None'
   );
-  let saving = $state(false);
   let error = $state<string | null>(null);
 
   // SvelteKit reuses this component on param-only navigation between workers;
@@ -40,38 +39,11 @@
     const w = data.worker;
 
     untrack(() => {
-      name = w.name ?? '';
-      desc = w.desc ?? '';
       domainsText = (w.domains ?? []).map((d) => d.name).join('\n');
       environment = w.environment?.id ?? '';
       error = null;
     });
   });
-
-  async function saveSettings(event: SubmitEvent) {
-    event.preventDefault();
-    saving = true;
-    error = null;
-
-    const domains = domainsText
-      .split('\n')
-      .map((d) => d.trim())
-      .filter(Boolean);
-
-    try {
-      await api.patch(`/api/v1/workers/${id}`, {
-        name,
-        desc: desc || null,
-        domains,
-        environment: environment || null
-      });
-      await refreshAll();
-    } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Failed to save';
-    } finally {
-      saving = false;
-    }
-  }
 
   async function remove() {
     const confirmed = await confirmDialog({
@@ -124,15 +96,18 @@
   <Card.Root>
     <Card.Header><Card.Title>Settings</Card.Title></Card.Header>
     <Card.Content>
-      <form class="flex flex-col gap-4" onsubmit={saveSettings}>
+      <form class="flex flex-col gap-4" {...settings}>
         <fieldset class="contents" disabled={!hydration.done}>
+          <input {...settings.fields.id.as('hidden', worker.id)} />
+          <input {...settings.fields.environment.as('hidden', environment)} />
+          <input {...settings.fields.domains.as('hidden', domainsText)} />
           <div class="flex flex-col gap-2">
             <Label for="name">Name</Label>
-            <Input id="name" bind:value={name} required />
+            <Input id="name" {...settings.fields.name.as('text', worker.name ?? '')} required />
           </div>
           <div class="flex flex-col gap-2">
             <Label for="desc">Description</Label>
-            <Input id="desc" bind:value={desc} />
+            <Input id="desc" {...settings.fields.desc.as('text', worker.desc ?? '')} />
           </div>
           <div class="flex flex-col gap-2">
             <Label for="environment">Environment</Label>
@@ -168,10 +143,15 @@
             <Textarea id="domains" bind:value={domainsText} rows={3} class="font-mono" />
           </div>
 
+          {#each settings.fields.allIssues() ?? [] as issue (issue.message)}
+            <p class="text-destructive text-sm">{issue.message}</p>
+          {/each}
           {#if error}<p class="text-destructive text-sm">{error}</p>{/if}
 
           <div class="flex justify-end">
-            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+            <Button type="submit" disabled={settings.pending > 0}>
+              {settings.pending > 0 ? 'Saving…' : 'Save'}
+            </Button>
           </div>
         </fieldset>
       </form>

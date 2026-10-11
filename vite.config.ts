@@ -95,7 +95,8 @@ export default defineConfig({
       inlineStyleThreshold: Number.POSITIVE_INFINITY,
       adapter: adapter({ functions: false, debug: { prettier: false } }),
       csrf: { trustedOrigins: ['*'] },
-      prerender: { entries: [] }
+      prerender: { entries: [] },
+      experimental: { remoteFunctions: true }
     })
   ],
   server: {
