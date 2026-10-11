@@ -6,8 +6,7 @@ const Schema = z.object({
   token: z
     .string()
     .regex(/^pg_[a-f0-9]{64}$/, 'POSTGATE_TOKEN must be a valid pg_xxx token')
-    .optional(),
-  systemTokenSecret: z.string().min(32, 'POSTGATE_SYSTEM_TOKEN_SECRET must be at least 32 characters')
+    .optional()
 });
 
 export type PostgateConfig = z.infer<typeof Schema>;
@@ -19,8 +18,7 @@ export function getPostgateConfig(): PostgateConfig {
 
   cached = Schema.parse({
     url: getEnv('POSTGATE_URL'),
-    token: getEnv('POSTGATE_TOKEN'),
-    systemTokenSecret: getEnv('POSTGATE_SYSTEM_TOKEN_SECRET')
+    token: getEnv('POSTGATE_TOKEN')
   });
 
   return cached;

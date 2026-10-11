@@ -9,8 +9,6 @@ export { getGithubConfig } from './github';
 export type { GithubConfig } from './github';
 export { getStorageConfig, sharedStorageConfigured } from './storage';
 export type { StorageConfig } from './storage';
-export { getMistralConfig } from './mistral';
-export type { MistralConfig } from './mistral';
 export { getEmailConfig } from './email';
 export type { EmailConfig } from './email';
 export { getPlanetScaleConfig } from './planetscale';

@@ -1,6 +1,6 @@
 import { invalid, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
-import { form, getRequestEvent } from '$app/server';
+import { command, form, getRequestEvent } from '$app/server';
 import { authService } from '#lib/services/auth.ts';
 import { clearSession, setSession } from '#lib/server/auth-cookies.ts';
 import { startGithubOAuth } from '#lib/server/github-oauth.ts';
@@ -87,3 +87,6 @@ export const signOut = form(async () => {
   clearSession(getRequestEvent().cookies);
   redirect(303, '/sign-in');
 });
+
+// Any request refreshes an expired access cookie in the hook; this one only reports whether a session remains
+export const checkSession = command(() => Boolean(getRequestEvent().locals.userId));

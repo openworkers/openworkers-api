@@ -6,6 +6,7 @@
   import { parseAnsi, stripAnsi, type AnsiSegment } from '#lib/utils/ansi.ts';
   import { cn } from '#lib/utils.ts';
   import { ArrowDown, Code, Download, Pause, Play, RotateCw, Search, Trash2 } from '@lucide/svelte';
+  import { checkSession } from '../../../../auth.remote.ts';
 
   let { worker }: { worker: { id: string; name: string | null } } = $props();
 
@@ -163,12 +164,11 @@
     return `${protocol}//${location.host}/api/v1/workers/${worker.id}/ws-logs`;
   }
 
-  // The WebSocket handshake can't refresh an expired access cookie, but any API
+  // The WebSocket handshake can't refresh an expired access cookie, but any
   // request does (hooks.server.ts). Returns false once the session is gone.
   async function ensureSession(): Promise<boolean> {
     try {
-      const res = await fetch('/api/v1/profile');
-      return res.status !== 401;
+      return await checkSession();
     } catch {
       return true; // Network trouble: let the socket attempt fail and retry.
     }

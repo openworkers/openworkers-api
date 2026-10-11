@@ -71,7 +71,6 @@ ow infra env bind openworkers-api-env ASSETS openworkers-api-storage --type asse
 
 # Set variables and secrets (see environment variables table below)
 ow infra env set openworkers-api-env APP_URL https://dash.example.com
-ow infra env set openworkers-api-env POSTGATE_SYSTEM_TOKEN_SECRET --secret
 ow infra env set openworkers-api-env JWT_ACCESS_SECRET --secret
 ow infra env set openworkers-api-env JWT_REFRESH_SECRET --secret
 
