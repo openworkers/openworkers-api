@@ -5,8 +5,10 @@ import { storageService } from '#lib/services/storage.ts';
 import { issueOnServiceError, requireUserId, requireUserIdInCommand } from '#lib/server/remote-guards.ts';
 import { ResourceSettingsSchema } from '#lib/server/remote-schemas.ts';
 import {
+  MASKED_SECRET,
   StorageConfigCreatePlatformInputSchema,
-  StorageConfigCreateS3InputSchema
+  StorageConfigCreateS3InputSchema,
+  StorageConfigUpdateInputSchema
 } from '#lib/types/schemas/storage.schema.ts';
 import type { IStorageConfigCreateInput } from '#lib/types/index.ts';
 
@@ -60,4 +62,44 @@ export const deleteStorageConfig = command(z.uuid(), async (id) => {
   if (!(await storageService.delete(userId, id))) {
     error(404, 'Storage config not found');
   }
+});
+
+const { bucket, prefix, accessKeyId, secretAccessKey, endpoint, region, publicUrl } =
+  StorageConfigUpdateInputSchema.shape;
+
+const S3SettingsSchema = z.object({
+  id: z.uuid(),
+  bucket: bucket.unwrap(),
+  prefix: prefix.unwrap().unwrap(),
+  endpoint: endpoint.unwrap().unwrap(),
+  region: region.unwrap().unwrap(),
+  publicUrl: publicUrl.unwrap().unwrap(),
+  // Empty or still masked keeps the current credential
+  accessKeyId: z.union([accessKeyId.unwrap(), z.literal('')]),
+  _secretAccessKey: z.union([secretAccessKey.unwrap(), z.literal('')])
+});
+
+const changed = (value: string) => (value && value !== MASKED_SECRET ? value : undefined);
+
+export const updateStorageS3Settings = form(S3SettingsSchema, async (input) => {
+  const userId = requireUserId();
+
+  // A platform config uses the shared credentials; its bucket and prefix must not change
+  if ((await storageService.findById(userId, input.id))?.provider !== 's3') {
+    error(404, 'S3 storage config not found');
+  }
+
+  await issueOnServiceError(
+    storageService.update(userId, input.id, {
+      bucket: input.bucket,
+      prefix: input.prefix || null,
+      endpoint: input.endpoint || null,
+      region: input.region || null,
+      publicUrl: input.publicUrl || null,
+      accessKeyId: changed(input.accessKeyId),
+      secretAccessKey: changed(input._secretAccessKey)
+    })
+  );
+
+  return { saved: true };
 });

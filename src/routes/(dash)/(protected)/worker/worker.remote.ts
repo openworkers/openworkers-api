@@ -2,6 +2,7 @@ import { error, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { command, form } from '$app/server';
 import { workersService } from '#lib/services/workers.ts';
+import { cronsService } from '#lib/services/crons.ts';
 import { defaultWorkerScript } from '#lib/server/default-worker.ts';
 import { issueOnServiceError, requireUserId, requireUserIdInCommand } from '#lib/server/remote-guards.ts';
 import { ResourceSettingsSchema } from '#lib/server/remote-schemas.ts';
@@ -57,5 +58,30 @@ export const deleteWorker = command(z.uuid(), async (id) => {
 
   if ((await workersService.delete(userId, id)) === 0) {
     error(404, 'Worker not found');
+  }
+});
+
+export const deployWorkerScript = command(z.object({ id: z.uuid(), script: z.string() }), async ({ id, script }) => {
+  const userId = requireUserIdInCommand();
+
+  if (!(await workersService.update(userId, id, { script }))) {
+    error(404, 'Worker not found');
+  }
+});
+
+export const addWorkerCron = form(
+  z.object({ workerId: z.uuid(), expression: z.string().trim().min(1) }),
+  async ({ workerId, expression }) => {
+    const userId = requireUserId();
+
+    await issueOnServiceError(cronsService.create(userId, { workerId, value: expression }));
+  }
+);
+
+export const deleteWorkerCron = command(z.uuid(), async (id) => {
+  const userId = requireUserIdInCommand();
+
+  if ((await cronsService.delete(userId, id)) === 0) {
+    error(404, 'Cron not found');
   }
 });

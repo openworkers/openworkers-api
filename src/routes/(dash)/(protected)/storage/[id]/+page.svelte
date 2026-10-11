@@ -3,7 +3,7 @@
   import ResourceDetail from '#lib/components/resource-detail.svelte';
   import { deleteStorageConfig, updateStorageConfig } from '../storage.remote.ts';
   import ResourceUsages from '#lib/components/resource-usages.svelte';
-  import StorageS3Settings from '#lib/components/storage-s3-settings.svelte';
+  import StorageS3Settings from './storage-s3-settings.svelte';
   import { Badge } from '#lib/components/ui/badge/index.ts';
 
   let { data } = $props();

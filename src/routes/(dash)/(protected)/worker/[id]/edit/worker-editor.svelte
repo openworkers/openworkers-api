@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { api, ApiError } from '#lib/api.ts';
+  import { remoteErrorMessage } from '#lib/remote-errors.ts';
+  import { deployWorkerScript } from '../../worker.remote.ts';
   import type { IWorker } from '#lib/types/index.ts';
   import type { EnvValue } from '#lib/monaco-setup.ts';
   import { Button } from '#lib/components/ui/button/index.ts';
@@ -33,11 +34,11 @@
     saved = false;
 
     try {
-      await api.patch(`/api/v1/workers/${worker.id}`, { script });
+      await deployWorkerScript({ id: worker.id, script });
       deployedScript = script;
       saved = true;
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Failed to deploy';
+      error = remoteErrorMessage(e, 'Failed to deploy');
     } finally {
       saving = false;
     }

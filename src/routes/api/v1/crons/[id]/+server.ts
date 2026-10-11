@@ -2,7 +2,8 @@ import type { RequestHandler } from './$types';
 import { cronsService } from '#lib/services/crons.ts';
 import { workersService } from '#lib/services/workers.ts';
 import { CronUpdateInputSchema, WorkerSchema } from '#lib/types/index.ts';
-import { jsonResponse, parseAndValidate } from '#lib/server/validate.ts';
+import { jsonResponse, parseAndValidate, serviceErrorResponse } from '#lib/server/validate.ts';
+import { ServiceError } from '#lib/services/errors.ts';
 
 // PATCH /api/v1/crons/:id - Update cron
 export const PATCH: RequestHandler = async ({ locals, params, request }) => {
@@ -16,6 +17,10 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
     const updatedWorker = await workersService.findById(userId, cron.workerId);
     return jsonResponse(WorkerSchema, updatedWorker);
   } catch (error) {
+    if (error instanceof ServiceError) {
+      return serviceErrorResponse(error, 'Failed to update cron');
+    }
+
     console.error('Failed to update cron:', error);
     return Response.json(
       { error: 'Failed to update cron', message: error instanceof Error ? error.message : 'Unknown error' },

@@ -11,7 +11,7 @@
   import * as Select from '#lib/components/ui/select/index.ts';
   import * as Card from '#lib/components/ui/card/index.ts';
   import PageHeader from '#lib/components/page-header.svelte';
-  import WorkerCrons from '#lib/components/worker-crons.svelte';
+  import WorkerCrons from './worker-crons.svelte';
   import { ArrowRight, Code, ExternalLink, ScrollText, Trash2 } from '@lucide/svelte';
   import { workerUrl } from '#lib/utils/worker-url.ts';
   import { hydration } from '#lib/hydration.svelte.ts';

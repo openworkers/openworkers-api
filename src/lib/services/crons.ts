@@ -1,6 +1,7 @@
 import * as db from './db';
 import type { ICron, ICronCreateInput, ICronUpdateInput } from '../types';
 import { WasmCron } from '@openworkers/croner-wasm';
+import { ServiceError } from './errors';
 
 export class CronsService {
   async findById(userId: string, id: string): Promise<ICron | null> {
@@ -13,14 +14,14 @@ export class CronsService {
       new WasmCron(input.value);
     } catch (error) {
       console.error('Invalid cron expression:', error);
-      throw new Error('Invalid cron expression');
+      throw new ServiceError('Invalid cron expression', 400);
     }
 
     const croner = new WasmCron(input.value);
     const nextRun = croner.nextRun();
 
     if (!nextRun) {
-      throw new Error('Cron expression will never run');
+      throw new ServiceError('Cron expression will never run', 400);
     }
 
     return db.createCron(userId, input.workerId, input.value, nextRun);
@@ -32,14 +33,14 @@ export class CronsService {
       new WasmCron(input.expression);
     } catch (error) {
       console.error('Invalid cron expression:', error);
-      throw new Error('Invalid cron expression');
+      throw new ServiceError('Invalid cron expression', 400);
     }
 
     const croner = new WasmCron(input.expression);
     const nextRun = croner.nextRun();
 
     if (!nextRun) {
-      throw new Error('Cron expression will never run');
+      throw new ServiceError('Cron expression will never run', 400);
     }
 
     const cron = await db.updateCron(userId, id, input.expression, nextRun);

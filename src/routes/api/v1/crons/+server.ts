@@ -1,7 +1,8 @@
 import type { RequestHandler } from './$types';
 import { cronsService } from '#lib/services/crons.ts';
 import { CronCreateInputSchema, CronSchema } from '#lib/types/index.ts';
-import { jsonResponse, parseAndValidate } from '#lib/server/validate.ts';
+import { jsonResponse, parseAndValidate, serviceErrorResponse } from '#lib/server/validate.ts';
+import { ServiceError } from '#lib/services/errors.ts';
 
 // POST /api/v1/crons - Create cron
 export const POST: RequestHandler = async ({ locals, request }) => {
@@ -12,6 +13,10 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     const cron = await cronsService.create(userId, payload);
     return jsonResponse(CronSchema, cron, 201);
   } catch (error) {
+    if (error instanceof ServiceError) {
+      return serviceErrorResponse(error, 'Failed to create cron');
+    }
+
     console.error('Failed to create cron:', error);
     return Response.json(
       { error: 'Failed to create cron', message: error instanceof Error ? error.message : 'Unknown error' },

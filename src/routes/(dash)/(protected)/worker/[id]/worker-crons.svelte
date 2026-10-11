@@ -1,44 +1,28 @@
 <script lang="ts">
   import { refreshAll } from '$app/navigation';
-  import { api, ApiError } from '#lib/api.ts';
+  import { remoteErrorMessage } from '#lib/remote-errors.ts';
   import { Button } from '#lib/components/ui/button/index.ts';
   import { Input } from '#lib/components/ui/input/index.ts';
   import * as Card from '#lib/components/ui/card/index.ts';
   import { Trash2 } from '@lucide/svelte';
-  import { hydration } from '#lib/hydration.svelte.ts';
+  import FieldIssues from '#lib/components/field-issues.svelte';
+  import { addWorkerCron, deleteWorkerCron } from '../worker.remote.ts';
 
   type Cron = { id: string; value: string; nextRun?: string | Date | null };
 
   let { workerId, crons }: { workerId: string; crons: Cron[] } = $props();
 
-  let expression = $state('');
+  let add = $derived(addWorkerCron.for(workerId));
   let error = $state<string | null>(null);
-  let busy = $state(false);
 
-  async function add(event: SubmitEvent) {
-    event.preventDefault();
-    if (!expression.trim()) return;
-
-    busy = true;
+  async function remove(cronId: string) {
     error = null;
 
     try {
-      await api.post(`/api/v1/workers/${workerId}/crons`, { expression });
-      expression = '';
+      await deleteWorkerCron(cronId);
       await refreshAll();
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Failed to add cron';
-    } finally {
-      busy = false;
-    }
-  }
-
-  async function remove(cronId: string) {
-    try {
-      await api.del(`/api/v1/crons/${cronId}`);
-      await refreshAll();
-    } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Failed to delete cron';
+      error = remoteErrorMessage(e, 'Failed to delete cron');
     }
   }
 </script>
@@ -58,13 +42,13 @@
       </div>
     {/each}
 
-    <form class="flex items-center gap-2" onsubmit={add}>
-      <fieldset class="contents" disabled={!hydration.done}>
-        <Input class="flex-1 font-mono" placeholder="*/5 * * * *" bind:value={expression} />
-        <Button type="submit" disabled={busy}>Add</Button>
-      </fieldset>
+    <form class="flex items-center gap-2" {...add}>
+      <input {...add.fields.workerId.as('hidden', workerId)} />
+      <Input class="flex-1 font-mono" placeholder="*/5 * * * *" {...add.fields.expression.as('text')} required />
+      <Button type="submit" disabled={!!add.pending}>Add</Button>
     </form>
 
+    <FieldIssues issues={add.fields.allIssues()} />
     {#if error}
       <p class="text-destructive text-sm">{error}</p>
     {/if}
