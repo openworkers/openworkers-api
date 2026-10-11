@@ -92,7 +92,8 @@ export default defineConfig({
     zodLocalesPlugin(),
     tailwindcss(),
     sveltekit({
-      inlineStyleThreshold: Number.POSITIVE_INFINITY,
+      // Inline the app CSS (~45k chars), not the Monaco CSS (~146k): it would enter the worker bundle
+      inlineStyleThreshold: 100_000,
       adapter: adapter({ functions: false, debug: { prettier: false } }),
       csrf: { trustedOrigins: ['*'] },
       prerender: { entries: [] },
