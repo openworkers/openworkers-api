@@ -9,7 +9,7 @@
 </script>
 
 {#key id}
-  <ResourceDetail base="kv" {id} listHref="/kv-namespaces" initialItem={data.item}>
+  <ResourceDetail base="kv" {id} listHref="/kv-namespaces" item={data.item}>
     {#snippet extra()}
       <ResourceUsages usages={data.usages} />
       <KvData {id} />

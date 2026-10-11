@@ -13,7 +13,7 @@
   createHref="/worker/create"
   rowHref={(id) => `/worker/${id}`}
   emptyLabel="No workers yet."
-  initialItems={data.workers}
+  items={data.workers}
   limit={data.profile.limits.workers}
   viewHref={(worker) => workerUrl(worker.name ?? '', page.url.host, page.data.workerDomain)}
 />

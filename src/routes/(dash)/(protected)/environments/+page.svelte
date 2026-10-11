@@ -11,6 +11,6 @@
   createHref="/environment/create"
   rowHref={(id) => `/environment/${id}`}
   emptyLabel="No environments yet."
-  initialItems={data.items}
+  items={data.items}
   limit={data.profile.limits.environments}
 />

@@ -21,7 +21,7 @@
 </script>
 
 {#key id}
-  <ResourceDetail base="storage" {id} listHref="/storage-configs" initialItem={data.item}>
+  <ResourceDetail base="storage" {id} listHref="/storage-configs" item={data.item}>
     {#snippet extra(item)}
       {@const s = item as Storage}
       <div class="flex items-center gap-2">

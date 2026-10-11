@@ -9,7 +9,7 @@
 </script>
 
 {#key id}
-  <ResourceDetail base="environments" {id} listHref="/environments" initialItem={data.item}>
+  <ResourceDetail base="environments" {id} listHref="/environments" item={data.item}>
     {#snippet extra()}
       <EnvironmentValues
         {id}

@@ -8,7 +8,7 @@
 </script>
 
 {#key id}
-  <ResourceDetail base="databases" {id} listHref="/databases" initialItem={data.item}>
+  <ResourceDetail base="databases" {id} listHref="/databases" item={data.item}>
     {#snippet extra()}
       <ResourceUsages usages={data.usages} />
     {/snippet}

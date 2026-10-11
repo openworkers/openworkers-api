@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { refreshAll } from '$app/navigation';
   import { api, ApiError } from '#lib/api.ts';
   import { Button } from '#lib/components/ui/button/index.ts';
   import { Input } from '#lib/components/ui/input/index.ts';
@@ -8,10 +8,8 @@
 
   type Cron = { id: string; value: string; nextRun?: string | Date | null };
 
-  let { workerId, crons: initial }: { workerId: string; crons: Cron[] } = $props();
+  let { workerId, crons }: { workerId: string; crons: Cron[] } = $props();
 
-  // One-time seed from the prop; the list is mutated locally afterwards.
-  let crons = $state<Cron[]>(untrack(() => initial ?? []));
   let expression = $state('');
   let error = $state<string | null>(null);
   let busy = $state(false);
@@ -24,11 +22,9 @@
     error = null;
 
     try {
-      const updated = await api.post<{ crons?: Cron[] }>(`/api/v1/workers/${workerId}/crons`, {
-        expression
-      });
-      crons = updated.crons ?? crons;
+      await api.post(`/api/v1/workers/${workerId}/crons`, { expression });
       expression = '';
+      await refreshAll();
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Failed to add cron';
     } finally {
@@ -39,7 +35,7 @@
   async function remove(cronId: string) {
     try {
       await api.del(`/api/v1/crons/${cronId}`);
-      crons = crons.filter((c) => c.id !== cronId);
+      await refreshAll();
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Failed to delete cron';
     }

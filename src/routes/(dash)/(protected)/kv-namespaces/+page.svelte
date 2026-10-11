@@ -11,6 +11,6 @@
   createHref="/kv/create"
   rowHref={(id) => `/kv/${id}`}
   emptyLabel="No KV namespaces yet."
-  initialItems={data.items}
+  items={data.items}
   limit={data.profile.limits.kv}
 />

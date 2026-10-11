@@ -1,17 +1,15 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { goto } from '$app/navigation';
+  import { goto, refreshAll } from '$app/navigation';
   import { page } from '$app/state';
   import { api, ApiError } from '#lib/api.ts';
   import { confirmDialog } from '#lib/confirm.svelte.ts';
-  import type { IWorker } from '#lib/types/index.ts';
   import { Button } from '#lib/components/ui/button/index.ts';
   import { Input } from '#lib/components/ui/input/index.ts';
   import { Label } from '#lib/components/ui/label/index.ts';
   import { Textarea } from '#lib/components/ui/textarea/index.ts';
   import * as Select from '#lib/components/ui/select/index.ts';
   import * as Card from '#lib/components/ui/card/index.ts';
-  import { Skeleton } from '#lib/components/ui/skeleton/index.ts';
   import PageHeader from '#lib/components/page-header.svelte';
   import WorkerCrons from '#lib/components/worker-crons.svelte';
   import { ArrowRight, Code, ExternalLink, ScrollText, Trash2 } from '@lucide/svelte';
@@ -20,8 +18,7 @@
   let { data } = $props();
   let id = $derived(page.params.id!);
 
-  // Seeded from the SSR loader (workersService.findById) — no client fetch.
-  let worker = $state<IWorker | null>(untrack(() => data.worker));
+  let worker = $derived(data.worker);
   let name = $state(untrack(() => data.worker.name ?? ''));
   let desc = $state(untrack(() => data.worker.desc ?? ''));
   let domainsText = $state(
@@ -32,7 +29,6 @@
   let environmentName = $derived(
     data.environments.find((e) => e.id === environment)?.name ?? 'None'
   );
-  let loading = $state(false);
   let saving = $state(false);
   let error = $state<string | null>(null);
 
@@ -43,7 +39,6 @@
     const w = data.worker;
 
     untrack(() => {
-      worker = w;
       name = w.name ?? '';
       desc = w.desc ?? '';
       domainsText = (w.domains ?? []).map((d) => d.name).join('\n');
@@ -69,6 +64,7 @@
         domains,
         environment: environment || null
       });
+      await refreshAll();
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Failed to save';
     } finally {
@@ -78,7 +74,7 @@
 
   async function remove() {
     const confirmed = await confirmDialog({
-      title: `Delete ${worker?.name ?? 'this worker'}`,
+      title: `Delete ${worker.name ?? 'this worker'}`,
       message: 'This cannot be undone.',
       confirmLabel: 'Delete',
       destructive: true
@@ -96,13 +92,13 @@
 
 </script>
 
-<PageHeader title={worker?.name ?? 'Loading…'}>
+<PageHeader title={worker.name ?? '(unnamed)'}>
   {#snippet actions()}
     <Button variant="outline" href={`/worker/${id}/edit`}>
       <Code class="size-4" />
       Edit code
     </Button>
-    {#if worker?.name}
+    {#if worker.name}
       <Button
         variant="outline"
         href={workerUrl(worker.name, page.url.host, page.data.workerDomain)}
@@ -124,69 +120,63 @@
 </PageHeader>
 
 <div class="flex max-w-2xl flex-col gap-6 p-8">
-  {#if loading}
-    <Skeleton class="h-40 w-full" />
-  {:else if worker}
-    <Card.Root>
-      <Card.Header><Card.Title>Settings</Card.Title></Card.Header>
-      <Card.Content>
-        <form class="flex flex-col gap-4" onsubmit={saveSettings}>
-          <div class="flex flex-col gap-2">
-            <Label for="name">Name</Label>
-            <Input id="name" bind:value={name} required />
+  <Card.Root>
+    <Card.Header><Card.Title>Settings</Card.Title></Card.Header>
+    <Card.Content>
+      <form class="flex flex-col gap-4" onsubmit={saveSettings}>
+        <div class="flex flex-col gap-2">
+          <Label for="name">Name</Label>
+          <Input id="name" bind:value={name} required />
+        </div>
+        <div class="flex flex-col gap-2">
+          <Label for="desc">Description</Label>
+          <Input id="desc" bind:value={desc} />
+        </div>
+        <div class="flex flex-col gap-2">
+          <Label for="environment">Environment</Label>
+          <div class="flex gap-2">
+            <Select.Root type="single" bind:value={environment}>
+              <Select.Trigger id="environment" class="flex-1">{environmentName}</Select.Trigger>
+              <Select.Content>
+                <Select.Item value="" label="None">None</Select.Item>
+                {#each data.environments as env (env.id)}
+                  <Select.Item value={env.id} label={env.name ?? env.id}>{env.name ?? env.id}</Select.Item>
+                {/each}
+              </Select.Content>
+            </Select.Root>
+            {#if environment}
+              <Button
+                variant="outline"
+                size="icon"
+                href={`/environment/${environment}`}
+                aria-label="Open the environment"
+                title="Open the environment"
+              >
+                <ArrowRight class="size-4" />
+              </Button>
+            {:else}
+              <Button variant="outline" size="icon" disabled aria-label="No environment">
+                <ArrowRight class="size-4" />
+              </Button>
+            {/if}
           </div>
-          <div class="flex flex-col gap-2">
-            <Label for="desc">Description</Label>
-            <Input id="desc" bind:value={desc} />
-          </div>
-          <div class="flex flex-col gap-2">
-            <Label for="environment">Environment</Label>
-            <div class="flex gap-2">
-              <Select.Root type="single" bind:value={environment}>
-                <Select.Trigger id="environment" class="flex-1">{environmentName}</Select.Trigger>
-                <Select.Content>
-                  <Select.Item value="" label="None">None</Select.Item>
-                  {#each data.environments as env (env.id)}
-                    <Select.Item value={env.id} label={env.name ?? env.id}>{env.name ?? env.id}</Select.Item>
-                  {/each}
-                </Select.Content>
-              </Select.Root>
-              {#if environment}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  href={`/environment/${environment}`}
-                  aria-label="Open the environment"
-                  title="Open the environment"
-                >
-                  <ArrowRight class="size-4" />
-                </Button>
-              {:else}
-                <Button variant="outline" size="icon" disabled aria-label="No environment">
-                  <ArrowRight class="size-4" />
-                </Button>
-              {/if}
-            </div>
-          </div>
-          <div class="flex flex-col gap-2">
-            <Label for="domains">Domains <span class="text-muted-foreground">(one per line)</span></Label>
-            <Textarea id="domains" bind:value={domainsText} rows={3} class="font-mono" />
-          </div>
+        </div>
+        <div class="flex flex-col gap-2">
+          <Label for="domains">Domains <span class="text-muted-foreground">(one per line)</span></Label>
+          <Textarea id="domains" bind:value={domainsText} rows={3} class="font-mono" />
+        </div>
 
-          {#if error}<p class="text-destructive text-sm">{error}</p>{/if}
+        {#if error}<p class="text-destructive text-sm">{error}</p>{/if}
 
-          <div class="flex justify-end">
-            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
-          </div>
-        </form>
-      </Card.Content>
-    </Card.Root>
+        <div class="flex justify-end">
+          <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+        </div>
+      </form>
+    </Card.Content>
+  </Card.Root>
 
-    <!-- Keyed: WorkerCrons seeds its cron list once at mount. -->
-    {#key id}
-      <WorkerCrons workerId={id} crons={worker.crons ?? []} />
-    {/key}
-  {:else}
-    <p class="text-destructive text-sm">{error}</p>
-  {/if}
+  <!-- Keyed: another worker starts with an empty cron input. -->
+  {#key id}
+    <WorkerCrons workerId={id} crons={worker.crons ?? []} />
+  {/key}
 </div>
