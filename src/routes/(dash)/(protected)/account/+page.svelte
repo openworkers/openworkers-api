@@ -11,6 +11,7 @@
   import FieldIssues from '#lib/components/field-issues.svelte';
   import { Trash2 } from '@lucide/svelte';
   import { createAccountApiKey, revokeAccountApiKey } from './account.remote.ts';
+  import { signOut } from '../../auth.remote.ts';
 
   let { data } = $props();
 
@@ -63,7 +64,7 @@
         <p class="font-medium">{data.profile.username}</p>
         <p class="text-muted-foreground text-sm">{data.profile.id}</p>
       </div>
-      <form method="POST" action="/logout">
+      <form {...signOut.for('account')}>
         <Button type="submit" variant="outline">Sign out</Button>
       </form>
     </Card.Content>

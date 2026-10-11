@@ -6,6 +6,7 @@
   import ConfirmDialog from '#lib/components/confirm-dialog.svelte';
   import { theme, toggleTheme } from '#lib/theme.svelte.ts';
   import { Boxes, Database, HardDrive, KeyRound, LayoutGrid, LogOut, Moon, Settings, Sun } from '@lucide/svelte';
+  import { signOut } from '../auth.remote.ts';
 
   let { data, children } = $props();
 
@@ -66,7 +67,7 @@
           Dark mode
         {/if}
       </Button>
-      <form method="POST" action="/logout">
+      <form {...signOut.for('sidebar')}>
         <Button type="submit" variant="ghost" size="sm" class="w-full justify-start gap-2">
           <LogOut class="size-4" />
           Sign out

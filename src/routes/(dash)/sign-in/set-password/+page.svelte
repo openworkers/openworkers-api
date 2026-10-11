@@ -1,7 +1,6 @@
 <script lang="ts">
   import SetPasswordForm from '#lib/components/set-password-form.svelte';
-
-  let { form } = $props();
+  import { setPassword } from '../../auth.remote.ts';
 </script>
 
-<SetPasswordForm {form} title="Set your password" cta="Set password" />
+<SetPasswordForm form={setPassword} title="Set your password" cta="Set password" />

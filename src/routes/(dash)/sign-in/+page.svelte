@@ -1,28 +1,17 @@
 <script lang="ts">
-  import { enhance } from '$app/forms';
   import { Button } from '#lib/components/ui/button/index.ts';
   import { Input } from '#lib/components/ui/input/index.ts';
   import { Label } from '#lib/components/ui/label/index.ts';
   import * as Card from '#lib/components/ui/card/index.ts';
-
-  let { form } = $props();
+  import FieldIssues from '#lib/components/field-issues.svelte';
+  import { register, signIn, signInWithGithub } from '../auth.remote.ts';
 
   type AuthMode = 'login' | 'register';
 
   let mode = $state<AuthMode>('login');
-  let loading = $state(false);
 
   function toggleMode() {
     mode = mode === 'login' ? 'register' : 'login';
-  }
-
-  // use:enhance handler that just toggles the loading flag around the request.
-  function submit() {
-    loading = true;
-    return async ({ update }: { update: () => Promise<void> }) => {
-      await update();
-      loading = false;
-    };
   }
 </script>
 
@@ -44,9 +33,10 @@
     </Card.Header>
 
     <Card.Content class="flex flex-col gap-4">
-      <form method="POST" action="?/github">
+      <form {...signInWithGithub}>
         <Button type="submit" variant="outline" class="w-full">Continue with GitHub</Button>
       </form>
+      <FieldIssues issues={signInWithGithub.fields.allIssues()} />
 
       <div class="flex items-center gap-3">
         <span class="bg-border h-px flex-1"></span>
@@ -55,10 +45,11 @@
       </div>
 
       {#if mode === 'login'}
-        <form method="POST" action="?/login" use:enhance={submit} class="flex flex-col gap-4">
+        <form {...signIn} class="flex flex-col gap-4">
           <div class="flex flex-col gap-2">
             <Label for="email">Email</Label>
-            <Input id="email" name="email" type="email" value={form?.email ?? ''} autocomplete="email" required />
+            <Input id="email" {...signIn.fields.email.as('email')} autocomplete="email" required />
+            <FieldIssues issues={signIn.fields.email.issues()} />
           </div>
 
           <div class="flex flex-col gap-2">
@@ -66,34 +57,30 @@
               <Label for="password">Password</Label>
               <a href="/sign-in/forgot-password" class="text-muted-foreground text-sm hover:underline"> Forgot? </a>
             </div>
-            <Input id="password" name="password" type="password" autocomplete="current-password" required />
+            <Input id="password" {...signIn.fields._password.as('password')} autocomplete="current-password" required />
           </div>
 
-          {#if form?.mode === 'login' && form?.error}
-            <p class="text-destructive text-sm">{form.error}</p>
-          {/if}
+          <FieldIssues issues={signIn.fields.issues()} />
 
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
+          <Button type="submit" disabled={!!signIn.pending}>
+            {signIn.pending ? 'Signing in…' : 'Sign in'}
           </Button>
         </form>
       {:else}
-        <form method="POST" action="?/register" use:enhance={submit} class="flex flex-col gap-4">
+        <form {...register} class="flex flex-col gap-4">
           <div class="flex flex-col gap-2">
             <Label for="email">Email</Label>
-            <Input id="email" name="email" type="email" value={form?.email ?? ''} autocomplete="email" required />
+            <Input id="email" {...register.fields.email.as('email')} autocomplete="email" required />
           </div>
 
-          {#if form?.mode === 'register' && form?.error}
-            <p class="text-destructive text-sm">{form.error}</p>
+          <FieldIssues issues={register.fields.allIssues()} />
+
+          {#if register.result}
+            <p class="text-sm text-green-500">{register.result.message}</p>
           {/if}
 
-          {#if form?.mode === 'register' && form?.success}
-            <p class="text-sm text-green-500">{form.success}</p>
-          {/if}
-
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Sending…' : 'Register'}
+          <Button type="submit" disabled={!!register.pending}>
+            {register.pending ? 'Sending…' : 'Register'}
           </Button>
         </form>
       {/if}

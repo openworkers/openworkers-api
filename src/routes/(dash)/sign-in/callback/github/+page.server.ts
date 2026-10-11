@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { authService } from '#lib/services/auth.ts';
 import { setSession } from '#lib/server/auth-cookies.ts';
+import { checkGithubState } from '#lib/server/github-oauth.ts';
 import type { PageServerLoad } from './$types';
 
 // BFF: GitHub redirects here with ?code=; exchange it server-side and mint a
@@ -10,6 +11,10 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 
   if (!code) {
     return { error: 'Missing authorization code.' };
+  }
+
+  if (!checkGithubState(cookies, url.searchParams.get('state'))) {
+    return { error: 'This GitHub answer was not asked for by this browser. Sign in again.' };
   }
 
   let user;

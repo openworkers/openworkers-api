@@ -1,34 +1,23 @@
 <script lang="ts">
-  import { enhance } from '$app/forms';
+  import type { RemoteForm } from '$app/server';
   import { page } from '$app/state';
   import { Button } from '#lib/components/ui/button/index.ts';
   import { Input } from '#lib/components/ui/input/index.ts';
   import { Label } from '#lib/components/ui/label/index.ts';
   import * as Card from '#lib/components/ui/card/index.ts';
+  import FieldIssues from './field-issues.svelte';
 
-  let { title, cta, form }: { title: string; cta: string; form: { error?: string } | null } = $props();
+  let {
+    title,
+    cta,
+    form
+  }: {
+    title: string;
+    cta: string;
+    form: RemoteForm<{ token: string; _password: string; _confirm: string }, unknown>;
+  } = $props();
 
   let token = $derived(page.url.searchParams.get('token') ?? '');
-  let password = $state('');
-  let confirm = $state('');
-  let loading = $state(false);
-  let clientError = $state<string | null>(null);
-
-  function submit({ cancel }: { cancel: () => void }) {
-    clientError = null;
-
-    if (password !== confirm) {
-      clientError = 'Passwords do not match.';
-      cancel();
-      return;
-    }
-
-    loading = true;
-    return async ({ update }: { update: () => Promise<void> }) => {
-      await update();
-      loading = false;
-    };
-  }
 </script>
 
 <svelte:head><title>{title} · OpenWorkers</title></svelte:head>
@@ -39,30 +28,25 @@
       <Card.Title class="text-xl">{title}</Card.Title>
     </Card.Header>
     <Card.Content>
-      <form method="POST" use:enhance={submit} class="flex flex-col gap-4">
-        <input type="hidden" name="token" value={token} />
+      <form {...form} class="flex flex-col gap-4">
+        <input {...form.fields.token.as('hidden', token)} />
 
         <div class="flex flex-col gap-2">
           <Label for="password">New password</Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            bind:value={password}
-            autocomplete="new-password"
-            required
-          />
+          <Input id="password" {...form.fields._password.as('password')} autocomplete="new-password" required />
+          <FieldIssues issues={form.fields._password.issues()} />
         </div>
 
         <div class="flex flex-col gap-2">
           <Label for="confirm">Confirm password</Label>
-          <Input id="confirm" type="password" bind:value={confirm} autocomplete="new-password" required />
+          <Input id="confirm" {...form.fields._confirm.as('password')} autocomplete="new-password" required />
+          <FieldIssues issues={form.fields._confirm.issues()} />
         </div>
 
-        {#if clientError}<p class="text-destructive text-sm">{clientError}</p>{/if}
-        {#if form?.error}<p class="text-destructive text-sm">{form.error}</p>{/if}
+        <FieldIssues issues={form.fields.token.issues()} />
+        <FieldIssues issues={form.fields.issues()} />
 
-        <Button type="submit" disabled={loading}>{loading ? 'Saving…' : cta}</Button>
+        <Button type="submit" disabled={!!form.pending}>{form.pending ? 'Saving…' : cta}</Button>
       </form>
     </Card.Content>
   </Card.Root>
