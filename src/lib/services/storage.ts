@@ -2,6 +2,7 @@ import * as db from './db/storage';
 import * as usersDb from './db/users';
 import { getStorageConfig, sharedStorageConfigured } from '../config';
 import { ServiceError } from './errors';
+import { refuseIfBound } from './binding-usages';
 
 export class PlatformStorageUnavailable extends ServiceError {
   constructor() {
@@ -171,6 +172,8 @@ export class StorageService {
   }
 
   async delete(userId: string, id: string): Promise<boolean> {
+    await refuseIfBound(userId, id);
+
     const deleted = await db.deleteStorageConfig(userId, id);
     return deleted > 0;
   }

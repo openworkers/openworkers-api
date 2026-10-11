@@ -2,7 +2,8 @@ import { z } from 'zod';
 import type { RequestHandler } from './$types';
 import { databasesService } from '#lib/services/databases.ts';
 import { DatabaseSchema } from '#lib/types/index.ts';
-import { jsonResponse, parseAndValidate } from '#lib/server/validate.ts';
+import { jsonResponse, parseAndValidate, serviceErrorResponse } from '#lib/server/validate.ts';
+import { ServiceError } from '#lib/services/errors.ts';
 
 // GET /api/v1/databases/:id - Get single database (accepts UUID or name)
 export const GET: RequestHandler = async ({ locals, params }) => {
@@ -76,6 +77,10 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 
     return Response.json({ deleted: true });
   } catch (error) {
+    if (error instanceof ServiceError) {
+      return serviceErrorResponse(error, 'Failed to delete database');
+    }
+
     console.error('Failed to delete database:', error);
     return Response.json({ error: 'Failed to delete database' }, { status: 500 });
   }

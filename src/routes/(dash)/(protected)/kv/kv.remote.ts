@@ -2,7 +2,12 @@ import { error, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { command, form } from '$app/server';
 import { kvService } from '#lib/services/kv.ts';
-import { issueOnServiceError, requireUserId, requireUserIdInCommand } from '#lib/server/remote-guards.ts';
+import {
+  errorOnServiceError,
+  issueOnServiceError,
+  requireUserId,
+  requireUserIdInCommand
+} from '#lib/server/remote-guards.ts';
 import { ResourceSettingsSchema } from '#lib/server/remote-schemas.ts';
 import { ResourceCreateInputSchema } from '#lib/types/schemas/base.schema.ts';
 
@@ -31,7 +36,7 @@ export const updateKvNamespace = form(ResourceSettingsSchema, async (input) => {
 export const deleteKvNamespace = command(z.uuid(), async (id) => {
   const userId = requireUserIdInCommand();
 
-  if (!(await kvService.delete(userId, id))) {
+  if (!(await errorOnServiceError(kvService.delete(userId, id)))) {
     error(404, 'KV namespace not found');
   }
 });

@@ -2,7 +2,7 @@ import { error, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { command, form } from '$app/server';
 import { databasesService } from '#lib/services/databases.ts';
-import { requireUserId, requireUserIdInCommand } from '#lib/server/remote-guards.ts';
+import { errorOnServiceError, requireUserId, requireUserIdInCommand } from '#lib/server/remote-guards.ts';
 import { ResourceSettingsSchema } from '#lib/server/remote-schemas.ts';
 import {
   DatabaseCreatePlatformInputSchema,
@@ -45,7 +45,7 @@ export const updateDatabase = form(ResourceSettingsSchema, async (input) => {
 export const deleteDatabase = command(z.uuid(), async (id) => {
   const userId = requireUserIdInCommand();
 
-  if (!(await databasesService.delete(userId, id))) {
+  if (!(await errorOnServiceError(databasesService.delete(userId, id)))) {
     error(404, 'Database not found');
   }
 });

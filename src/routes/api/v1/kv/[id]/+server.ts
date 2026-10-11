@@ -76,6 +76,10 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 
     return Response.json({ deleted: true });
   } catch (error) {
+    if (error instanceof ServiceError) {
+      return serviceErrorResponse(error, 'Failed to delete KV namespace');
+    }
+
     console.error('Failed to delete KV namespace:', error);
     return Response.json({ error: 'Failed to delete KV namespace' }, { status: 500 });
   }

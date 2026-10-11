@@ -3,6 +3,7 @@ import * as db from './db/databases';
 import { planetScaleService } from './planetscale';
 import type { IDatabase, IDatabaseCreateInput } from '../types';
 import { isUuid } from '../utils/validation';
+import { refuseIfBound } from './binding-usages';
 
 /**
  * Generate a unique schema name for platform provider
@@ -147,6 +148,8 @@ export class DatabasesService {
     if (!row) {
       return false;
     }
+
+    await refuseIfBound(userId, id);
 
     // For platform provider, drop the schema
     if (row.provider === 'platform' && row.schemaName) {

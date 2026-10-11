@@ -2,6 +2,7 @@ import * as db from './db';
 import * as projectsDb from './db/projects';
 import type { IWorker, IWorkerLanguage, IWorkerUpdateInput } from '../types';
 import { ServiceError } from './errors';
+import { refuseIfBound } from './binding-usages';
 
 interface FindWorkerOptions {
   includeScript?: boolean;
@@ -42,6 +43,8 @@ export class WorkersService {
   }
 
   async delete(userId: string, id: string): Promise<number> {
+    await refuseIfBound(userId, id);
+
     // Deleting the main worker of a project deletes the whole project
     if (await projectsDb.isProjectMainWorker(userId, id)) {
       return projectsDb.deleteProject(userId, id);

@@ -4,6 +4,7 @@ import type { IKvNamespace, IKvNamespaceCreateInput, IKvNamespaceUpdateInput } f
 import type { KvDataRow, KvDataListResult } from './db/kv';
 import { isUuid } from '../utils/validation';
 import { ServiceError } from './errors';
+import { refuseIfBound } from './binding-usages';
 
 const MAX_VALUE_SIZE = 100 * 1024;
 
@@ -118,6 +119,8 @@ export class KvService {
   }
 
   async delete(userId: string, id: string): Promise<boolean> {
+    await refuseIfBound(userId, id);
+
     const deleted = await db.deleteKvNamespace(userId, id);
     return deleted > 0;
   }

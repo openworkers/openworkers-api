@@ -4,7 +4,12 @@ import { command, form } from '$app/server';
 import { workersService } from '#lib/services/workers.ts';
 import { cronsService } from '#lib/services/crons.ts';
 import { defaultWorkerScript } from '#lib/server/default-worker.ts';
-import { issueOnServiceError, requireUserId, requireUserIdInCommand } from '#lib/server/remote-guards.ts';
+import {
+  errorOnServiceError,
+  issueOnServiceError,
+  requireUserId,
+  requireUserIdInCommand
+} from '#lib/server/remote-guards.ts';
 import { ResourceSettingsSchema } from '#lib/server/remote-schemas.ts';
 import { ResourceCreateInputSchema } from '#lib/types/schemas/base.schema.ts';
 import { WorkerLanguageSchema } from '#lib/types/schemas/worker.schema.ts';
@@ -56,7 +61,7 @@ export const updateWorkerSettings = form(SettingsSchema, async (input) => {
 export const deleteWorker = command(z.uuid(), async (id) => {
   const userId = requireUserIdInCommand();
 
-  if ((await workersService.delete(userId, id)) === 0) {
+  if ((await errorOnServiceError(workersService.delete(userId, id))) === 0) {
     error(404, 'Worker not found');
   }
 });

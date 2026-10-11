@@ -1,7 +1,8 @@
 import type { RequestHandler } from './$types';
 import { workersService } from '#lib/services/workers.ts';
 import { WorkerUpdateInputSchema, WorkerSchema } from '#lib/types/index.ts';
-import { jsonResponse, parseAndValidate } from '#lib/server/validate.ts';
+import { jsonResponse, parseAndValidate, serviceErrorResponse } from '#lib/server/validate.ts';
+import { ServiceError } from '#lib/services/errors.ts';
 
 // GET /api/v1/workers/:id - Get single worker (accepts UUID or name)
 export const GET: RequestHandler = async ({ locals, params, url }) => {
@@ -72,6 +73,10 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 
     return Response.json({ deleted });
   } catch (error) {
+    if (error instanceof ServiceError) {
+      return serviceErrorResponse(error, 'Failed to delete worker');
+    }
+
     console.error('Failed to delete worker:', error);
     return Response.json({ error: 'Failed to delete worker' }, { status: 500 });
   }
