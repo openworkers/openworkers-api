@@ -47,6 +47,7 @@
     "mode-watcher": "^1.1.0",
     "monaco-editor": "0.55.1",
     "prettier": "^3.7.4",
+    "prettier-plugin-svelte": "^4.1.1",
     "rimraf": "^6.1.2",
     "svelte": "^5.57.1",
     "svelte-check": "^4.7.6",
