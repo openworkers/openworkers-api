@@ -19,7 +19,7 @@
       },
       "devDependencies": {
         "@internationalized/date": "^3.12.0",
-        "@openworkers/adapter-sveltekit": "file:vendor/openworkers-adapter-sveltekit-0.5.9.tgz",
+        "@openworkers/adapter-sveltekit": "^0.6.0",
         "@openworkers/workers-types": "^0.1.12",
         "@sveltejs/kit": "^3.0.0",
         "@sveltejs/vite-plugin-svelte": "^7.0.0",
@@ -117,7 +117,7 @@
 
     "@lucide/svelte": ["@lucide/svelte@1.17.0", "", { "peerDependencies": { "svelte": "^5" } }, "sha512-q06YCFBN5CO8cd1ADmLCxWRVMVb7xxvHzqC0lvNoxGa+FLW6Cd1Y1AOxgbQk4Iwe68vkAMCRveNHint4WoaVKg=="],
 
-    "@openworkers/adapter-sveltekit": ["@openworkers/adapter-sveltekit@vendor/openworkers-adapter-sveltekit-0.5.9.tgz", { "dependencies": { "esbuild": "^0.27.7" }, "peerDependencies": { "@sveltejs/kit": "^2.0.0 || ^3.0.0" } }, "sha512-+Jo/16/4xRo5nnO/M0cRUqvGK/AncTuymW4u8BiTteQoFf7AbLhpi+cguTITGQfGqddnVjGXZh/c3+qItj9M1w=="],
+    "@openworkers/adapter-sveltekit": ["@openworkers/adapter-sveltekit@0.6.0", "", { "dependencies": { "esbuild": "^0.27.7" }, "peerDependencies": { "@sveltejs/kit": "^2.0.0 || ^3.0.0" } }, "sha512-KsXbfSCm7LL7CE/qcWd94/3rm2m+ZuNiN/HIOU86kWVWSq+FVqvAC5WRy3BAtHiSIjxIwAcaqzSzRPMCrprsSg=="],
 
     "@openworkers/croner-wasm": ["@openworkers/croner-wasm@0.3.1", "", {}, "sha512-03yc9hYWt4Fhu3K9kWw7cV3ig3aefMFMp3ylkqa1t/wWHSwelwzmepHRXlvKL8ZsegnDWK1yQuzS2oruspmLiA=="],
 
