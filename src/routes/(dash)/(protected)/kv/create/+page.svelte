@@ -1,5 +1,6 @@
 <script lang="ts">
   import ResourceCreate from '#lib/components/resource-create.svelte';
+  import { createKvNamespace } from './create.remote.ts';
 </script>
 
-<ResourceCreate title="New KV namespace" base="kv" detailHref={(id) => `/kv/${id}`} />
+<ResourceCreate title="New KV namespace" form={createKvNamespace} />
