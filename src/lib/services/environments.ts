@@ -8,6 +8,7 @@ import type {
 } from '../types';
 import { isUuid } from '../utils/validation';
 import { ServiceError } from './errors';
+import { ownsBindingTarget } from './binding-owner';
 
 export class EnvironmentsService {
   async findAll(userId: string): Promise<IEnvironment[]> {
@@ -73,6 +74,28 @@ export class EnvironmentsService {
     const env = await db.findEnvironmentById(userId, envId);
     if (!env) {
       throw new Error('Environment not found');
+    }
+
+    const current = new Map((env.values ?? []).map((value) => [value.id, value]));
+
+    // Check every value before writing any
+    for (const val of values) {
+      if (val.id && val.value === null) {
+        continue;
+      }
+
+      const existing = val.id ? current.get(val.id) : undefined;
+
+      if (val.id && !existing) {
+        throw new ServiceError(`No value with id ${val.id} in this environment`, 404);
+      }
+
+      const type = val.type ?? existing?.type ?? 'var';
+      const target = val.value ?? existing?.value ?? '';
+
+      if (type !== 'var' && type !== 'secret' && !(await ownsBindingTarget(userId, type, target))) {
+        throw new ServiceError(`${val.key ?? existing?.key}: no ${type} resource with this id in your account`, 400);
+      }
     }
 
     // Transaction logic simulation (since we don't have easy transaction object passing yet)

@@ -1,7 +1,8 @@
 import type { RequestHandler } from './$types';
 import { environmentsService } from '#lib/services/environments.ts';
 import { EnvironmentUpdateInputSchema, EnvironmentSchema } from '#lib/types/index.ts';
-import { jsonResponse } from '#lib/server/validate.ts';
+import { jsonResponse, serviceErrorResponse } from '#lib/server/validate.ts';
+import { ServiceError } from '#lib/services/errors.ts';
 
 // GET /api/v1/environments/:id - Get environment by id or name
 export const GET: RequestHandler = async ({ locals, params }) => {
@@ -49,6 +50,10 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
     const updatedEnv = await environmentsService.findById(userId, envId);
     return jsonResponse(EnvironmentSchema, updatedEnv);
   } catch (error) {
+    if (error instanceof ServiceError) {
+      return serviceErrorResponse(error, 'Failed to update environment');
+    }
+
     console.error('Failed to update environment:', error);
     return Response.json(
       { error: 'Failed to update environment', message: error instanceof Error ? error.message : 'Unknown error' },
