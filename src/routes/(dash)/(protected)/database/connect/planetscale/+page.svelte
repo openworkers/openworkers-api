@@ -1,36 +1,9 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { api, ApiError } from '#lib/api.ts';
   import { Button } from '#lib/components/ui/button/index.ts';
   import * as Card from '#lib/components/ui/card/index.ts';
   import PageHeader from '#lib/components/page-header.svelte';
 
-  type Org = { id: string; name: string };
-
-  let orgs = $state<Org[]>([]);
-  let connected = $state(false);
-  let loading = $state(true);
-  let note = $state<string | null>(null);
-
-  async function probe() {
-    try {
-      orgs = await api.get<Org[]>('/api/v1/planetscale/organizations');
-      connected = true;
-    } catch (e) {
-      // Not connected yet (or token expired) — offer the OAuth handshake.
-      connected = false;
-      note = e instanceof ApiError && e.status !== 401 ? e.message : null;
-    } finally {
-      loading = false;
-    }
-  }
-
-  function connect() {
-    // Kick off the PlanetScale OAuth handshake handled by the API.
-    window.location.href = '/api/v1/openid/planetscale';
-  }
-
-  onMount(probe);
+  let { data } = $props();
 </script>
 
 <PageHeader title="Connect PlanetScale" />
@@ -42,15 +15,14 @@
       <Card.Description>Authorize OpenWorkers to provision databases on your PlanetScale account.</Card.Description>
     </Card.Header>
     <Card.Content class="flex flex-col gap-4">
-      {#if loading}
-        <p class="text-muted-foreground text-sm">Checking connection…</p>
-      {:else if !connected}
-        <Button onclick={connect}>Connect PlanetScale account</Button>
-        {#if note}<p class="text-destructive text-sm">{note}</p>{/if}
+      {#if !data.orgs}
+        <!-- The OAuth handshake is a full page navigation, not a fetch -->
+        <Button href="/api/v1/openid/planetscale" data-sveltekit-reload>Connect PlanetScale account</Button>
+        {#if data.note}<p class="text-destructive text-sm">{data.note}</p>{/if}
       {:else}
         <p class="text-sm">Connected. Organizations:</p>
         <ul class="list-inside list-disc text-sm">
-          {#each orgs as org (org.id)}
+          {#each data.orgs as org (org.id)}
             <li>{org.name}</li>
           {/each}
         </ul>

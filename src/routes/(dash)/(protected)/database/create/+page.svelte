@@ -1,39 +1,14 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { api, ApiError } from '#lib/api.ts';
   import { Button } from '#lib/components/ui/button/index.ts';
   import { Input } from '#lib/components/ui/input/index.ts';
   import { Label } from '#lib/components/ui/label/index.ts';
   import * as Card from '#lib/components/ui/card/index.ts';
   import PageHeader from '#lib/components/page-header.svelte';
-  import { hydration } from '#lib/hydration.svelte.ts';
+  import FieldIssues from '#lib/components/field-issues.svelte';
+  import ChoiceButton from '#lib/components/choice-button.svelte';
+  import { createDatabase } from '../database.remote.ts';
 
-  let provider = $state<'platform' | 'postgres'>('platform');
-  let name = $state('');
-  let desc = $state('');
-  let connectionString = $state('');
-
-  let saving = $state(false);
-  let error = $state<string | null>(null);
-
-  async function submit(event: SubmitEvent) {
-    event.preventDefault();
-    saving = true;
-    error = null;
-
-    const body =
-      provider === 'platform'
-        ? { provider, name, desc: desc || undefined }
-        : { provider, name, desc: desc || undefined, connectionString };
-
-    try {
-      const created = await api.post<{ id: string }>('/api/v1/databases', body);
-      await goto(`/database/${created.id}`);
-    } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Failed to create';
-      saving = false;
-    }
-  }
+  const { fields } = createDatabase;
 </script>
 
 <PageHeader title="New database" />
@@ -41,54 +16,42 @@
 <div class="max-w-xl p-8">
   <Card.Root>
     <Card.Content class="pt-6">
-      <form class="flex flex-col gap-4" onsubmit={submit}>
-        <fieldset class="contents" disabled={!hydration.done}>
-          <div class="flex flex-col gap-2">
-            <Label>Provider</Label>
-            <div class="flex gap-2">
-              <Button
-                type="button"
-                variant={provider === 'platform' ? 'default' : 'outline'}
-                onclick={() => (provider = 'platform')}
-              >
-                Platform
-              </Button>
-              <Button
-                type="button"
-                variant={provider === 'postgres' ? 'default' : 'outline'}
-                onclick={() => (provider = 'postgres')}
-              >
-                Postgres
-              </Button>
-              <Button type="button" variant="outline" href="/database/connect/planetscale">PlanetScale…</Button>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <Label for="name">Name</Label>
-            <Input id="name" bind:value={name} required />
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <Label for="desc">Description <span class="text-muted-foreground">(optional)</span></Label>
-            <Input id="desc" bind:value={desc} />
-          </div>
-
-          {#if provider === 'postgres'}
-            <div class="flex flex-col gap-2">
-              <Label for="cs">Connection string</Label>
-              <Input id="cs" type="password" bind:value={connectionString} placeholder="postgres://…" required />
-            </div>
-          {/if}
-
-          {#if error}
-            <p class="text-destructive text-sm">{error}</p>
-          {/if}
-
-          <div class="flex justify-end">
-            <Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create'}</Button>
+      <!-- CSS hides the connection string while Platform is checked, so the form works without JS -->
+      <form class="group flex flex-col gap-4" {...createDatabase}>
+        <fieldset>
+          <legend class="mb-2 text-sm leading-none font-medium">Provider</legend>
+          <div class="flex gap-2">
+            <ChoiceButton input={fields.provider.as('radio', 'platform', true)}>Platform</ChoiceButton>
+            <ChoiceButton input={fields.provider.as('radio', 'postgres')}>Postgres</ChoiceButton>
+            <Button variant="outline" href="/database/connect/planetscale">PlanetScale…</Button>
           </div>
         </fieldset>
+
+        <div class="flex flex-col gap-2">
+          <Label for="name">Name</Label>
+          <Input id="name" {...fields.name.as('text')} required />
+          <FieldIssues issues={fields.name.issues()} />
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <Label for="desc">Description <span class="text-muted-foreground">(optional)</span></Label>
+          <Input id="desc" {...fields.desc.as('text')} />
+          <FieldIssues issues={fields.desc.issues()} />
+        </div>
+
+        <div class="flex flex-col gap-2 group-has-[input[value=platform]:checked]:hidden">
+          <Label for="cs">Connection string</Label>
+          <Input id="cs" {...fields._connectionString.as('password')} placeholder="postgres://…" />
+          <FieldIssues issues={fields._connectionString.issues()} />
+        </div>
+
+        <FieldIssues issues={fields.issues()} />
+
+        <div class="flex justify-end">
+          <Button type="submit" disabled={!!createDatabase.pending}>
+            {createDatabase.pending ? 'Creating…' : 'Create'}
+          </Button>
+        </div>
       </form>
     </Card.Content>
   </Card.Root>
