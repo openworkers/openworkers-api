@@ -2,6 +2,8 @@
   import { Button } from '#lib/components/ui/button/index.ts';
   import * as Card from '#lib/components/ui/card/index.ts';
   import PageHeader from '#lib/components/page-header.svelte';
+  import FieldIssues from '#lib/components/field-issues.svelte';
+  import { connectPlanetScale } from './planetscale.remote.ts';
 
   let { data } = $props();
 </script>
@@ -16,8 +18,10 @@
     </Card.Header>
     <Card.Content class="flex flex-col gap-4">
       {#if !data.orgs}
-        <!-- The OAuth handshake is a full page navigation, not a fetch -->
-        <Button href="/api/v1/openid/planetscale" data-sveltekit-reload>Connect PlanetScale account</Button>
+        <form {...connectPlanetScale}>
+          <Button type="submit" disabled={!!connectPlanetScale.pending}>Connect PlanetScale account</Button>
+        </form>
+        <FieldIssues issues={connectPlanetScale.fields.allIssues()} />
         {#if data.note}<p class="text-destructive text-sm">{data.note}</p>{/if}
       {:else}
         <p class="text-sm">Connected. Organizations:</p>
