@@ -30,15 +30,6 @@ formatting). Without production mode, these imports leak into the bundle and cau
 `SyntaxError` in the OpenWorkers runtime which supports neither `node:*` builtins
 nor dynamic `import()`.
 
-## Docker
-
-```bash
-docker build -t openworkers-api .
-docker run -p 7000:7000 --env-file .env openworkers-api
-```
-
-Or use `bun run build && bun start` to run locally without Docker.
-
 ## API Endpoints
 
 ### Auth (Public)
@@ -125,21 +116,22 @@ console.log(users[0], users.count);
 
 ## Environment Variables
 
-The API runs in two modes with different configuration:
-
-- **Worker mode** — deployed on OpenWorkers, uses `DATABASE` binding for direct DB access
-- **Docker/standalone mode** — uses `POSTGATE_URL` + `POSTGATE_TOKEN` for HTTP-based DB access
+The API runs as a worker on OpenWorkers. It reaches the platform database
+through its `DATABASE` binding. In development, `bun dev` has no bindings and
+reaches the database through Postgate HTTP, with `POSTGATE_URL` and
+`POSTGATE_TOKEN`.
 
 | Variable                           | Type    | Required | Description                              |
 | ---------------------------------- | ------- | -------- | ---------------------------------------- |
 | `DATABASE`                         | binding | worker   | Database binding (direct DB access)      |
 | `ASSETS`                           | binding | worker   | Assets storage binding (SvelteKit files) |
-| `POSTGATE_URL`                     | var     | docker   | Postgate HTTP proxy URL                  |
-| `POSTGATE_TOKEN`                   | secret  | docker   | Postgate token (`pg_xxx` format)         |
+| `POSTGATE_URL`                     | var     | dev      | Postgate HTTP proxy URL                  |
+| `POSTGATE_TOKEN`                   | secret  | dev      | Postgate token (`pg_xxx` format)         |
 | `POSTGATE_SYSTEM_TOKEN_SECRET`     | secret  | yes      | System token HMAC secret (>= 32 chars)   |
 | `APP_URL`                          | var     | yes      | Dashboard URL (for OAuth redirects)      |
 | `JWT_ACCESS_SECRET`                | secret  | yes      | JWT signing secret (>= 32 chars)         |
 | `JWT_REFRESH_SECRET`               | secret  | yes      | JWT refresh token secret (>= 32 chars)   |
+| `WORKER_DOMAIN`                    | var     | no       | Domain of the worker links               |
 | `GITHUB_CLIENT_ID`                 | var     | no       | GitHub OAuth app client ID               |
 | `GITHUB_CLIENT_SECRET`             | secret  | no       | GitHub OAuth app client secret           |
 | `MISTRAL_API_KEY`                  | secret  | no       | Mistral AI API key (transcription)       |

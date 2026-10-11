@@ -1,16 +1,16 @@
-import { json, redirect } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getGithubConfig } from '$lib/config';
+import { getGithubConfig } from '#lib/config/index.ts';
 
 export const POST: RequestHandler = async () => {
   const githubConfig = getGithubConfig();
 
   if (!githubConfig.clientId) {
-    return json({ error: 'GitHub OAuth not configured' }, { status: 500 });
+    return Response.json({ error: 'GitHub OAuth not configured' }, { status: 500 });
   }
 
   const githubAuthUrl = new URL('https://github.com/login/oauth/authorize');
   githubAuthUrl.searchParams.set('client_id', githubConfig.clientId);
 
-  return redirect(302, githubAuthUrl.toString());
+  return redirect(302, githubAuthUrl.toString(), { external: true });
 };

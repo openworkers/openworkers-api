@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import {
   getClaudeToken,
@@ -12,14 +11,14 @@ import {
   CLAUDE_MODELS,
   DEFAULT_MODEL,
   type ExtendedChatRequest
-} from '$lib/server/ai';
+} from '#lib/server/ai.ts';
 
 // POST /api/v1/ai/chat/stream - Stream chat with Claude (SSE)
 export const POST: RequestHandler = async ({ request }) => {
   const rawToken = getClaudeToken(request);
 
   if (!rawToken) {
-    return json({ error: 'AI chat service not configured' }, { status: 503 });
+    return Response.json({ error: 'AI chat service not configured' }, { status: 503 });
   }
 
   try {
@@ -38,7 +37,7 @@ export const POST: RequestHandler = async ({ request }) => {
     const claudeModel = CLAUDE_MODELS[model] || CLAUDE_MODELS[DEFAULT_MODEL];
 
     if (!userMessage?.trim()) {
-      return json({ error: 'No message provided' }, { status: 400 });
+      return Response.json({ error: 'No message provided' }, { status: 400 });
     }
 
     const contextPrompt = buildContextPrompt(code, diagnostics);
@@ -69,7 +68,7 @@ export const POST: RequestHandler = async ({ request }) => {
     if (!response.ok) {
       const error = await response.text();
       console.error('[chat/stream] Claude API error:', error);
-      return json({ error: 'AI chat failed' }, { status: 500 });
+      return Response.json({ error: 'AI chat failed' }, { status: 500 });
     }
 
     // Stream SSE response
@@ -199,6 +198,6 @@ export const POST: RequestHandler = async ({ request }) => {
     });
   } catch (error) {
     console.error('Chat stream error:', error);
-    return json({ error: 'AI chat failed' }, { status: 500 });
+    return Response.json({ error: 'AI chat failed' }, { status: 500 });
   }
 };

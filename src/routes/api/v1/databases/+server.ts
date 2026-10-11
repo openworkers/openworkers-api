@@ -1,8 +1,7 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { databasesService } from '$lib/services/databases';
-import { DatabaseSchema, DatabaseCreateInputSchema } from '$lib/types';
-import { jsonResponse, jsonArrayResponse, parseAndValidate } from '$lib/server/validate';
+import { databasesService } from '#lib/services/databases.ts';
+import { DatabaseSchema, DatabaseCreateInputSchema } from '#lib/types/index.ts';
+import { jsonResponse, jsonArrayResponse, parseAndValidate } from '#lib/server/validate.ts';
 
 // GET /api/v1/databases - List all databases for current user
 export const GET: RequestHandler = async ({ locals }) => {
@@ -13,7 +12,7 @@ export const GET: RequestHandler = async ({ locals }) => {
     return jsonArrayResponse(DatabaseSchema, dbs);
   } catch (error) {
     console.error('Failed to fetch databases:', error);
-    return json({ error: 'Failed to fetch databases' }, { status: 500 });
+    return Response.json({ error: 'Failed to fetch databases' }, { status: 500 });
   }
 };
 
@@ -27,7 +26,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     return jsonResponse(DatabaseSchema, db, 201);
   } catch (error) {
     console.error('Failed to create database:', error);
-    return json(
+    return Response.json(
       { error: 'Failed to create database', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );

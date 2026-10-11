@@ -1,8 +1,7 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { workersService } from '$lib/services/workers';
-import { WorkerCreateInputSchema, WorkerSchema } from '$lib/types';
-import { jsonResponse, jsonArrayResponse, parseAndValidate } from '$lib/server/validate';
+import { workersService } from '#lib/services/workers.ts';
+import { WorkerCreateInputSchema, WorkerSchema } from '#lib/types/index.ts';
+import { jsonResponse, jsonArrayResponse, parseAndValidate } from '#lib/server/validate.ts';
 import defaultWorkerJs from '../../../../../examples/default-worker-js.txt?raw';
 import defaultWorkerTs from '../../../../../examples/default-worker-ts.txt?raw';
 
@@ -15,7 +14,7 @@ export const GET: RequestHandler = async ({ locals }) => {
     return jsonArrayResponse(WorkerSchema, workers);
   } catch (error) {
     console.error('Failed to fetch workers:', error);
-    return json({ error: 'Failed to fetch workers' }, { status: 500 });
+    return Response.json({ error: 'Failed to fetch workers' }, { status: 500 });
   }
 };
 
@@ -30,6 +29,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
     const worker = await workersService.create(userId, {
       name: payload.name,
+      desc: payload.desc,
       script,
       language: payload.language
     });
@@ -37,7 +37,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     return jsonResponse(WorkerSchema, worker, 201);
   } catch (error) {
     console.error('Failed to create worker:', error);
-    return json(
+    return Response.json(
       { error: 'Failed to create worker', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );

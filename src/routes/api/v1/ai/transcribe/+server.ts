@@ -1,6 +1,5 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getMistralConfig } from '$lib/config';
+import { getMistralConfig } from '#lib/config/index.ts';
 
 const VOXTRAL_API_URL = 'https://api.mistral.ai/v1/audio/transcriptions';
 const VOXTRAL_MODEL = 'voxtral-mini-2507';
@@ -10,7 +9,7 @@ export const POST: RequestHandler = async ({ request }) => {
   const mistral = getMistralConfig();
 
   if (!mistral.apiKey) {
-    return json({ error: 'Transcription service not configured' }, { status: 503 });
+    return Response.json({ error: 'Transcription service not configured' }, { status: 503 });
   }
 
   try {
@@ -18,7 +17,7 @@ export const POST: RequestHandler = async ({ request }) => {
     const audioFile = formData.get('audio');
 
     if (!audioFile || !(audioFile instanceof File)) {
-      return json({ error: 'No audio file provided' }, { status: 400 });
+      return Response.json({ error: 'No audio file provided' }, { status: 400 });
     }
 
     const mistralForm = new FormData();
@@ -36,14 +35,14 @@ export const POST: RequestHandler = async ({ request }) => {
     if (!response.ok) {
       const error = await response.text();
       console.error('Voxtral API error:', error);
-      return json({ error: 'Transcription failed' }, { status: 500 });
+      return Response.json({ error: 'Transcription failed' }, { status: 500 });
     }
 
     const result = (await response.json()) as { text: string };
 
-    return json({ text: result.text });
+    return Response.json({ text: result.text });
   } catch (error) {
     console.error('Transcription error:', error);
-    return json({ error: 'Transcription failed' }, { status: 500 });
+    return Response.json({ error: 'Transcription failed' }, { status: 500 });
   }
 };

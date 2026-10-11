@@ -112,7 +112,7 @@ export function getSystemPrompt(token: string): string {
   return isOAuthToken(token) ? CLAUDE_SYSTEM_PROMPT_OAUTH : CLAUDE_SYSTEM_PROMPT_API;
 }
 
-import contextPromptTemplate from '$lib/assets/ai-context.txt';
+import contextPromptTemplate from '#lib/assets/ai-context.txt';
 
 export function buildContextPrompt(code: string, diagnostics: string[]): string {
   const diagnosticsText = diagnostics?.length > 0 ? `\n\nTypeScript diagnostics:\n${diagnostics.join('\n')}` : '';

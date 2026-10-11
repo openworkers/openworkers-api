@@ -2,28 +2,26 @@
   import { untrack } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { api, ApiError } from '$lib/api';
-  import { confirmDialog } from '$lib/confirm.svelte';
-  import type { IWorker } from '$lib/types';
-  import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
-  import { Textarea } from '$lib/components/ui/textarea';
-  import * as Select from '$lib/components/ui/select';
-  import * as Card from '$lib/components/ui/card';
-  import { Skeleton } from '$lib/components/ui/skeleton';
-  import PageHeader from '$lib/components/page-header.svelte';
-  import WorkerCrons from '$lib/components/worker-crons.svelte';
+  import { api, ApiError } from '#lib/api.ts';
+  import { confirmDialog } from '#lib/confirm.svelte.ts';
+  import { Button } from '#lib/components/ui/button/index.ts';
+  import { Input } from '#lib/components/ui/input/index.ts';
+  import { Label } from '#lib/components/ui/label/index.ts';
+  import { Textarea } from '#lib/components/ui/textarea/index.ts';
+  import * as Select from '#lib/components/ui/select/index.ts';
+  import * as Card from '#lib/components/ui/card/index.ts';
+  import PageHeader from '#lib/components/page-header.svelte';
+  import WorkerCrons from '#lib/components/worker-crons.svelte';
   import { ArrowRight, Code, ExternalLink, ScrollText, Trash2 } from '@lucide/svelte';
-  import { workerUrl } from '$lib/utils/worker-url';
+  import { workerUrl } from '#lib/utils/worker-url.ts';
+  import { hydration } from '#lib/hydration.svelte.ts';
+  import { updateWorkerSettings } from './worker.remote.ts';
 
   let { data } = $props();
   let id = $derived(page.params.id!);
 
-  // Seeded from the SSR loader (workersService.findById) — no client fetch.
-  let worker = $state<IWorker | null>(untrack(() => data.worker));
-  let name = $state(untrack(() => data.worker.name ?? ''));
-  let desc = $state(untrack(() => data.worker.desc ?? ''));
+  let worker = $derived(data.worker);
+  let settings = $derived(updateWorkerSettings.for(worker.id));
   let domainsText = $state(
     untrack(() => (data.worker.domains ?? []).map((d) => d.name).join('\n'))
   );
@@ -32,8 +30,6 @@
   let environmentName = $derived(
     data.environments.find((e) => e.id === environment)?.name ?? 'None'
   );
-  let loading = $state(false);
-  let saving = $state(false);
   let error = $state<string | null>(null);
 
   // SvelteKit reuses this component on param-only navigation between workers;
@@ -43,42 +39,15 @@
     const w = data.worker;
 
     untrack(() => {
-      worker = w;
-      name = w.name ?? '';
-      desc = w.desc ?? '';
       domainsText = (w.domains ?? []).map((d) => d.name).join('\n');
       environment = w.environment?.id ?? '';
       error = null;
     });
   });
 
-  async function saveSettings(event: SubmitEvent) {
-    event.preventDefault();
-    saving = true;
-    error = null;
-
-    const domains = domainsText
-      .split('\n')
-      .map((d) => d.trim())
-      .filter(Boolean);
-
-    try {
-      await api.patch(`/api/v1/workers/${id}`, {
-        name,
-        desc: desc || null,
-        domains,
-        environment: environment || null
-      });
-    } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Failed to save';
-    } finally {
-      saving = false;
-    }
-  }
-
   async function remove() {
     const confirmed = await confirmDialog({
-      title: `Delete ${worker?.name ?? 'this worker'}`,
+      title: `Delete ${worker.name ?? 'this worker'}`,
       message: 'This cannot be undone.',
       confirmLabel: 'Delete',
       destructive: true
@@ -96,16 +65,16 @@
 
 </script>
 
-<PageHeader title={worker?.name ?? 'Loading…'}>
+<PageHeader title={worker.name ?? '(unnamed)'}>
   {#snippet actions()}
     <Button variant="outline" href={`/worker/${id}/edit`}>
       <Code class="size-4" />
       Edit code
     </Button>
-    {#if worker?.name}
+    {#if worker.name}
       <Button
         variant="outline"
-        href={workerUrl(worker.name, page.url.host)}
+        href={workerUrl(worker.name, page.url.host, page.data.workerDomain)}
         target="_blank"
         rel="noopener"
       >
@@ -124,20 +93,21 @@
 </PageHeader>
 
 <div class="flex max-w-2xl flex-col gap-6 p-8">
-  {#if loading}
-    <Skeleton class="h-40 w-full" />
-  {:else if worker}
-    <Card.Root>
-      <Card.Header><Card.Title>Settings</Card.Title></Card.Header>
-      <Card.Content>
-        <form class="flex flex-col gap-4" onsubmit={saveSettings}>
+  <Card.Root>
+    <Card.Header><Card.Title>Settings</Card.Title></Card.Header>
+    <Card.Content>
+      <form class="flex flex-col gap-4" {...settings}>
+        <fieldset class="contents" disabled={!hydration.done}>
+          <input {...settings.fields.id.as('hidden', worker.id)} />
+          <input {...settings.fields.environment.as('hidden', environment)} />
+          <input {...settings.fields.domains.as('hidden', domainsText)} />
           <div class="flex flex-col gap-2">
             <Label for="name">Name</Label>
-            <Input id="name" bind:value={name} required />
+            <Input id="name" {...settings.fields.name.as('text', worker.name ?? '')} required />
           </div>
           <div class="flex flex-col gap-2">
             <Label for="desc">Description</Label>
-            <Input id="desc" bind:value={desc} />
+            <Input id="desc" {...settings.fields.desc.as('text', worker.desc ?? '')} />
           </div>
           <div class="flex flex-col gap-2">
             <Label for="environment">Environment</Label>
@@ -173,20 +143,23 @@
             <Textarea id="domains" bind:value={domainsText} rows={3} class="font-mono" />
           </div>
 
+          {#each settings.fields.allIssues() ?? [] as issue (issue.message)}
+            <p class="text-destructive text-sm">{issue.message}</p>
+          {/each}
           {#if error}<p class="text-destructive text-sm">{error}</p>{/if}
 
           <div class="flex justify-end">
-            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+            <Button type="submit" disabled={settings.pending > 0}>
+              {settings.pending > 0 ? 'Saving…' : 'Save'}
+            </Button>
           </div>
-        </form>
-      </Card.Content>
-    </Card.Root>
+        </fieldset>
+      </form>
+    </Card.Content>
+  </Card.Root>
 
-    <!-- Keyed: WorkerCrons seeds its cron list once at mount. -->
-    {#key id}
-      <WorkerCrons workerId={id} crons={worker.crons ?? []} />
-    {/key}
-  {:else}
-    <p class="text-destructive text-sm">{error}</p>
-  {/if}
+  <!-- Keyed: another worker starts with an empty cron input. -->
+  {#key id}
+    <WorkerCrons workerId={id} crons={worker.crons ?? []} />
+  {/key}
 </div>

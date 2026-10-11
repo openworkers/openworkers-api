@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SetPasswordForm from '$lib/components/set-password-form.svelte';
+  import SetPasswordForm from '#lib/components/set-password-form.svelte';
 
   let { form } = $props();
 </script>

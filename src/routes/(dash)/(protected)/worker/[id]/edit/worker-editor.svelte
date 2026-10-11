@@ -1,11 +1,11 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { api, ApiError } from '$lib/api';
-  import type { IWorker } from '$lib/types';
-  import type { EnvValue } from '$lib/monaco-setup';
-  import { Button } from '$lib/components/ui/button';
-  import CodeEditor from '$lib/components/code-editor.svelte';
-  import PageHeader from '$lib/components/page-header.svelte';
+  import { api, ApiError } from '#lib/api.ts';
+  import type { IWorker } from '#lib/types/index.ts';
+  import type { EnvValue } from '#lib/monaco-setup.ts';
+  import { Button } from '#lib/components/ui/button/index.ts';
+  import CodeEditor from '#lib/components/code-editor.svelte';
+  import PageHeader from '#lib/components/page-header.svelte';
 
   // Rendered inside {#key worker.id} by the page: a navigation to another
   // worker remounts this component, so the once-seeded state below (and the

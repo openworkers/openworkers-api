@@ -1,11 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { api, ApiError } from '$lib/api';
-  import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import * as Card from '$lib/components/ui/card';
-  import * as Table from '$lib/components/ui/table';
+  import { api, ApiError } from '#lib/api.ts';
+  import { Button } from '#lib/components/ui/button/index.ts';
+  import { Input } from '#lib/components/ui/input/index.ts';
+  import * as Card from '#lib/components/ui/card/index.ts';
+  import * as Table from '#lib/components/ui/table/index.ts';
   import { Trash2 } from '@lucide/svelte';
+  import { hydration } from '#lib/hydration.svelte.ts';
 
   let { id }: { id: string } = $props();
 
@@ -75,9 +76,11 @@
   </Card.Header>
   <Card.Content class="flex flex-col gap-4">
     <form class="flex items-end gap-2" onsubmit={put}>
-      <Input class="flex-1" placeholder="key" bind:value={newKey} />
-      <Input class="flex-1" placeholder="value" bind:value={newValue} />
-      <Button type="submit" disabled={busy}>Set</Button>
+      <fieldset class="contents" disabled={!hydration.done}>
+        <Input class="flex-1" placeholder="key" bind:value={newKey} />
+        <Input class="flex-1" placeholder="value" bind:value={newValue} />
+        <Button type="submit" disabled={busy}>Set</Button>
+      </fieldset>
     </form>
 
     {#if error}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ResourceList from '$lib/components/resource-list.svelte';
+  import ResourceList from '#lib/components/resource-list.svelte';
 
   let { data } = $props();
 </script>
@@ -11,6 +11,6 @@
   createHref="/storage/create"
   rowHref={(id) => `/storage/${id}`}
   emptyLabel="No storage configs yet."
-  initialItems={data.items}
+  items={data.items}
   limit={data.profile.limits.storage}
 />

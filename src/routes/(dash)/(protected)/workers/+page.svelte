@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import ResourceList from '$lib/components/resource-list.svelte';
-  import { workerUrl } from '$lib/utils/worker-url';
+  import ResourceList from '#lib/components/resource-list.svelte';
+  import { workerUrl } from '#lib/utils/worker-url.ts';
 
   let { data } = $props();
 </script>
@@ -13,7 +13,7 @@
   createHref="/worker/create"
   rowHref={(id) => `/worker/${id}`}
   emptyLabel="No workers yet."
-  initialItems={data.workers}
+  items={data.workers}
   limit={data.profile.limits.workers}
-  viewHref={(worker) => workerUrl(worker.name ?? '', page.url.host)}
+  viewHref={(worker) => workerUrl(worker.name ?? '', page.url.host, page.data.workerDomain)}
 />

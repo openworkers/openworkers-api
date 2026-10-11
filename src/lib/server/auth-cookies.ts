@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit';
-import { getJwtConfig } from '$lib/config';
-import { parseExpiration } from '$lib/services/auth';
+import { getJwtConfig } from '#lib/config/index.ts';
+import { parseExpiration } from '#lib/services/auth.ts';
 
 type Tokens = { accessToken: string; refreshToken: string };
 

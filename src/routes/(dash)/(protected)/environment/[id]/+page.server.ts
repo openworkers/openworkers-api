@@ -1,9 +1,9 @@
 import { error } from '@sveltejs/kit';
-import { environmentsService } from '$lib/services/environments';
-import { storageService } from '$lib/services/storage';
-import { kvService } from '$lib/services/kv';
-import { databasesService } from '$lib/services/databases';
-import { workersService } from '$lib/services/workers';
+import { environmentsService } from '#lib/services/environments.ts';
+import { storageService } from '#lib/services/storage.ts';
+import { kvService } from '#lib/services/kv.ts';
+import { databasesService } from '#lib/services/databases.ts';
+import { workersService } from '#lib/services/workers.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, params }) => {

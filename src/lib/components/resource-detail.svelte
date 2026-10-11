@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { onMount, untrack } from 'svelte';
-  import { goto } from '$app/navigation';
-  import { api, ApiError } from '$lib/api';
-  import { confirmDialog } from '$lib/confirm.svelte';
-  import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
-  import * as Card from '$lib/components/ui/card';
-  import { Skeleton } from '$lib/components/ui/skeleton';
+  import { untrack } from 'svelte';
+  import { goto, refreshAll } from '$app/navigation';
+  import { api, ApiError } from '#lib/api.ts';
+  import { confirmDialog } from '#lib/confirm.svelte.ts';
+  import { Button } from '#lib/components/ui/button/index.ts';
+  import { Input } from '#lib/components/ui/input/index.ts';
+  import { Label } from '#lib/components/ui/label/index.ts';
+  import * as Card from '#lib/components/ui/card/index.ts';
   import PageHeader from './page-header.svelte';
   import type { Snippet } from 'svelte';
+  import { hydration } from '#lib/hydration.svelte.ts';
 
   type Resource = { id: string; name: string | null; desc?: string | null };
 
@@ -18,34 +18,30 @@
     id,
     listHref,
     extra,
-    initialItem
+    item
   }: {
     base: string;
     id: string;
     listHref: string;
     extra?: Snippet<[Resource]>;
-    // SSR-provided item (from a +page.server.ts load) — skips the client fetch.
-    initialItem?: Resource;
+    item: Resource;
   } = $props();
 
-  let item = $state<Resource | null>(untrack(() => initialItem ?? null));
-  let name = $state(untrack(() => initialItem?.name ?? ''));
-  let desc = $state(untrack(() => initialItem?.desc ?? ''));
-  let loading = $state(untrack(() => !initialItem));
+  let name = $state(untrack(() => item.name ?? ''));
+  let desc = $state(untrack(() => item.desc ?? ''));
   let saving = $state(false);
   let error = $state<string | null>(null);
 
-  async function load() {
-    try {
-      item = await api.get<Resource>(`/api/v1/${base}/${id}`);
-      name = item.name ?? '';
-      desc = item.desc ?? '';
-    } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Failed to load';
-    } finally {
-      loading = false;
-    }
-  }
+  // Reseed the form from the loaded item, after a save or on navigation to another item.
+  $effect(() => {
+    const loaded = item;
+
+    untrack(() => {
+      name = loaded.name ?? '';
+      desc = loaded.desc ?? '';
+      error = null;
+    });
+  });
 
   async function save(event: SubmitEvent) {
     event.preventDefault();
@@ -54,6 +50,7 @@
 
     try {
       await api.patch(`/api/v1/${base}/${id}`, { name, desc: desc || null });
+      await refreshAll();
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Failed to save';
     } finally {
@@ -63,7 +60,7 @@
 
   async function remove() {
     const confirmed = await confirmDialog({
-      title: `Delete ${item?.name ?? 'this resource'}`,
+      title: `Delete ${item.name ?? 'this resource'}`,
       message: 'This cannot be undone.',
       confirmLabel: 'Delete',
       destructive: true
@@ -79,32 +76,23 @@
     }
   }
 
-  onMount(() => {
-    if (!initialItem) {
-      load();
-    }
-  });
 </script>
 
-<PageHeader title={item?.name ?? 'Loading…'}>
+<PageHeader title={item.name ?? '(unnamed)'}>
   {#snippet actions()}
     <Button variant="outline" href={listHref}>Back</Button>
-    <Button variant="destructive" onclick={remove} disabled={loading}>Delete</Button>
+    <Button variant="destructive" onclick={remove}>Delete</Button>
   {/snippet}
 </PageHeader>
 
 <div class="flex max-w-xl flex-col gap-6 p-8">
-  {#if loading}
-    <Skeleton class="h-40 w-full" />
-  {:else if error && !item}
-    <p class="text-destructive text-sm">{error}</p>
-  {:else if item}
-    <Card.Root>
-      <Card.Header>
-        <Card.Title>Settings</Card.Title>
-      </Card.Header>
-      <Card.Content>
-        <form class="flex flex-col gap-4" onsubmit={save}>
+  <Card.Root>
+    <Card.Header>
+      <Card.Title>Settings</Card.Title>
+    </Card.Header>
+    <Card.Content>
+      <form class="flex flex-col gap-4" onsubmit={save}>
+        <fieldset class="contents" disabled={!hydration.done}>
           <div class="flex flex-col gap-2">
             <Label for="name">Name</Label>
             <Input id="name" bind:value={name} required />
@@ -122,12 +110,12 @@
           <div class="flex justify-end">
             <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
           </div>
-        </form>
-      </Card.Content>
-    </Card.Root>
+        </fieldset>
+      </form>
+    </Card.Content>
+  </Card.Root>
 
-    {#if extra}
-      {@render extra(item)}
-    {/if}
+  {#if extra}
+    {@render extra(item)}
   {/if}
 </div>

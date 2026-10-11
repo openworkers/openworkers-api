@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import PageHeader from '$lib/components/page-header.svelte';
-  import { parseAnsi, stripAnsi, type AnsiSegment } from '$lib/utils/ansi';
-  import { cn } from '$lib/utils';
+  import { Button } from '#lib/components/ui/button/index.ts';
+  import { Input } from '#lib/components/ui/input/index.ts';
+  import PageHeader from '#lib/components/page-header.svelte';
+  import { parseAnsi, stripAnsi, type AnsiSegment } from '#lib/utils/ansi.ts';
+  import { cn } from '#lib/utils.ts';
   import { ArrowDown, Code, Download, Pause, Play, RotateCw, Search, Trash2 } from '@lucide/svelte';
 
   let { worker }: { worker: { id: string; name: string | null } } = $props();

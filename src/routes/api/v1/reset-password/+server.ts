@@ -1,11 +1,10 @@
 // @deprecated — kept for the legacy Angular dashboard. The new UI BFFs this
 // flow as a SvelteKit form action/load; tokens are set as HttpOnly cookies
 // server-side (see src/routes/(dash)/sign-in/**).
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { authService } from '$lib/services/auth';
-import { ResetPasswordInputSchema, LoginResponseSchema } from '$lib/types';
-import { parseAndValidate, jsonResponse } from '$lib/server/validate';
+import { authService } from '#lib/services/auth.ts';
+import { ResetPasswordInputSchema, LoginResponseSchema } from '#lib/types/index.ts';
+import { parseAndValidate, jsonResponse } from '#lib/server/validate.ts';
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
@@ -22,10 +21,10 @@ export const POST: RequestHandler = async ({ request }) => {
     return response;
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid or expired token') {
-      return json({ error: 'Invalid or expired reset link' }, { status: 400 });
+      return Response.json({ error: 'Invalid or expired reset link' }, { status: 400 });
     }
 
     console.error('Password reset error:', error);
-    return json({ error: 'Password reset failed' }, { status: 500 });
+    return Response.json({ error: 'Password reset failed' }, { status: 500 });
   }
 };

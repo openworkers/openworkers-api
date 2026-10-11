@@ -1,7 +1,7 @@
 <script lang="ts">
-  import * as Dialog from '$lib/components/ui/dialog';
-  import { Button } from '$lib/components/ui/button';
-  import { confirmState, settleConfirm } from '$lib/confirm.svelte';
+  import * as Dialog from '#lib/components/ui/dialog/index.ts';
+  import { Button } from '#lib/components/ui/button/index.ts';
+  import { confirmState, settleConfirm } from '#lib/confirm.svelte.ts';
 
   let pending = $derived(confirmState.pending);
 </script>

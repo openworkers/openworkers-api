@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { authService } from '$lib/services/auth';
-import { setSession } from '$lib/server/auth-cookies';
+import { authService } from '#lib/services/auth.ts';
+import { setSession } from '#lib/server/auth-cookies.ts';
 import type { Actions } from './$types';
 
 // BFF: validate the set-password token, mint a session into HttpOnly cookies.

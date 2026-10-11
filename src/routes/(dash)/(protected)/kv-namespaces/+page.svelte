@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ResourceList from '$lib/components/resource-list.svelte';
+  import ResourceList from '#lib/components/resource-list.svelte';
 
   let { data } = $props();
 </script>
@@ -11,6 +11,6 @@
   createHref="/kv/create"
   rowHref={(id) => `/kv/${id}`}
   emptyLabel="No KV namespaces yet."
-  initialItems={data.items}
+  items={data.items}
   limit={data.profile.limits.kv}
 />

@@ -1,4 +1,4 @@
-import { getPlanetScaleConfig } from '$lib/config';
+import { getPlanetScaleConfig } from '#lib/config/index.ts';
 import * as psTokens from './db/planetscale-tokens';
 
 const AUTH_URL = 'https://auth.planetscale.com/oauth/token';

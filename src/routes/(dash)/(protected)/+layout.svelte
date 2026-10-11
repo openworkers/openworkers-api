@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { page } from '$app/state';
-  import { Button } from '$lib/components/ui/button';
-  import { Separator } from '$lib/components/ui/separator';
-  import Logo from '$lib/components/logo.svelte';
-  import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
-  import { theme, toggleTheme } from '$lib/theme.svelte';
+  import { page, updated } from '$app/state';
+  import { Button } from '#lib/components/ui/button/index.ts';
+  import { Separator } from '#lib/components/ui/separator/index.ts';
+  import Logo from '#lib/components/logo.svelte';
+  import ConfirmDialog from '#lib/components/confirm-dialog.svelte';
+  import { theme, toggleTheme } from '#lib/theme.svelte.ts';
   import {
     Boxes,
     Database,
@@ -91,6 +91,12 @@
   </aside>
 
   <main class="flex-1 overflow-auto">
+    {#if updated.current}
+      <div class="bg-primary text-primary-foreground flex items-center justify-between gap-4 px-8 py-2 text-sm" role="status">
+        A new version of the dashboard is available.
+        <Button size="sm" variant="secondary" onclick={() => location.reload()}>Reload</Button>
+      </div>
+    {/if}
     {@render children?.()}
   </main>
 </div>

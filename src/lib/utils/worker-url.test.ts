@@ -10,4 +10,9 @@ describe('workerUrl', () => {
     expect(workerUrl('hello', 'dash.dev.localhost')).toBe('https://hello.workers.dev.localhost');
     expect(workerUrl('hello', 'dash.dev.localhost:5173')).toBe('https://hello.workers.dev.localhost');
   });
+
+  test('a configured worker domain takes precedence over the dashboard host', () => {
+    expect(workerUrl('hello', 'my-host.local', 'my-host.local')).toBe('https://hello.my-host.local');
+    expect(workerUrl('hello', 'dash.dev.localhost', 'workers.example.com')).toBe('https://hello.workers.example.com');
+  });
 });

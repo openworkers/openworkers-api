@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import {
   getClaudeToken,
@@ -12,14 +11,14 @@ import {
   CLAUDE_MODELS,
   DEFAULT_MODEL,
   type ChatRequest
-} from '$lib/server/ai';
+} from '#lib/server/ai.ts';
 
 // POST /api/v1/ai/chat - Chat with Claude (non-streaming)
 export const POST: RequestHandler = async ({ request }) => {
   const rawToken = getClaudeToken(request);
 
   if (!rawToken) {
-    return json({ error: 'AI chat service not configured' }, { status: 503 });
+    return Response.json({ error: 'AI chat service not configured' }, { status: 503 });
   }
 
   try {
@@ -30,7 +29,7 @@ export const POST: RequestHandler = async ({ request }) => {
     const claudeModel = CLAUDE_MODELS[model] || CLAUDE_MODELS[DEFAULT_MODEL];
 
     if (!userMessage?.trim()) {
-      return json({ error: 'No message provided' }, { status: 400 });
+      return Response.json({ error: 'No message provided' }, { status: 400 });
     }
 
     const contextPrompt = buildContextPrompt(code, diagnostics);
@@ -51,7 +50,7 @@ export const POST: RequestHandler = async ({ request }) => {
     if (!response.ok) {
       const error = await response.text();
       console.error('[chat] Claude API error:', error);
-      return json({ error: 'AI chat failed' }, { status: 500 });
+      return Response.json({ error: 'AI chat failed' }, { status: 500 });
     }
 
     const data = (await response.json()) as {
@@ -62,7 +61,7 @@ export const POST: RequestHandler = async ({ request }) => {
     };
 
     if (!data.content || data.content.length === 0) {
-      return json({ error: 'Invalid API response' }, { status: 500 });
+      return Response.json({ error: 'Invalid API response' }, { status: 500 });
     }
 
     let textResponse = '';
@@ -78,12 +77,12 @@ export const POST: RequestHandler = async ({ request }) => {
       }
     }
 
-    return json({
+    return Response.json({
       response: textResponse || 'Done!',
       appliedCode
     });
   } catch (error) {
     console.error('Chat error:', error);
-    return json({ error: 'AI chat failed' }, { status: 500 });
+    return Response.json({ error: 'AI chat failed' }, { status: 500 });
   }
 };

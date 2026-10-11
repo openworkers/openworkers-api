@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { api, ApiError } from '$lib/api';
-  import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
-  import * as Card from '$lib/components/ui/card';
+  import { api, ApiError } from '#lib/api.ts';
+  import { Button } from '#lib/components/ui/button/index.ts';
+  import { Input } from '#lib/components/ui/input/index.ts';
+  import { Label } from '#lib/components/ui/label/index.ts';
+  import * as Card from '#lib/components/ui/card/index.ts';
+  import { hydration } from '#lib/hydration.svelte.ts';
 
   let email = $state('');
   let loading = $state(false);
@@ -37,15 +38,17 @@
     </Card.Header>
     <Card.Content>
       <form class="flex flex-col gap-4" onsubmit={submit}>
-        <div class="flex flex-col gap-2">
-          <Label for="email">Email</Label>
-          <Input id="email" type="email" bind:value={email} autocomplete="email" required />
-        </div>
+        <fieldset class="contents" disabled={!hydration.done}>
+          <div class="flex flex-col gap-2">
+            <Label for="email">Email</Label>
+            <Input id="email" type="email" bind:value={email} autocomplete="email" required />
+          </div>
 
-        {#if error}<p class="text-destructive text-sm">{error}</p>{/if}
-        {#if success}<p class="text-sm text-green-500">{success}</p>{/if}
+          {#if error}<p class="text-destructive text-sm">{error}</p>{/if}
+          {#if success}<p class="text-sm text-green-500">{success}</p>{/if}
 
-        <Button type="submit" disabled={loading}>{loading ? 'Sending…' : 'Send reset link'}</Button>
+          <Button type="submit" disabled={loading}>{loading ? 'Sending…' : 'Send reset link'}</Button>
+        </fieldset>
       </form>
     </Card.Content>
     <Card.Footer class="justify-center">

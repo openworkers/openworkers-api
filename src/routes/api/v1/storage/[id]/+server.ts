@@ -1,8 +1,7 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { storageService } from '$lib/services/storage';
-import { StorageConfigSchema, StorageConfigUpdateInputSchema } from '$lib/types';
-import { jsonResponse, parseAndValidate } from '$lib/server/validate';
+import { storageService } from '#lib/services/storage.ts';
+import { StorageConfigSchema, StorageConfigUpdateInputSchema } from '#lib/types/index.ts';
+import { jsonResponse, parseAndValidate } from '#lib/server/validate.ts';
 
 // GET /api/v1/storage/:id - Get single storage config (accepts UUID or name)
 export const GET: RequestHandler = async ({ locals, params }) => {
@@ -13,13 +12,13 @@ export const GET: RequestHandler = async ({ locals, params }) => {
     const config = await storageService.findByIdOrName(userId, idOrName);
 
     if (!config) {
-      return json({ error: 'Storage config not found' }, { status: 404 });
+      return Response.json({ error: 'Storage config not found' }, { status: 404 });
     }
 
     return jsonResponse(StorageConfigSchema, config);
   } catch (error) {
     console.error('Failed to fetch storage config:', error);
-    return json({ error: 'Failed to fetch storage config' }, { status: 500 });
+    return Response.json({ error: 'Failed to fetch storage config' }, { status: 500 });
   }
 };
 
@@ -33,19 +32,19 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
     const existing = await storageService.findByIdOrName(userId, idOrName);
 
     if (!existing) {
-      return json({ error: 'Storage config not found' }, { status: 404 });
+      return Response.json({ error: 'Storage config not found' }, { status: 404 });
     }
 
     const config = await storageService.update(userId, existing.id, payload);
 
     if (!config) {
-      return json({ error: 'Storage config not found' }, { status: 404 });
+      return Response.json({ error: 'Storage config not found' }, { status: 404 });
     }
 
     return jsonResponse(StorageConfigSchema, config);
   } catch (error) {
     console.error('Failed to update storage config:', error);
-    return json(
+    return Response.json(
       { error: 'Failed to update storage config', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
@@ -61,18 +60,18 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
     const existing = await storageService.findByIdOrName(userId, idOrName);
 
     if (!existing) {
-      return json({ error: 'Storage config not found' }, { status: 404 });
+      return Response.json({ error: 'Storage config not found' }, { status: 404 });
     }
 
     const deleted = await storageService.delete(userId, existing.id);
 
     if (!deleted) {
-      return json({ error: 'Storage config not found' }, { status: 404 });
+      return Response.json({ error: 'Storage config not found' }, { status: 404 });
     }
 
-    return json({ deleted: true });
+    return Response.json({ deleted: true });
   } catch (error) {
     console.error('Failed to delete storage config:', error);
-    return json({ error: 'Failed to delete storage config' }, { status: 500 });
+    return Response.json({ error: 'Failed to delete storage config' }, { status: 500 });
   }
 };

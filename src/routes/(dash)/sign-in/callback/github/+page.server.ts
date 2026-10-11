@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
-import { authService } from '$lib/services/auth';
-import { setSession } from '$lib/server/auth-cookies';
+import { authService } from '#lib/services/auth.ts';
+import { setSession } from '#lib/server/auth-cookies.ts';
 import type { PageServerLoad } from './$types';
 
 // BFF: GitHub redirects here with ?code=; exchange it server-side and mint a

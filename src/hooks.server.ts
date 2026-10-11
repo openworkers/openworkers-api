@@ -1,9 +1,9 @@
-import { json, type Handle } from '@sveltejs/kit';
-import { authenticate } from '$lib/server/auth';
-import { setSession } from '$lib/server/auth-cookies';
-import { authService } from '$lib/services/auth';
-import { getJwtConfig } from '$lib/config';
-import { verify } from '$lib/utils/jwt';
+import type { Handle, HandleServerError } from '@sveltejs/kit/hooks';
+import { authenticate } from '#lib/server/auth.ts';
+import { setSession } from '#lib/server/auth-cookies.ts';
+import { authService } from '#lib/services/auth.ts';
+import { getJwtConfig } from '#lib/config/index.ts';
+import { verify } from '#lib/utils/jwt.ts';
 
 /** Route prefixes that don't require authentication */
 const PUBLIC_PREFIXES = ['/api/health', '/api/domain/'];
@@ -73,11 +73,18 @@ export const handle: Handle = async ({ event, resolve }) => {
   if (path.startsWith('/api/') && !auth) {
     const ms = (performance.now() - start).toFixed(0);
     console.log(`--> ${method} ${requestId} ${path} 401 ${ms}ms`);
-    return json({ error: 'Unauthorized' }, { status: 401 });
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const response = await resolve(event);
   const ms = (performance.now() - start).toFixed(0);
   console.log(`--> ${method} ${requestId} ${path} ${response.status} ${ms}ms`);
   return response;
+};
+
+export const handleError: HandleServerError = ({ kind, error }) => {
+  // A malformed id in the URL reaches PostgreSQL as an invalid uuid; it names no resource, so it is a 404.
+  if (kind === 'unknown' && error instanceof Error && error.message.includes('invalid input syntax for type uuid')) {
+    return { status: 404, message: 'Not Found' };
+  }
 };

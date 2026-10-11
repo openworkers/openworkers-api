@@ -1,5 +1,5 @@
-import type { ISelf } from '$lib/types';
-import { api } from '$lib/api';
+import type { ISelf } from '#lib/types/index.ts';
+import { api } from '#lib/api.ts';
 
 // Shared, reactive auth state (Svelte 5 runes in a .svelte.ts module).
 export const auth = $state<{ profile: ISelf | null; loaded: boolean }>({

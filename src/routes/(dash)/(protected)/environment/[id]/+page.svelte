@@ -1,15 +1,15 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import ResourceDetail from '$lib/components/resource-detail.svelte';
-  import EnvironmentValues from '$lib/components/environment-values.svelte';
-  import * as Card from '$lib/components/ui/card';
+  import ResourceDetail from '#lib/components/resource-detail.svelte';
+  import EnvironmentValues from '#lib/components/environment-values.svelte';
+  import * as Card from '#lib/components/ui/card/index.ts';
 
   let { data } = $props();
   let id = $derived(page.params.id!);
 </script>
 
 {#key id}
-  <ResourceDetail base="environments" {id} listHref="/environments" initialItem={data.item}>
+  <ResourceDetail base="environments" {id} listHref="/environments" item={data.item}>
     {#snippet extra()}
       <EnvironmentValues
         {id}

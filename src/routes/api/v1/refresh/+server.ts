@@ -1,27 +1,26 @@
 // @deprecated — kept for the legacy Angular dashboard. The new UI BFFs this
 // flow as a SvelteKit form action; tokens are set as HttpOnly cookies
 // server-side (see src/routes/(dash)/sign-in/+page.server.ts and hooks.server.ts).
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { verify } from '$lib/utils/jwt';
-import { authService } from '$lib/services/auth';
-import { getJwtConfig } from '$lib/config';
-import { LoginResponseSchema } from '$lib/types';
-import { jsonResponse } from '$lib/server/validate';
+import { verify } from '#lib/utils/jwt.ts';
+import { authService } from '#lib/services/auth.ts';
+import { getJwtConfig } from '#lib/config/index.ts';
+import { LoginResponseSchema } from '#lib/types/index.ts';
+import { jsonResponse } from '#lib/server/validate.ts';
 
 export const POST: RequestHandler = async ({ request }) => {
   const body = await request.json();
   const refreshToken = body.refreshToken;
 
   if (!refreshToken) {
-    return json({ error: 'Missing refresh token' }, { status: 400 });
+    return Response.json({ error: 'Missing refresh token' }, { status: 400 });
   }
 
   try {
     const payload = await verify(refreshToken, getJwtConfig().refresh.secret);
 
     if (!payload.sub || typeof payload.sub !== 'string') {
-      return json({ error: 'Invalid token payload' }, { status: 401 });
+      return Response.json({ error: 'Invalid token payload' }, { status: 401 });
     }
 
     const tokens = await authService.refreshTokens(payload.sub);
@@ -34,6 +33,6 @@ export const POST: RequestHandler = async ({ request }) => {
     return response;
   } catch (error) {
     console.error('Refresh token verification failed:', error);
-    return json({ error: 'Invalid or expired refresh token' }, { status: 401 });
+    return Response.json({ error: 'Invalid or expired refresh token' }, { status: 401 });
   }
 };

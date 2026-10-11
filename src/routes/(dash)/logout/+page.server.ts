@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { clearSession } from '$lib/server/auth-cookies';
+import { clearSession } from '#lib/server/auth-cookies.ts';
 import type { Actions } from './$types';
 
 // UI-internal session op — a SvelteKit form action, NOT a /api/v1 endpoint.

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type * as Monaco from 'monaco-editor';
-  import type { EnvValue } from '$lib/monaco-setup';
-  import { theme } from '$lib/theme.svelte';
+  import type { EnvValue } from '#lib/monaco-setup.ts';
+  import { theme } from '#lib/theme.svelte.ts';
 
   let {
     value = $bindable(''),
@@ -33,7 +33,7 @@
     (async () => {
       // Monaco never enters the SSR graph — loaded only here, in the browser.
       const { setupMonaco, setEnvironmentLibs, clearEnvironmentLibs } = await import(
-        '$lib/monaco-setup'
+        '#lib/monaco-setup.ts'
       );
       const monaco = setupMonaco();
 
