@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import adapter from '@openworkers/adapter-sveltekit';
@@ -86,7 +87,23 @@ if (envPort !== undefined && !/^\d{1,5}$/.test(envPort)) {
   console.warn(`Warning: Invalid PORT environment variable "${envPort}", defaulting to 5173`);
 }
 
+// The commit this build comes from, for /api/health. GIT_COMMIT covers a build without the .git directory.
+function gitCommit(): string {
+  if (process.env.GIT_COMMIT) {
+    return process.env.GIT_COMMIT.slice(0, 6);
+  }
+
+  try {
+    return execSync('git rev-parse --short=6 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+  } catch {
+    return 'unknown';
+  }
+}
+
 export default defineConfig({
+  define: { __GIT_COMMIT__: JSON.stringify(gitCommit()) },
   plugins: [
     cronerWasmInlinePlugin(),
     zodLocalesPlugin(),
