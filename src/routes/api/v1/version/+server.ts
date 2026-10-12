@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
-import pkg from '../../../../../package.json';
+import { name, version } from '../../../../../package.json';
 
 export const GET: RequestHandler = async () => {
-  return Response.json({ version: pkg.version, name: pkg.name });
+  return Response.json({ version, name });
 };
