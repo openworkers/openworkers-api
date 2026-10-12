@@ -4,6 +4,10 @@ import { setSession } from '#lib/server/auth-cookies.ts';
 import { authService } from '#lib/services/auth.ts';
 import { getJwtConfig } from '#lib/config/index.ts';
 import { verify } from '#lib/utils/jwt.ts';
+import { z } from 'zod';
+
+// Zod sets its English messages when it loads, but it declares no side effects, so the bundler drops that call
+z.config(z.locales.en());
 
 /** Route prefixes that don't require authentication */
 const PUBLIC_PREFIXES = ['/api/health', '/api/domain/'];

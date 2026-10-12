@@ -117,6 +117,8 @@ export default defineConfig({
       experimental: { remoteFunctions: true }
     })
   ],
+  // Bundle zod here, not in the adapter: the locales plugin only applies to what Vite bundles
+  ssr: { noExternal: ['zod'] },
   server: {
     port: parseInt(process.env.PORT || '5173', 10)
   }
