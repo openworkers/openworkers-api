@@ -2,7 +2,12 @@
   let { data } = $props();
 </script>
 
-<svelte:head><title>Signing in… · OpenWorkers</title></svelte:head>
+<svelte:head>
+  <title>Signing in… · OpenWorkers</title>
+  {#if data.next}
+    <meta http-equiv="refresh" content="0;url={data.next}" />
+  {/if}
+</svelte:head>
 
 <main class="flex min-h-screen items-center justify-center p-6 text-center">
   {#if data.error}
@@ -12,5 +17,6 @@
     </div>
   {:else}
     <p class="text-muted-foreground text-sm">Completing GitHub sign-in…</p>
+    <a href={data.next} class="text-muted-foreground mt-2 inline-block text-sm hover:underline">Continue</a>
   {/if}
 </main>

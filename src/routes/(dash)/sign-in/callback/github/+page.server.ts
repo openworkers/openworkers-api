@@ -1,4 +1,3 @@
-import { redirect } from '@sveltejs/kit';
 import { authService } from '#lib/services/auth.ts';
 import { setSession } from '#lib/server/auth-cookies.ts';
 import { checkGithubState } from '#lib/server/github-oauth.ts';
@@ -25,5 +24,8 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
   }
 
   setSession(cookies, await authService.createTokens(user));
-  throw redirect(303, '/workers');
+
+  // The session cookies are SameSite=strict. After the GitHub consent screen, this request is a navigation that
+  // GitHub started, and a redirect would continue it without the new cookies: the page navigates itself instead.
+  return { next: '/workers' };
 };
