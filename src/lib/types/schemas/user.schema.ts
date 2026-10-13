@@ -9,6 +9,8 @@ export const ResourceLimitsSchema = z.object({
   storage: z.number().int().min(0).default(3),
   // 0 turns D1 off for the account
   d1: z.number().int().min(0).default(0),
+  // 0 turns Durable Objects off for the account
+  durableObjects: z.number().int().min(0).default(0),
   secondPrecision: z.boolean().default(false)
 });
 

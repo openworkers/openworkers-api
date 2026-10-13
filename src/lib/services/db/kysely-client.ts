@@ -21,6 +21,7 @@ export interface Database {
     limitKv: Generated<number>;
     limitStorage: Generated<number>;
     limitD1: Generated<number>;
+    limitDurableObjects: Generated<number>;
     secondPrecision: Generated<boolean>;
     createdAt: Generated<Date>;
     updatedAt: Generated<Date>;
@@ -44,6 +45,18 @@ export interface Database {
   d1Databases: {
     id: Generated<string>;
     userId: string;
+    name: string;
+    desc: string | null;
+    createdAt: Generated<Date>;
+    updatedAt: Generated<Date>;
+    deletedAt: Date | null;
+  };
+  // The key column is left out: only the runner reads it
+  durableObjectNamespaces: {
+    id: Generated<string>;
+    userId: string;
+    workerId: string | null;
+    className: string;
     name: string;
     desc: string | null;
     createdAt: Generated<Date>;
@@ -138,7 +151,7 @@ export interface Database {
     id: Generated<string>;
     key: string;
     value: string;
-    type: 'var' | 'secret' | 'assets' | 'storage' | 'kv' | 'database' | 'worker' | 'd1';
+    type: 'var' | 'secret' | 'assets' | 'storage' | 'kv' | 'database' | 'worker' | 'd1' | 'durable_object';
     environmentId: string;
     userId: string;
     createdAt: Generated<Date>;

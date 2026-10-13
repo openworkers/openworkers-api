@@ -21,6 +21,8 @@
         workers={data.workers}
         d1={data.d1}
         d1Enabled={data.profile.limits.d1 > 0 || data.d1.length > 0}
+        durableObjects={data.durableObjects}
+        durableObjectsEnabled={data.profile.limits.durableObjects > 0 || data.durableObjects.length > 0}
       />
 
       <Card.Root>

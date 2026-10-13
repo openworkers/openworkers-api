@@ -5,6 +5,7 @@ import { kvService } from '#lib/services/kv.ts';
 import { databasesService } from '#lib/services/databases.ts';
 import { workersService } from '#lib/services/workers.ts';
 import { d1Service } from '#lib/services/d1.ts';
+import { durableObjectsService } from '#lib/services/durable-objects.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
@@ -15,13 +16,14 @@ export const load: PageServerLoad = async ({ locals, params }) => {
   }
 
   // Sibling resources, for resolving binding names and populating the pickers.
-  const [storage, kv, databases, workers, d1] = await Promise.all([
+  const [storage, kv, databases, workers, d1, durableObjects] = await Promise.all([
     storageService.findAll(locals.userId),
     kvService.findAll(locals.userId),
     databasesService.findAll(locals.userId),
     workersService.findAll(locals.userId),
-    d1Service.findAll(locals.userId)
+    d1Service.findAll(locals.userId),
+    durableObjectsService.findAll(locals.userId)
   ]);
 
-  return { item, storage, kv, databases, workers, d1 };
+  return { item, storage, kv, databases, workers, d1, durableObjects };
 };

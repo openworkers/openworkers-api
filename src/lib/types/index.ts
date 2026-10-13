@@ -97,6 +97,17 @@ export {
 export type { ID1Database, ID1DatabaseCreateInput, ID1DatabaseUpdateInput, ID1Request } from './schemas/d1.schema';
 
 export {
+  DurableObjectNamespaceSchema,
+  DurableObjectNamespaceCreateInputSchema,
+  DurableObjectNamespaceUpdateInputSchema
+} from './schemas/durable-object.schema';
+export type {
+  IDurableObjectNamespace,
+  IDurableObjectNamespaceCreateInput,
+  IDurableObjectNamespaceUpdateInput
+} from './schemas/durable-object.schema';
+
+export {
   StorageConfigSchema,
   StorageConfigCreateInputSchema,
   StorageConfigUpdateInputSchema,

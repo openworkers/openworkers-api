@@ -1,11 +1,12 @@
 import { findD1DatabaseById } from './db/d1';
+import { findNamespaceById } from './db/durable-objects';
 import { findDatabaseById } from './db/databases';
 import { findKvNamespaceById } from './db/kv';
 import { findStorageConfigById } from './db/storage';
 import { findWorker } from './db/workers';
 import { isUuid } from '../utils/validation';
 
-export type ResourceBindingType = 'assets' | 'storage' | 'kv' | 'database' | 'worker' | 'd1';
+export type ResourceBindingType = 'assets' | 'storage' | 'kv' | 'database' | 'worker' | 'd1' | 'durable_object';
 
 // The runner resolves a binding by id only, so the API must check who owns the target
 export async function ownsBindingTarget(userId: string, type: ResourceBindingType, id: string): Promise<boolean> {
@@ -25,5 +26,7 @@ export async function ownsBindingTarget(userId: string, type: ResourceBindingTyp
       return (await findWorker(userId, id)) !== null;
     case 'd1':
       return (await findD1DatabaseById(userId, id)) !== null;
+    case 'durable_object':
+      return (await findNamespaceById(userId, id)) !== null;
   }
 }

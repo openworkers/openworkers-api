@@ -11,10 +11,10 @@
   import * as Select from '#lib/components/ui/select/index.ts';
   import { Box, Lock, LockOpen, Plus, RotateCcw, Trash2 } from '@lucide/svelte';
 
-  type BindingType = 'var' | 'secret' | 'assets' | 'storage' | 'kv' | 'database' | 'worker' | 'd1';
+  type BindingType = 'var' | 'secret' | 'assets' | 'storage' | 'kv' | 'database' | 'worker' | 'd1' | 'durable_object';
   type Value = { id: string; key: string; value: string; type: BindingType };
   type Resource = { id: string; name: string | null };
-  type Kind = 'storage' | 'kv' | 'database' | 'worker' | 'd1';
+  type Kind = 'storage' | 'kv' | 'database' | 'worker' | 'd1' | 'durable_object';
 
   let {
     id,
@@ -24,7 +24,9 @@
     databases = [],
     workers = [],
     d1 = [],
-    d1Enabled = false
+    d1Enabled = false,
+    durableObjects = [],
+    durableObjectsEnabled = false
   }: {
     id: string;
     values?: Value[];
@@ -35,9 +37,12 @@
     d1?: Resource[];
     // D1 is off until the account limit allows a database
     d1Enabled?: boolean;
+    durableObjects?: Resource[];
+    // Durable Objects are off until the account limit allows a namespace
+    durableObjectsEnabled?: boolean;
   } = $props();
 
-  const RESOURCE_TYPES: BindingType[] = ['assets', 'storage', 'kv', 'database', 'worker', 'd1'];
+  const RESOURCE_TYPES: BindingType[] = ['assets', 'storage', 'kv', 'database', 'worker', 'd1', 'durable_object'];
 
   type Row = {
     id?: string;
@@ -128,6 +133,7 @@
     if (type === 'database') return databases;
     if (type === 'worker') return workers;
     if (type === 'd1') return d1;
+    if (type === 'durable_object') return durableObjects;
     return storage;
   }
 
@@ -141,6 +147,7 @@
     if (type === 'database') return `/database/${value}`;
     if (type === 'worker') return `/worker/${value}`;
     if (type === 'd1') return `/d1/${value}`;
+    if (type === 'durable_object') return `/durable-object/${value}`;
     return `/storage/${value}`;
   }
 
@@ -180,6 +187,7 @@
     kv: 'KV',
     database: 'Database',
     d1: 'D1',
+    durable_object: 'Durable Object',
     worker: 'Worker'
   };
   const KIND_CREATE: Record<Kind, string> = {
@@ -187,6 +195,7 @@
     kv: '/kv/create',
     database: '/database/create',
     d1: '/d1/create',
+    durable_object: '/durable-object/create',
     worker: '/worker/create'
   };
 
@@ -301,6 +310,11 @@
         {#if d1Enabled}
           <Button variant="outline" size="sm" onclick={() => openDialog('d1')}>
             <Plus class="size-4" /> D1
+          </Button>
+        {/if}
+        {#if durableObjectsEnabled}
+          <Button variant="outline" size="sm" onclick={() => openDialog('durable_object')}>
+            <Plus class="size-4" /> Durable Object
           </Button>
         {/if}
       </div>
