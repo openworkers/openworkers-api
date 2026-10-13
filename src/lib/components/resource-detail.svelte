@@ -19,7 +19,8 @@
     update,
     remove,
     extra,
-    item
+    item,
+    removeWarning = 'This cannot be undone.'
   }: {
     id: string;
     listHref: string;
@@ -27,6 +28,8 @@
     remove: RemoteCommand<string, void>;
     extra?: Snippet<[Resource]>;
     item: Resource;
+    // What the delete dialog says goes with the item
+    removeWarning?: string;
   } = $props();
 
   let settings = $derived(update.for(id));
@@ -35,7 +38,7 @@
   async function confirmRemove() {
     const confirmed = await confirmDialog({
       title: `Delete ${item.name ?? 'this resource'}`,
-      message: 'This cannot be undone.',
+      message: removeWarning,
       confirmLabel: 'Delete',
       destructive: true
     });

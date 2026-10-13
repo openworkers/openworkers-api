@@ -19,7 +19,8 @@
     emptyLabel = 'Nothing here yet.',
     items,
     limit,
-    viewHref
+    viewHref,
+    removeWarning = 'This cannot be undone.'
   }: {
     title: string;
     description?: string;
@@ -32,6 +33,8 @@
     limit?: number;
     // A public URL of the item, opened in a new tab.
     viewHref?: (item: Row) => string;
+    // What the delete dialog says goes with the item
+    removeWarning?: string;
   } = $props();
 
   let error = $state<string | null>(null);
@@ -40,7 +43,7 @@
   async function confirmRemove(id: string, name: string) {
     const confirmed = await confirmDialog({
       title: `Delete ${name}`,
-      message: 'This cannot be undone.',
+      message: removeWarning,
       confirmLabel: 'Delete',
       destructive: true
     });

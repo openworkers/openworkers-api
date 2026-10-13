@@ -45,8 +45,8 @@
     <Card.Header>
       <Card.Title>Resource limits</Card.Title>
     </Card.Header>
-    <Card.Content class="grid grid-cols-6 gap-4 text-center">
-      {#each [['Workers', data.profile.limits.workers], ['Environments', data.profile.limits.environments], ['Databases', data.profile.limits.databases], ['KV', data.profile.limits.kv], ['Storage', data.profile.limits.storage], ['D1', data.profile.limits.d1]] as [label, value] (label)}
+    <Card.Content class="grid grid-cols-7 gap-4 text-center">
+      {#each [['Workers', data.profile.limits.workers], ['Environments', data.profile.limits.environments], ['Databases', data.profile.limits.databases], ['KV', data.profile.limits.kv], ['Storage', data.profile.limits.storage], ['D1', data.profile.limits.d1], ['Durable Objects', data.profile.limits.durableObjects]] as [label, value] (label)}
         <div>
           <p class="text-2xl font-semibold">{value}</p>
           <p class="text-muted-foreground text-sm">{label}</p>

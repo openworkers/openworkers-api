@@ -15,6 +15,7 @@
     LogOut,
     Moon,
     Settings,
+    Shapes,
     Sun
   } from '@lucide/svelte';
   import { signOut } from '../auth.remote.ts';
@@ -28,6 +29,10 @@
     { href: '/databases', detail: '/database/', label: 'Databases', icon: Database },
     // D1 is off until the account limit allows a database
     ...(data.profile.limits.d1 > 0 ? [{ href: '/d1-databases', detail: '/d1/', label: 'D1', icon: DatabaseZap }] : []),
+    // Durable Objects are off until the account limit allows a namespace
+    ...(data.profile.limits.durableObjects > 0
+      ? [{ href: '/durable-objects', detail: '/durable-object/', label: 'Durable Objects', icon: Shapes }]
+      : []),
     { href: '/kv-namespaces', detail: '/kv/', label: 'KV', icon: KeyRound },
     { href: '/storage-configs', detail: '/storage/', label: 'Storage', icon: HardDrive }
   ]);
