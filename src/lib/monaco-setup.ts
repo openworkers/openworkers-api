@@ -11,7 +11,7 @@ import EditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import TsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
 // Workers runtime declarations, inlined at build time via ?raw. The Angular
-// dash copied the same 12 files to /assets/workers-types and fetched them at
+// dash copied the same files to /assets/workers-types and fetched them at
 // runtime; ?raw skips the asset copy + network round-trip. globals.d.ts is
 // intentionally omitted, as in the dash.
 import eventsDts from '@openworkers/workers-types/types/events.d.ts?raw';
@@ -24,6 +24,7 @@ import encodingDts from '@openworkers/workers-types/types/encoding.d.ts?raw';
 import cryptoDts from '@openworkers/workers-types/types/crypto.d.ts?raw';
 import consoleDts from '@openworkers/workers-types/types/console.d.ts?raw';
 import timersDts from '@openworkers/workers-types/types/timers.d.ts?raw';
+import websocketDts from '@openworkers/workers-types/types/websocket.d.ts?raw';
 import workersDts from '@openworkers/workers-types/types/workers.d.ts?raw';
 import bindingsDts from '@openworkers/workers-types/types/bindings.d.ts?raw';
 
@@ -43,6 +44,7 @@ const WORKERS_TYPES_LIB = [
   cryptoDts,
   consoleDts,
   timersDts,
+  websocketDts,
   workersDts,
   bindingsDts
 ].join('\n');
