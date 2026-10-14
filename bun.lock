@@ -20,7 +20,7 @@
       "devDependencies": {
         "@internationalized/date": "^3.12.0",
         "@openworkers/adapter-sveltekit": "^0.6.1",
-        "@openworkers/workers-types": "^0.1.15",
+        "@openworkers/workers-types": "^0.1.16",
         "@sveltejs/kit": "^3.0.0",
         "@sveltejs/vite-plugin-svelte": "^7.0.0",
         "@tailwindcss/vite": "^4.3.0",
@@ -122,7 +122,7 @@
 
     "@openworkers/croner-wasm": ["@openworkers/croner-wasm@0.3.1", "", {}, "sha512-03yc9hYWt4Fhu3K9kWw7cV3ig3aefMFMp3ylkqa1t/wWHSwelwzmepHRXlvKL8ZsegnDWK1yQuzS2oruspmLiA=="],
 
-    "@openworkers/workers-types": ["@openworkers/workers-types@0.1.15", "", { "peerDependencies": { "typescript": "^5.9.3 || ^6" } }, "sha512-vczksP+8zLQ33RoRpw+FOI5M8CYNlR1jHy++XZzaKFgjGYCSd3V0cqLdUWgKBuKXC5x/SwFSlijlkhGwbpR27g=="],
+    "@openworkers/workers-types": ["@openworkers/workers-types@0.1.16", "", { "peerDependencies": { "typescript": "^5.9.3 || ^6" } }, "sha512-7IhWlGAhhja/1ijLzXaOhkpWFtjh9+VTfd/XiWH+E4/7mKh01+ScRNkcKiM/Fn1X/DMr1xwOnTR8xy7zg8wMkw=="],
 
     "@oxc-project/types": ["@oxc-project/types@0.153.0", "", {}, "sha512-jSNrRIyvPVLL5E1z/tS5zLAprosGz/FuI1PWwEOz59j3E4TTTzSpqKb/RDGqJhhW0QHYISGXxq582wGx6T11Tw=="],
 
